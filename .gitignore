@@ -1,0 +1,30 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Laravel
+backend/vendor/
+backend/node_modules/
+backend/public/build/
+backend/storage/*.key
+backend/storage/logs/*.log
+backend/bootstrap/cache/*.php
+
+# React / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+
+# Test / analysis
+coverage/
+.phpunit.result.cache
+
+# Misc
+*.log

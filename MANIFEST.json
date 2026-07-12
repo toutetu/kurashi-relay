@@ -1,0 +1,157 @@
+[
+  {
+    "path": ".gitignore",
+    "sha256": "3e46dec28d74c7cbf40746b4be588c8a0496940a728fe7c6f5016927ce7c4a0d",
+    "bytes": 380
+  },
+  {
+    "path": "AGENTS.md",
+    "sha256": "c8d3392b8e1c59ea0f459b610e4ed977e9465185ad785fe170415412bd9910cb",
+    "bytes": 4010
+  },
+  {
+    "path": "PROMPT_CODEX_01.md",
+    "sha256": "31c860ffb7dd43a43541a49b417b3bb9d99a4713cb833313817cb0dd5df2c846",
+    "bytes": 1825
+  },
+  {
+    "path": "PROMPT_CODEX_REVIEW.md",
+    "sha256": "8536f3f185b83b021f450f3ecea427680af65208d8475e0c5ab8288e1ce51884",
+    "bytes": 1543
+  },
+  {
+    "path": "README.md",
+    "sha256": "eccd197c95573f60fd4bb56ecde3f56374cc183a5e5e2b476fb7d0ddf9ce1e8a",
+    "bytes": 2338
+  },
+  {
+    "path": "backend/.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "docs/api-contract-01.md",
+    "sha256": "bf7d37aefb567852752037894bac52f14eec667af7e5edeaeace11efb7a8ec11",
+    "bytes": 2101
+  },
+  {
+    "path": "docs/architecture.md",
+    "sha256": "1f740502b5ca2b6027f30dfbbabc94ad2f9f343e79ebde3cc8990b9f2c7d1f5f",
+    "bytes": 1782
+  },
+  {
+    "path": "docs/codex-design-spec.md",
+    "sha256": "31d165961a98685e181e208666d60a0cb75608317aac3012232e2833a9c4e978",
+    "bytes": 5031
+  },
+  {
+    "path": "docs/codex-handoff-guide.md",
+    "sha256": "6137e1c7c509c16c31e025f5f3d4946fe33eaa0008be819c99d6f3fb3ce7e8da",
+    "bytes": 1923
+  },
+  {
+    "path": "docs/codex-implementation-01.md",
+    "sha256": "edee0fe2d2493c78bd2f02eb4cb6b03d4b8211250a11458a49951c7603df89ca",
+    "bytes": 32063
+  },
+  {
+    "path": "docs/data-model.md",
+    "sha256": "13b22bb9fdc5859841cab9acfb1ff95a65a0868c3c0a2598345af30cec9febde",
+    "bytes": 4696
+  },
+  {
+    "path": "docs/product-plan.md",
+    "sha256": "6076eab28e23976fe245bec3a7f7027fde1801639ccf71a17a877dc780fd3cda",
+    "bytes": 3661
+  },
+  {
+    "path": "docs/ui-color-guide.md",
+    "sha256": "6d476773a6f2335c342a6f51607ec2be10f4a193edf8814d9c0556d9b5f9f98b",
+    "bytes": 700
+  },
+  {
+    "path": "docs/wireframes/README.md",
+    "sha256": "35e81093b86374fe42e041f8a6da943878a3c38a89fd55bb8519c37cdfb41157",
+    "bytes": 1288
+  },
+  {
+    "path": "docs/wireframes/activity-desktop.png",
+    "sha256": "08d23e8dc3045efa5216146c0daef28b4e214f016808dd8d12560fd3769aa22f",
+    "bytes": 1098517
+  },
+  {
+    "path": "docs/wireframes/activity-mobile.png",
+    "sha256": "4eeee6cc0e117fb5312704f36ef0fc965bee0f7799d7af975931f26bf316c730",
+    "bytes": 1170331
+  },
+  {
+    "path": "docs/wireframes/activity-tablet.png",
+    "sha256": "007d6de4d9ac961b09120eb2719e89337a08463573976de69f8fd9ecb75fffec",
+    "bytes": 1084027
+  },
+  {
+    "path": "docs/wireframes/child-strategy-responsive.png",
+    "sha256": "032be4f9770559e46a8b67d933f815cfc6118b6afe2ae5803dde8232c9d9cfa0",
+    "bytes": 1967387
+  },
+  {
+    "path": "docs/wireframes/home-desktop.png",
+    "sha256": "719421423a96eabbc0c2b9c2729d3f94aec078dc8095898054012e8a4d471627",
+    "bytes": 1117984
+  },
+  {
+    "path": "docs/wireframes/home-mobile.png",
+    "sha256": "60a3451ff43c84a574924aef03409bd9e1c71ec1496d36cbcbe1ea1360438fae",
+    "bytes": 1118412
+  },
+  {
+    "path": "docs/wireframes/home-tablet.png",
+    "sha256": "31358f468963c24d64ff4af2ec747bb8e93226e404036a80443b5c5186f6de79",
+    "bytes": 1170809
+  },
+  {
+    "path": "docs/wireframes/schedule-comparison-no-plan.png",
+    "sha256": "15da66d7fea864760de5c95fadec3dfabc97d3c274bec28b7c2e27015087096e",
+    "bytes": 1739269
+  },
+  {
+    "path": "docs/wireframes/schedule-comparison-responsive.png",
+    "sha256": "657245461be11869fd4a7e946b7b140e33715bc057599f8fc36e90df24e6e16d",
+    "bytes": 1498283
+  },
+  {
+    "path": "docs/wireframes/schedule-desktop.png",
+    "sha256": "9eda17606e8c9ebcb5f97b9e9129f21f74639baab12ee310d6ea854cdadae752",
+    "bytes": 1092893
+  },
+  {
+    "path": "docs/wireframes/schedule-impact-responsive.png",
+    "sha256": "90b7b4b2a86453e88f040d611fd213a0565ef0b17bfc95e182eb9c7541da4ca6",
+    "bytes": 1267221
+  },
+  {
+    "path": "docs/wireframes/schedule-mobile.png",
+    "sha256": "7348751e6328c1736db6b8f6668905f754344df8c7c7bf281e8671274c397782",
+    "bytes": 1098409
+  },
+  {
+    "path": "docs/wireframes/schedule-tablet.png",
+    "sha256": "4576a45ce60a3a950431ef4291f96637df3b549b46db92ae9d1069a3ac80ed35",
+    "bytes": 1028984
+  },
+  {
+    "path": "docs/wireframes/waiting-recovery-responsive.png",
+    "sha256": "afb235b2b0c0ab7a43558181e5c2d2b6dceb81a7a6c48153a41286a1abf4a3fe",
+    "bytes": 1358711
+  },
+  {
+    "path": "frontend/.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "scripts/.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  }
+]
