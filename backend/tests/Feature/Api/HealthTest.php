@@ -43,13 +43,22 @@ class HealthTest extends TestCase
             ->assertHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
     }
 
+    public function test_health_endpoint_allows_the_loopback_frontend_origin(): void
+    {
+        $this
+            ->withHeader('Origin', 'http://127.0.0.1:5173')
+            ->getJson('/api/health')
+            ->assertOk()
+            ->assertHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5173');
+    }
+
     public function test_cors_does_not_echo_an_unconfigured_origin(): void
     {
         $this
             ->withHeader('Origin', 'https://example.invalid')
             ->getJson('/api/health')
             ->assertOk()
-            ->assertHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
+            ->assertHeaderMissing('Access-Control-Allow-Origin')
             ->assertHeaderMissing('Access-Control-Allow-Credentials');
     }
 }
