@@ -14,10 +14,11 @@ Webアプリ「くらしリレー」のPoCです。
 1. `docs/product-plan.md`
 2. `docs/architecture.md`
 3. `docs/codex-design-spec.md`
-4. `docs/data-model.md`
-5. `docs/api-contract-01.md`
-6. 対象タスクの実装指示書
-7. `docs/wireframes/README.md`
+4. `docs/design-principles.md`
+5. `docs/data-model.md`
+6. `docs/api-contract-01.md`
+7. 対象タスクの実装指示書
+8. `docs/wireframes/README.md`
 
 第1実装では `docs/codex-implementation-01.md` を優先してください。
 
@@ -71,6 +72,13 @@ Webアプリ「くらしリレー」のPoCです。
 - 人物イラストは原則使用しない
 - アイコンと文字を併用する
 - 色だけで状態を表現しない
+- 共通Buttonと共通UIコンポーネントを優先する
+- 操作可能な要素には一貫した押下フィードバックを付ける
+- デザイントークンを使用し、新しい直接カラーコードを原則追加しない
+- ホームでは頻度の高い操作を最優先する
+- PCホームの6カードは、1つの均等3列Gridで幅を管理する
+- カード自身へ固定幅、個別col-span、max-widthを設定しない
+- UIの並び順を変更した場合は設計文書も更新する
 
 ## プロダクト上の重要ルール
 
