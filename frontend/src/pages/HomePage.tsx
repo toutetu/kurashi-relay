@@ -1,5 +1,5 @@
 import { CalendarDays, RefreshCcw, Sparkles } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SegmentedTabs } from "../components/ui/SegmentedTabs";
 import { Button } from "../components/ui/Button";
@@ -30,27 +30,6 @@ function getDashboardTab(value: string | null): DashboardTab {
     : "record";
 }
 
-function DashboardPanel({
-  tab,
-  activeTab,
-  children,
-}: {
-  tab: DashboardTab;
-  activeTab: DashboardTab;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      id={`dashboard-panel-${tab}`}
-      role="tabpanel"
-      aria-labelledby={`dashboard-tab-${tab}`}
-      className={`${activeTab === tab ? "block" : "hidden"} xl:block`}
-    >
-      {children}
-    </div>
-  );
-}
-
 function HomeDashboard({ data }: { data: DashboardData }) {
   const [currentActivity, setCurrentActivity] = useState<LocalActivity | null>(
     data.currentActivity ? createLocalActivity(data.currentActivity) : null,
@@ -78,44 +57,49 @@ function HomeDashboard({ data }: { data: DashboardData }) {
         tabs={dashboardTabs}
         value={activeTab}
         onChange={selectTab}
+        panelId="dashboard-panel"
         label="ホームの表示内容"
       />
-      <div className="space-y-3">
-        <DashboardPanel tab="record" activeTab={activeTab}>
-          <div
-            data-testid="home-record-row"
-            className="grid min-w-0 gap-3 xl:grid-cols-3 xl:items-stretch"
-          >
-            <div className="flex min-w-0">
-              <QuickStartCard onStart={setCurrentActivity} />
-            </div>
-            <div className="flex min-w-0">
-              <QuickLogsCard initialLogs={data.quickLogs} />
-            </div>
-            <div className="flex min-w-0">
-              <CurrentActivityCard
-                activity={currentActivity}
-                onChange={setCurrentActivity}
-              />
-            </div>
-          </div>
-        </DashboardPanel>
-        <DashboardPanel tab="today" activeTab={activeTab}>
-          <div
-            data-testid="home-today-row"
-            className="grid min-w-0 gap-3 xl:grid-cols-3 xl:items-stretch"
-          >
-            <div className="flex min-w-0">
-              <NextPlansCard plans={data.nextPlans} />
-            </div>
-            <div className="flex min-w-0">
-              <MotherConditionsCard initialCondition={data.conditions.mother} />
-            </div>
-            <div className="flex min-w-0">
-              <TimeBalanceCard balance={data.timeBalance} />
-            </div>
-          </div>
-        </DashboardPanel>
+      <div
+        id="dashboard-panel"
+        role="tabpanel"
+        aria-labelledby={`dashboard-tab-${activeTab}`}
+        data-testid="home-dashboard-grid"
+        className="grid min-w-0 gap-3 xl:grid-cols-3 xl:items-stretch"
+      >
+        <div
+          className={`${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+        >
+          <QuickStartCard onStart={setCurrentActivity} />
+        </div>
+        <div
+          className={`${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+        >
+          <QuickLogsCard initialLogs={data.quickLogs} />
+        </div>
+        <div
+          className={`${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+        >
+          <MotherConditionsCard initialCondition={data.conditions.mother} />
+        </div>
+        <div
+          className={`${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+        >
+          <CurrentActivityCard
+            activity={currentActivity}
+            onChange={setCurrentActivity}
+          />
+        </div>
+        <div
+          className={`${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+        >
+          <NextPlansCard plans={data.nextPlans} />
+        </div>
+        <div
+          className={`${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+        >
+          <TimeBalanceCard balance={data.timeBalance} />
+        </div>
       </div>
     </div>
   );

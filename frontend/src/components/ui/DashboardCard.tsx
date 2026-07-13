@@ -29,7 +29,7 @@ export function DashboardCard({
   return (
     <section
       id={id}
-      className={`dashboard-card dashboard-card--tone-${tone} flex h-full min-w-0 scroll-mt-24 flex-col rounded-[var(--card-radius)] border border-t-4 ${isCompact ? "p-3 sm:p-3.5" : "p-4 sm:p-5"} ${className}`}
+      className={`dashboard-card dashboard-card--tone-${tone} flex h-full w-full min-w-0 justify-self-stretch scroll-mt-24 flex-col rounded-[var(--card-radius)] border border-t-4 ${isCompact ? "p-3 sm:p-3.5" : "p-4 sm:p-5"} ${className}`}
     >
       <div
         className={`${isCompact ? "mb-2.5" : "mb-4"} flex min-w-0 items-center justify-between gap-3`}

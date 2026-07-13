@@ -56,9 +56,9 @@ describe("くらしリレー SPA", () => {
     ).toEqual([
       "クイック活動記録",
       "クイック記録",
+      "母の体調と気分",
       "現在の活動",
       "次の予定",
-      "母の体調と気分",
       "時間の内訳",
     ]);
     for (const absentHeading of [
@@ -76,13 +76,12 @@ describe("くらしリレー SPA", () => {
       expect.stringContaining("/api/dashboard?date="),
       expect.objectContaining({ method: "GET" }),
     );
-    expect(screen.getByTestId("home-record-row")).toHaveClass(
+    expect(screen.getByTestId("home-dashboard-grid")).toHaveClass(
+      "grid",
+      "min-w-0",
       "xl:grid-cols-3",
       "xl:items-stretch",
-    );
-    expect(screen.getByTestId("home-today-row")).toHaveClass(
-      "xl:grid-cols-3",
-      "xl:items-stretch",
+      "gap-3",
     );
   });
 

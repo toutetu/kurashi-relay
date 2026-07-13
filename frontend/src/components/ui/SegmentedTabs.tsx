@@ -10,11 +10,13 @@ export function SegmentedTabs({
   value,
   onChange,
   label,
+  panelId,
 }: {
   tabs: readonly SegmentedTab[];
   value: string;
   onChange: (value: string) => void;
   label: string;
+  panelId?: string;
 }) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectedIndex = Math.max(
@@ -48,7 +50,7 @@ export function SegmentedTabs({
             type="button"
             role="tab"
             aria-selected={selected}
-            aria-controls={`dashboard-panel-${tab.value}`}
+            aria-controls={panelId ?? `dashboard-panel-${tab.value}`}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.value)}
             onKeyDown={(event) => {

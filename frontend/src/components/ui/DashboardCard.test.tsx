@@ -18,6 +18,9 @@ describe("DashboardCard", () => {
       "dashboard-card",
       "dashboard-card--tone-red",
       "h-full",
+      "w-full",
+      "min-w-0",
+      "justify-self-stretch",
     );
     expect(card?.querySelector(".dashboard-card__icon")).toBeInTheDocument();
   });
