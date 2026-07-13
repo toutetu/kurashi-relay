@@ -1,9 +1,15 @@
+/* eslint-disable react-refresh/only-export-components */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import App from "../App";
 
-export function renderApp(path = "/") {
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location-search">{location.search}</output>;
+}
+
+export function renderApp(path = "/", showLocation = false) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -17,6 +23,7 @@ export function renderApp(path = "/") {
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[path]}>
         <App />
+        {showLocation && <LocationProbe />}
       </MemoryRouter>
     </QueryClientProvider>,
   );

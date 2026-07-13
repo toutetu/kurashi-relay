@@ -30,7 +30,7 @@ describe("くらしリレー SPA", () => {
     );
   });
 
-  it("API成功時にホームの主要カードを表示する", async () => {
+  it("ホームには表示順どおり6項目だけを表示する", async () => {
     fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
     renderApp();
 
@@ -38,24 +38,94 @@ describe("くらしリレー SPA", () => {
       await screen.findByRole("heading", { name: "現在の活動" }),
     ).toBeInTheDocument();
     for (const heading of [
-      "現在の活動",
-      "クイック活動開始",
+      "クイック活動記録",
       "クイック記録",
+      "現在の活動",
       "次の予定",
-      "母・娘の体調と気分",
-      "娘の今日の作戦",
-      "時間のバランス",
-      "予定への影響",
-      "次のアクション",
-      "ラストウォー",
+      "母の体調と気分",
+      "時間の内訳",
     ]) {
       expect(
         screen.getByRole("heading", { name: heading }),
       ).toBeInTheDocument();
     }
+    expect(
+      Array.from(document.querySelectorAll("main h2")).map(
+        (heading) => heading.textContent,
+      ),
+    ).toEqual([
+      "クイック活動記録",
+      "クイック記録",
+      "現在の活動",
+      "次の予定",
+      "母の体調と気分",
+      "時間の内訳",
+    ]);
+    for (const absentHeading of [
+      "娘の体調と気分",
+      "娘の今日の作戦",
+      "予定への影響",
+      "対応事項",
+      "ラストウォー",
+    ]) {
+      expect(
+        screen.queryByRole("heading", { name: absentHeading }),
+      ).not.toBeInTheDocument();
+    }
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/dashboard?date="),
       expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("ホームは記録タブを初期表示し、URLへ同期する", async () => {
+    fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
+    renderApp("/", true);
+
+    expect(await screen.findByRole("tab", { name: "記録" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("location-search")).toHaveTextContent(
+        "?tab=record",
+      ),
+    );
+    expect(screen.getByRole("tabpanel", { name: "記録" })).toBeInTheDocument();
+  });
+
+  it("ホームタブをURLとキーボードで切り替える", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
+    renderApp("/?tab=today", true);
+
+    const todayTab = await screen.findByRole("tab", { name: "今日" });
+    expect(todayTab).toHaveAttribute("aria-selected", "true");
+    await user.click(screen.getByRole("tab", { name: "記録" }));
+    expect(screen.getByTestId("location-search")).toHaveTextContent(
+      "?tab=record",
+    );
+
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "今日" })).toHaveFocus();
+    expect(screen.getByRole("tab", { name: "今日" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("不正なホームタブは記録へ戻す", async () => {
+    fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
+    renderApp("/?tab=unknown", true);
+
+    expect(await screen.findByRole("tab", { name: "記録" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("location-search")).toHaveTextContent(
+        "?tab=record",
+      ),
     );
   });
 
@@ -128,7 +198,7 @@ describe("くらしリレー SPA", () => {
     ).toBeInTheDocument();
   });
 
-  it("母と娘の体調を区別し、ローカル編集できる", async () => {
+  it("ホームの母の体調と気分を1クリックでローカル編集できる", async () => {
     const user = userEvent.setup();
     fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
     renderApp();
@@ -140,6 +210,29 @@ describe("くらしリレー SPA", () => {
       screen.getByRole("button", { name: "母の体調を5にする" }),
     ).toHaveAttribute("aria-pressed", "true");
 
+    await user.click(screen.getByRole("button", { name: "母の気分を4にする" }));
+    expect(
+      screen.getByRole("button", { name: "母の気分を4にする" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("娘の状態ページでは入力者区分と今日の作戦を表示・編集できる", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
+    renderApp("/child-plan");
+
+    expect(
+      await screen.findByRole("heading", { name: "娘の状態・今日の作戦" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "娘の体調と気分" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "娘の今日の作戦" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("難しい場合の別案")).toBeInTheDocument();
+    expect(screen.getByText("今日の作戦メモ")).toBeInTheDocument();
+
     await user.click(
       screen.getByRole("button", {
         name: "娘の入力者区分を娘本人にする",
@@ -150,6 +243,41 @@ describe("くらしリレー SPA", () => {
         name: "娘の入力者区分を娘本人にする",
       }),
     ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("今日のまとめページには生活支援の詳細2項目だけを表示する", async () => {
+    fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
+    renderApp("/summary");
+
+    expect(
+      await screen.findByRole("heading", { name: "今日のまとめ" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "予定への影響" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "対応事項" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "ラストウォー" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("ラストウォーは専用ページで表示する", async () => {
+    fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
+    renderApp("/last-war");
+
+    expect(
+      await screen.findByRole("heading", { name: "ラストウォー" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "今日の状態" }),
+    ).toBeInTheDocument();
+    for (const heading of ["次に行うこと"]) {
+      expect(
+        screen.getByRole("heading", { name: heading }),
+      ).toBeInTheDocument();
+    }
   });
 
   it("モバイルドロワーをフォーカス管理し、Escapeで閉じる", async () => {
@@ -167,6 +295,12 @@ describe("くらしリレー SPA", () => {
     await user.click(toggle);
     expect(drawerElement).toHaveAttribute("aria-hidden", "false");
     expect(drawerElement).not.toHaveAttribute("inert");
+    expect(
+      within(drawerElement).getByRole("link", { name: "今日のまとめ" }),
+    ).toBeInTheDocument();
+    expect(
+      within(drawerElement).getByRole("link", { name: "ラストウォー" }),
+    ).toBeInTheDocument();
 
     const drawerHome = within(drawerElement).getByRole("link", {
       name: "ホーム",
@@ -184,6 +318,27 @@ describe("くらしリレー SPA", () => {
     await waitFor(() => expect(toggle).toHaveFocus());
     expect(drawerElement).toHaveAttribute("aria-hidden", "true");
     expect(drawerElement).toHaveAttribute("inert");
+  });
+
+  it("PCサイドバーには専用ページ、モバイル下部には6項目だけを表示する", () => {
+    fetchMock.mockImplementation(() => new Promise<Response>(() => undefined));
+    renderApp();
+
+    const sidebar = screen.getByRole("navigation", { name: "メインメニュー" });
+    expect(
+      within(sidebar).getByRole("link", { name: "娘の状態" }),
+    ).toHaveAttribute("href", "/child-plan");
+    expect(
+      within(sidebar).getByRole("link", { name: "今日のまとめ" }),
+    ).toHaveAttribute("href", "/summary");
+    expect(
+      within(sidebar).getByRole("link", { name: "ラストウォー" }),
+    ).toHaveAttribute("href", "/last-war");
+    expect(
+      within(
+        screen.getByRole("navigation", { name: "モバイルメニュー" }),
+      ).getAllByRole("link"),
+    ).toHaveLength(6);
   });
 
   it("予定なしの時間を空白にせず、予定外の活動と実績記録なしを表示する", async () => {

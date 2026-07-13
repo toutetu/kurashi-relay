@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
 
 @theme {
   --breakpoint-xl: 75rem;
@@ -9,29 +10,12 @@
 
 :root {
   font-family: var(--font-sans);
-  color: #28334a;
-  background: #fffdf9;
+  color: var(--text);
+  background: var(--page-background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --mother-red: #ef767a;
-  --mother-red-soft: #fff0f1;
-  --mother-yellow: #f3c85b;
-  --mother-yellow-soft: #fff8db;
-  --mother-blue: #68a7e3;
-  --mother-blue-soft: #edf6ff;
-  --mother-white: #ffffff;
-  --mother-bg: #fffdf9;
-  --text-main: #28334a;
-  --text-muted: #667085;
-  --border: #dce5ef;
-  --daughter-blue: #dff4ff;
-  --daughter-blue-strong: #85c8ef;
-  --daughter-purple: #8265c7;
-  --daughter-purple-soft: #eee8ff;
-  --daughter-pink: #f0b6d2;
-  --daughter-text: #312a58;
 }
 
 * {
@@ -41,7 +25,7 @@
 html {
   min-width: 320px;
   scroll-behavior: smooth;
-  background: #fffdf9;
+  background: var(--page-background);
 }
 
 body {
@@ -50,13 +34,17 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 0 0, rgb(104 167 227 / 8%), transparent 30rem),
+    radial-gradient(
+      circle at 0 0,
+      color-mix(in srgb, var(--mother-blue) 8%, transparent),
+      transparent 30rem
+    ),
     radial-gradient(
       circle at 100% 25%,
-      rgb(239 118 122 / 7%),
+      color-mix(in srgb, var(--mother-red) 7%, transparent),
       transparent 28rem
     ),
-    #fffdf9;
+    var(--page-background);
 }
 
 button,
@@ -70,36 +58,34 @@ button:not(:disabled),
 }
 
 ::selection {
-  background: #d8ecff;
-  color: #28334a;
+  background: var(--mother-blue-soft);
+  color: var(--text);
 }
 
 @layer components {
-  .action-button {
-    display: inline-flex;
-    min-height: 2.75rem;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    border-radius: 0.8rem;
-    padding: 0.6rem 0.9rem;
-    font-size: 0.875rem;
-    font-weight: 800;
-    box-shadow: 0 2px 8px rgb(40 51 74 / 8%);
+  .pressable {
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 8%, transparent);
     transition:
       transform 150ms ease,
       box-shadow 150ms ease,
       background-color 150ms ease;
   }
 
-  .action-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 5px 14px rgb(40 51 74 / 12%);
+  @media (hover: hover) {
+    .pressable:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 14px color-mix(in srgb, var(--text) 12%, transparent);
+    }
   }
 
-  .action-button:focus-visible {
-    outline: 3px solid #68a7e3;
-    outline-offset: 2px;
+  .pressable:not(:disabled):active {
+    transform: translateY(2px) scale(0.99);
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--text) 10%, transparent);
+  }
+
+  .pressable:disabled {
+    transform: none;
+    box-shadow: none;
   }
 }
 
