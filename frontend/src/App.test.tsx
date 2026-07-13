@@ -76,6 +76,14 @@ describe("くらしリレー SPA", () => {
       expect.stringContaining("/api/dashboard?date="),
       expect.objectContaining({ method: "GET" }),
     );
+    expect(screen.getByTestId("home-record-row")).toHaveClass(
+      "xl:grid-cols-3",
+      "xl:items-stretch",
+    );
+    expect(screen.getByTestId("home-today-row")).toHaveClass(
+      "xl:grid-cols-3",
+      "xl:items-stretch",
+    );
   });
 
   it("ホームは記録タブを初期表示し、URLへ同期する", async () => {

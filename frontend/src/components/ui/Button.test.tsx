@@ -12,7 +12,12 @@ describe("Button", () => {
     );
 
     const button = screen.getByRole("button", { name: "更新中…" });
-    expect(button).toHaveClass("pressable");
+    expect(button).toHaveClass(
+      "button",
+      "button--variant-outline",
+      "button--tone-blue",
+      "pressable",
+    );
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute("aria-busy", "true");
   });

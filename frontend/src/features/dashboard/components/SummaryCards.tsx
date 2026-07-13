@@ -156,7 +156,7 @@ export function ActionItemsCard({ items }: { items: ActionItem[] }) {
     <DashboardCard
       title="対応事項"
       icon={ListChecks}
-      tone="white"
+      tone="neutral"
       density="compact"
       action={<SectionLink to="/support">詳しく見る</SectionLink>}
     >

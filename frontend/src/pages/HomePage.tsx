@@ -44,7 +44,7 @@ function DashboardPanel({
       id={`dashboard-panel-${tab}`}
       role="tabpanel"
       aria-labelledby={`dashboard-tab-${tab}`}
-      className={`${activeTab === tab ? "grid" : "hidden"} gap-3 xl:col-span-full xl:contents`}
+      className={`${activeTab === tab ? "block" : "hidden"} xl:block`}
     >
       {children}
     </div>
@@ -80,30 +80,40 @@ function HomeDashboard({ data }: { data: DashboardData }) {
         onChange={selectTab}
         label="ホームの表示内容"
       />
-      <div className="grid min-w-0 gap-3 xl:grid-cols-12 xl:gap-3">
+      <div className="space-y-3">
         <DashboardPanel tab="record" activeTab={activeTab}>
-          <div className="xl:col-span-4">
-            <QuickStartCard onStart={setCurrentActivity} />
-          </div>
-          <div className="xl:col-span-4">
-            <QuickLogsCard initialLogs={data.quickLogs} />
-          </div>
-          <div className="xl:col-span-4">
-            <CurrentActivityCard
-              activity={currentActivity}
-              onChange={setCurrentActivity}
-            />
+          <div
+            data-testid="home-record-row"
+            className="grid min-w-0 gap-3 xl:grid-cols-3 xl:items-stretch"
+          >
+            <div className="flex min-w-0">
+              <QuickStartCard onStart={setCurrentActivity} />
+            </div>
+            <div className="flex min-w-0">
+              <QuickLogsCard initialLogs={data.quickLogs} />
+            </div>
+            <div className="flex min-w-0">
+              <CurrentActivityCard
+                activity={currentActivity}
+                onChange={setCurrentActivity}
+              />
+            </div>
           </div>
         </DashboardPanel>
         <DashboardPanel tab="today" activeTab={activeTab}>
-          <div className="xl:col-span-4">
-            <NextPlansCard plans={data.nextPlans} />
-          </div>
-          <div className="xl:col-span-4">
-            <MotherConditionsCard initialCondition={data.conditions.mother} />
-          </div>
-          <div className="xl:col-span-4">
-            <TimeBalanceCard balance={data.timeBalance} />
+          <div
+            data-testid="home-today-row"
+            className="grid min-w-0 gap-3 xl:grid-cols-3 xl:items-stretch"
+          >
+            <div className="flex min-w-0">
+              <NextPlansCard plans={data.nextPlans} />
+            </div>
+            <div className="flex min-w-0">
+              <MotherConditionsCard initialCondition={data.conditions.mother} />
+            </div>
+            <div className="flex min-w-0">
+              <TimeBalanceCard balance={data.timeBalance} />
+            </div>
           </div>
         </DashboardPanel>
       </div>

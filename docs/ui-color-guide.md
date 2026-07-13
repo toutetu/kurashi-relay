@@ -34,10 +34,35 @@
 
 `compact` はPCホームの要点表示に使う。余白・見出し・リスト行間を縮めるが、操作ボタンは44px以上を維持する。`regular` は詳細を読む画面や、十分な説明が必要なカードに使う。
 
+### DashboardCard tone とトークン
+
+| tone       | 背景                         | 枠線・上端アクセント                                | アイコン背景・色                                                 | 本文                   |
+| ---------- | ---------------------------- | --------------------------------------------------- | ---------------------------------------------------------------- | ---------------------- |
+| `neutral`  | `--card-neutral-background`  | `--card-neutral-border` / `--card-neutral-accent`   | `--card-neutral-icon-background` / `--card-neutral-icon-color`   | `--card-neutral-text`  |
+| `red`      | `--card-red-background`      | `--card-red-border` / `--card-red-accent`           | `--card-red-icon-background` / `--card-red-icon-color`           | `--card-red-text`      |
+| `yellow`   | `--card-yellow-background`   | `--card-yellow-border` / `--card-yellow-accent`     | `--card-yellow-icon-background` / `--card-yellow-icon-color`     | `--card-yellow-text`   |
+| `blue`     | `--card-blue-background`     | `--card-blue-border` / `--card-blue-accent`         | `--card-blue-icon-background` / `--card-blue-icon-color`         | `--card-blue-text`     |
+| `daughter` | `--card-daughter-background` | `--card-daughter-border` / `--card-daughter-accent` | `--card-daughter-icon-background` / `--card-daughter-icon-color` | `--card-daughter-text` |
+
+カードは `--card-radius`、`--card-shadow` を共通で使う。影は右下方向へ薄く落とし、上側へ広がる影やカード全体を浮かせるhover表現は使わない。母向けの値と娘向けの値は別のトークンとして管理する。
+
+### Button tone・variantと状態
+
+各toneは `--button-{tone}-background`、`text`、`border`、`icon`、`hover-background`、`hover-text`、`hover-border`、`hover-icon`、`active-background`、`active-border`、`disabled-background`、`disabled-text` を持つ。Button、QuickActionButton、ScoreControlはこれらを共通利用する。
+
+| variant   | 通常                       | hover（fine pointerのみ）                | active                 | disabled                           |
+| --------- | -------------------------- | ---------------------------------------- | ---------------------- | ---------------------------------- |
+| `solid`   | toneの通常背景・文字・枠線 | 少し濃いtone背景とコントラストを保つ文字 | toneのactive背景・枠線 | toneのdisabled背景・文字、操作不可 |
+| `soft`    | tone背景を淡く混ぜる       | 背景と枠線を少し強くする                 | active背景・枠線       | toneのdisabled背景・文字、操作不可 |
+| `outline` | surface背景とtone枠線      | 薄いtone背景と強い枠線                   | active背景・枠線       | toneのdisabled背景・文字、操作不可 |
+| `ghost`   | 透明背景                   | 薄いtone背景のみ表示                     | active背景・枠線       | toneのdisabled背景・文字、操作不可 |
+
+hoverは `@media (hover: hover) and (pointer: fine)` に限定する。hover時は色変更と最大1pxの上移動、active時は2px下移動・0.99倍・小さい影を使う。disabledとloadingはhover・activeの色変更や移動を行わず、focusリングはどの状態でも維持する。
+
 ## レスポンシブ基準
 
-- 0〜1199px: ホームは「記録」「今日」「まとめ」のタブで一群ずつ表示する。
-- 1200px以上: タブを表示せず、全カードを3段に再配置する。
+- 0〜1199px: ホームは「記録」「今日」のタブで一群ずつ表示する。
+- 1200px以上: タブを表示せず、ホームの2段を別々の3列グリッドへ再配置する。同じ段のカードは自然な最大高へそろえる。
 - 200%表示では縦スクロールを許可し、文字と操作領域を縮めて収めようとしない。
 
 ## 実装ルール
