@@ -61,4 +61,24 @@ class HealthTest extends TestCase
             ->assertHeaderMissing('Access-Control-Allow-Origin')
             ->assertHeaderMissing('Access-Control-Allow-Credentials');
     }
+
+    public function test_health_endpoint_allows_the_frontend_url_origin(): void
+    {
+        config([
+            'cors.allowed_origins' => [
+                'http://localhost:5173',
+                'http://127.0.0.1:5173',
+                'https://frontend-preview.example.com',
+            ],
+        ]);
+
+        $this
+            ->withHeader('Origin', 'https://frontend-preview.example.com')
+            ->getJson('/api/health')
+            ->assertOk()
+            ->assertHeader(
+                'Access-Control-Allow-Origin',
+                'https://frontend-preview.example.com',
+            );
+    }
 }

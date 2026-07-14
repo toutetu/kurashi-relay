@@ -96,6 +96,11 @@ npm run test
 npm run build
 ```
 
+## 検証用デプロイ（Render）
+
+Fixtureデータのまま、スマートフォンから娘向け画面を確認するための検証環境をRenderへ出せます。
+手順は [Render検証用デプロイ手順書](docs/render-preview-deployment.md) を参照してください。
+
 ## 第1実装の範囲外
 
 - 認証、Laravel Sanctum、ユーザー登録、ログイン
@@ -103,6 +108,6 @@ npm run build
 - DB永続化
 - 支援者アカウント、支援者別レポート、PDF、共有URL
 - 通知、メール、外部ゲーム連携
-- 本番デプロイ
+- 本番デプロイ（Render検証プレビューは上記手順書を参照）
 
 詳細は [第1実装指示書](docs/codex-implementation-01.md) と [API契約](docs/api-contract-01.md) を参照してください。

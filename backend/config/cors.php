@@ -1,15 +1,31 @@
 <?php
 
-$allowedOrigins = array_values(array_filter(array_map(
-    'trim',
-    explode(
-        ',',
-        (string) env(
-            'CORS_ALLOWED_ORIGINS',
-            'http://localhost:5173,http://127.0.0.1:5173',
-        ),
-    ),
-)));
+$localOrigins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+];
+
+$configuredOrigins = [];
+
+$frontendUrl = trim((string) env('FRONTEND_URL', ''));
+if ($frontendUrl !== '') {
+    $configuredOrigins[] = rtrim($frontendUrl, '/');
+}
+
+$corsAllowedOrigins = env('CORS_ALLOWED_ORIGINS');
+if ($corsAllowedOrigins !== null && trim((string) $corsAllowedOrigins) !== '') {
+    foreach (explode(',', (string) $corsAllowedOrigins) as $origin) {
+        $trimmed = trim($origin);
+        if ($trimmed !== '') {
+            $configuredOrigins[] = rtrim($trimmed, '/');
+        }
+    }
+}
+
+$allowedOrigins = array_values(array_unique([
+    ...$localOrigins,
+    ...$configuredOrigins,
+]));
 
 return [
     'paths' => ['api/*'],

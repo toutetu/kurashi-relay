@@ -23,6 +23,10 @@ export default defineConfig([
     },
     rules: {
       ...reactRefresh.configs.vite.rules,
+      "react-refresh/only-export-components": [
+        "error",
+        { allowConstantExport: true, allowExportNames: ["useMood"] },
+      ],
     },
   },
 ]);

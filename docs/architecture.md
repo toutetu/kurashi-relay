@@ -83,3 +83,7 @@ Laravel API: http://localhost:8000
 ```
 
 本番デプロイ先は、第1実装と画面レビュー後に決定する。
+
+検証用の一時プレビューとして、Renderへの分離デプロイ手順は
+[docs/render-preview-deployment.md](./render-preview-deployment.md) を参照する。
+（Fixtureのみ。認証・DB・本番公開ではない）

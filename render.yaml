@@ -1,0 +1,43 @@
+# Render Blueprint — くらしリレー検証用プレビュー
+# 公式仕様: https://render.com/docs/blueprint-spec
+# 実際のURLや秘密値はダッシュボードで設定する（このファイルへ書かない）
+
+services:
+  # --- Backend: Laravel REST API (Docker) ---
+  - type: web
+    name: kurashi-relay-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+  # --- Frontend: React + Vite Static Site ---
+  - type: web
+    name: kurashi-relay-web
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false

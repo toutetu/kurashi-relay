@@ -10,9 +10,9 @@ export function DashboardLoading() {
           aria-hidden="true"
         />
         <div>
-          <p className="font-bold">今日のくらしを読み込んでいます</p>
+          <p className="font-bold">データを準備しています</p>
           <p className="mt-1 text-sm text-[var(--muted-text)]">
-            予定と実績をまとめています。
+            少し時間がかかることがあります。予定と実績をまとめています。
           </p>
         </div>
       </div>

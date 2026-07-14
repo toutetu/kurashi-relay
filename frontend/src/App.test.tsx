@@ -26,7 +26,10 @@ describe("くらしリレー SPA", () => {
     renderApp();
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "今日のくらしを読み込んでいます",
+      "データを準備しています",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "少し時間がかかることがあります",
     );
   });
 
