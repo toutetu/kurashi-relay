@@ -32,7 +32,6 @@ COPY . .
 # Artisan実行前に書込先を用意し、ビルド時だけ仮APP_KEYを渡して
 # dump-autoload（= post-autoload-dump 内の package:discover を1回）を実行する。
 # 仮キーは ENV に残さない。実行時は Render の APP_KEY を使う。
-# $$ は Dockerfile 内でシェルの $ に展開される（ENV への永続化ではない）。
 RUN mkdir -p \
         storage/framework/cache \
         storage/framework/sessions \
@@ -40,7 +39,7 @@ RUN mkdir -p \
         storage/logs \
         bootstrap/cache \
     && chmod -R ug+rwx storage bootstrap/cache \
-    && export APP_KEY="$$(php -r 'echo '\''base64:'\'' . base64_encode(random_bytes(32));')" \
+    && export APP_KEY="$(php -r 'echo '\''base64:'\'' . base64_encode(random_bytes(32));')" \
     && composer dump-autoload --optimize --no-dev \
     && unset APP_KEY
 
