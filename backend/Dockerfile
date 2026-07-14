@@ -1,5 +1,5 @@
 # くらしリレー API（検証用 / ECS移設しやすい最小構成）
-# PHP 組み込みサーバー + artisan 相当のルーティングで $PORT 待ち受け。
+# PHP 組み込みサーバー相当のルーティングで $PORT 待ち受け。
 
 FROM php:8.2-cli-bookworm
 
@@ -29,18 +29,20 @@ RUN composer install \
 # アプリケーション本体（.env は .dockerignore で除外）
 COPY . .
 
-# package:discover など、ベンダー同梱後に必要な scripts のみ実行
-# ビルド時のみの仮キー（実行時は Render の APP_KEY を使う。イメージへ .env は含めない）
-RUN composer dump-autoload --optimize --no-dev \
-    && mkdir -p \
+# Artisan実行前に書込先を用意し、ビルド時だけ仮APP_KEYを渡して
+# dump-autoload（= post-autoload-dump 内の package:discover を1回）を実行する。
+# 仮キーは ENV に残さない。実行時は Render の APP_KEY を使う。
+# $$ は Dockerfile 内でシェルの $ に展開される（ENV への永続化ではない）。
+RUN mkdir -p \
         storage/framework/cache \
         storage/framework/sessions \
         storage/framework/views \
         storage/logs \
         bootstrap/cache \
-    && APP_KEY=base64:dGVtcG9yYXJ5LWtleS1mb3ItZG9ja2VyLWJ1aWxkLW9ubHk= \
-        php artisan package:discover --ansi \
-    && chmod -R ug+rwx storage bootstrap/cache
+    && chmod -R ug+rwx storage bootstrap/cache \
+    && export APP_KEY="$$(php -r 'echo '\''base64:'\'' . base64_encode(random_bytes(32));')" \
+    && composer dump-autoload --optimize --no-dev \
+    && unset APP_KEY
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

@@ -25,46 +25,62 @@
 * backendは `backend/Dockerfile` でイメージをビルドし、`$PORT` / `0.0.0.0` で起動する
 * データはメモリ上のFixtureのみ。DB・認証なし
 * モノレポリポジトリ: `toutetu/kurashi-relay`
-* Blueprint定義: リポジトリルートの `render.yaml`
+* Blueprint定義: リポジトリルートの `render.yaml`（慣れてのちの再現用・任意。初回は個別作成を推奨）
 
 ## 3. Renderでのサービス作成手順
 
-### 方法A: Blueprint（推奨）
+frontend URL と backend URL は、サービス作成後に確定します。
+初回デプロイでは、URLがまだ分からない状態で Blueprint の `sync: false` 項目へ何を入れるか迷いやすいため、**方法B（個別作成）を推奨**します。
 
-1. [Render Dashboard](https://dashboard.render.com/) にログインする
-2. **New → Blueprint** を選ぶ
-3. GitHubリポジトリ `toutetu/kurashi-relay` を接続する
-4. デプロイ対象ブランチを選ぶ（検証用ブランチでも可。`main` 直pushは運用ルールに従う）
-5. `render.yaml` を検出したら、`sync: false` の環境変数を入力する（後述）
-6. 作成を開始する
+| 方法 | 向き | 説明 |
+|---|---|---|
+| **方法B: 個別作成（初回推奨）** | 初めての検証デプロイ | backendを先に作り、URL確定後にfrontendを作る |
+| 方法A: Blueprint | 設定に慣れた後の再現用・任意 | `render.yaml` からまとめて作る。初回は必須ではない |
 
-### 方法B: ダッシュボードから個別作成
-
-Blueprintを使わない場合も、同じ考え方で個別作成できます。
+### 方法B: ダッシュボードから個別作成（初回推奨）
 
 **backend（先に作成）**
 
-1. **New → Web Service**
-2. リポジトリ接続、Root Directory: `backend`
-3. Runtime: **Docker**
-4. ヘルスチェックパス: `/api/health`
-5. 環境変数を設定（後述）
+1. [Render Dashboard](https://dashboard.render.com/) にログインする
+2. **New → Web Service**
+3. GitHubリポジトリ `toutetu/kurashi-relay` を接続し、デプロイ対象ブランチを選ぶ
+4. Root Directory: `backend`
+5. Runtime: **Docker**
+6. ヘルスチェックパス: `/api/health`
+7. 環境変数を設定する（この時点では `FRONTEND_URL` は後回しでよい。`APP_KEY`・`APP_URL` などは [§7](#7-app_key-の準備方法) と [環境変数一覧](#環境変数一覧設定チートシート) を参照）
+8. デプロイし、backendの公開URLを控える
 
 **frontend（backendのURL確定後）**
 
 1. **New → Static Site**
-2. Root Directory: `frontend`
+2. 同じリポジトリ・ブランチ、Root Directory: `frontend`
 3. Build Command: `npm run build`
 4. Publish Directory: `dist`
 5. Redirects/Rewrites に Rewrite: Source `/*` → Destination `/index.html`
-6. 環境変数 `VITE_API_BASE_URL` に backend URL を設定してビルドする
+6. 環境変数 `VITE_API_BASE_URL` に、控えた backend URL（末尾 `/` なし）を設定してビルドする
+7. frontendの公開URLが分かったら、backendの `FRONTEND_URL` に設定して再起動する（[§6](#6-backendへfrontend-urlを設定する手順)）
+
+### 方法A: Blueprint（任意・再現用）
+
+設定に慣れたあと、同じ構成を再現したい場合に使います。初回は個別作成（方法B）で問題ありません。
+
+1. **New → Blueprint** を選ぶ
+2. GitHubリポジトリ `toutetu/kurashi-relay` を接続する
+3. デプロイ対象ブランチを選ぶ（`main` 直pushは運用ルールに従う）
+4. `render.yaml` を検出したら、`sync: false` の環境変数を入力する
+
+注意: `APP_URL`・`FRONTEND_URL`・`VITE_API_BASE_URL` はサービス作成後にしか確定しません。
+Blueprintで初回作成する場合は、次のどちらかにしてください。
+
+* **推奨**: Blueprintを使わず、上記の方法Bで個別作成する
+* どうしてもBlueprintを使う場合: 一時的なプレースホルダ（例: `https://example.invalid`）で作成し、各サービスのURL確定後に正しい値へ更新して再デプロイする（特に frontend の `VITE_API_BASE_URL` は再ビルドが必要）
 
 ## 4. backendを先にデプロイする理由と手順
 
 frontendの `VITE_API_BASE_URL` は **ビルド時** に埋め込まれます。
 backendの公開URLが先に決まっていないと、frontendを正しくビルドできません。
 
-手順:
+初回は方法Bに沿って、次の順で進めてください。
 
 1. backendをデプロイする
 2. `https://<api-service>.onrender.com/api/health` が成功することを確認する
