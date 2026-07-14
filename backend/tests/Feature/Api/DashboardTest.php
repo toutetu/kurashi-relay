@@ -114,6 +114,16 @@ class DashboardTest extends TestCase
             ->assertJsonPath('data.scheduleComparisons.0.difference.startDelayMinutes', 10);
     }
 
+    public function test_dashboard_json_keeps_japanese_unescaped_for_browser_reading(): void
+    {
+        $response = $this->get('/api/dashboard');
+
+        $response
+            ->assertOk()
+            ->assertSee('登校支援', false)
+            ->assertDontSee('\\u767b\\u6821', false);
+    }
+
     public function test_unknown_api_routes_return_json_errors(): void
     {
         $response = $this
