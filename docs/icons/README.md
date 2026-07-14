@@ -22,7 +22,7 @@
 ## フォルダ構成
 
 ```
-doc/icons/
+docs/icons/
 ├── README.md
 ├── final-oyako-shizuku/            ★採用（おやこしずく・きらきら）
 │   ├── gallery.html
