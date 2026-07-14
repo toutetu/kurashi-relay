@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import App from "../App";
+import { MoodProvider } from "../features/mood/mood";
 
 function LocationProbe() {
   const location = useLocation();
@@ -21,10 +22,12 @@ export function renderApp(path = "/", showLocation = false) {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[path]}>
-        <App />
-        {showLocation && <LocationProbe />}
-      </MemoryRouter>
+      <MoodProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <App />
+          {showLocation && <LocationProbe />}
+        </MemoryRouter>
+      </MoodProvider>
     </QueryClientProvider>,
   );
 }

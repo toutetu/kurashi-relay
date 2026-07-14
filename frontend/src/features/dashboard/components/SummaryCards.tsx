@@ -1,13 +1,9 @@
 import {
-  Activity,
   AlarmClock,
   Clock3,
   Gamepad2,
-  Heart,
   ListChecks,
-  Moon,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { DashboardCard } from "../../../components/ui/DashboardCard";
 import {
   EmptyState,
@@ -25,37 +21,36 @@ import { formatDateTime, formatMinutes } from "../../../utils/date";
 const balanceItems: Array<{
   key: keyof TimeBalance;
   label: string;
-  icon: LucideIcon;
   color: string;
 }> = [
   {
     key: "sleepMinutes",
     label: "睡眠",
-    icon: Moon,
-    color: "bg-[var(--mother-blue)]",
+    color: "var(--balance-sleep)",
   },
   {
     key: "waitingMinutes",
     label: "待機",
-    icon: Clock3,
-    color: "bg-[var(--mother-yellow)]",
+    color: "var(--balance-waiting)",
   },
   {
     key: "activityMinutes",
     label: "活動",
-    icon: Activity,
-    color: "bg-[var(--mother-red)]",
+    color: "var(--balance-activity)",
   },
   {
     key: "recoveryMinutes",
     label: "回復",
-    icon: Heart,
-    color: "bg-[var(--daughter-purple)]",
+    color: "var(--balance-recovery)",
   },
 ];
 
 export function TimeBalanceCard({ balance }: { balance: TimeBalance }) {
   const total = Object.values(balance).reduce((sum, value) => sum + value, 0);
+  const ariaLabel = `時間の内訳: ${balanceItems
+    .map(({ key, label }) => `${label}${formatMinutes(balance[key])}`)
+    .join("、")}`;
+
   return (
     <DashboardCard
       title="時間の内訳"
@@ -63,26 +58,12 @@ export function TimeBalanceCard({ balance }: { balance: TimeBalance }) {
       tone="yellow"
       density="compact"
     >
-      <dl className="grid grid-cols-2 gap-2">
-        {balanceItems.map(({ key, label, icon: Icon }) => {
-          const value = balance[key];
-          return (
-            <MetricTile
-              key={key}
-              label={label}
-              value={
-                <span className="flex items-center gap-1">
-                  <Icon aria-hidden="true" size={14} />
-                  {formatMinutes(value)}
-                </span>
-              }
-              className="relative overflow-hidden"
-            />
-          );
-        })}
-      </dl>
-      <div className="mt-2 grid grid-cols-4 gap-1" aria-label="時間の内訳">
-        {balanceItems.map(({ key, label, color }) => {
+      <div
+        role="img"
+        aria-label={ariaLabel}
+        className="mb-2.5 flex h-4 gap-0.5 overflow-hidden rounded-full"
+      >
+        {balanceItems.map(({ key, color }) => {
           const percentage =
             total > 0
               ? Math.max(6, Math.round((balance[key] / total) * 100))
@@ -90,12 +71,29 @@ export function TimeBalanceCard({ balance }: { balance: TimeBalance }) {
           return (
             <span
               key={key}
-              aria-label={`${label} ${percentage}%`}
-              className={`h-2 rounded-full ${color}`}
-              style={{ flexBasis: `${percentage}%` }}
+              className="block h-full rounded-sm"
+              style={{
+                width: `${percentage}%`,
+                background: color,
+              }}
             />
           );
         })}
+      </div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+        {balanceItems.map(({ key, label, color }) => (
+          <span key={key} className="flex items-center gap-1.5 text-[11.5px]">
+            <span
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ background: color }}
+              aria-hidden="true"
+            />
+            <span className="font-semibold text-[var(--muted)]">{label}</span>
+            <span className="ml-auto font-extrabold tabular-nums text-[var(--ink)]">
+              {formatMinutes(balance[key])}
+            </span>
+          </span>
+        ))}
       </div>
     </DashboardCard>
   );

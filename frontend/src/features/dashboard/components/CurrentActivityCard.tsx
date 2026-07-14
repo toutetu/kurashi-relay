@@ -1,18 +1,12 @@
 import {
-  Activity,
   ArrowRightLeft,
   CirclePause,
   CirclePlay,
   CircleStop,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { DashboardCard } from "../../../components/ui/DashboardCard";
+import { useEffect, useId, useState } from "react";
 import { Button } from "../../../components/ui/Button";
-import {
-  EmptyState,
-  MetricTile,
-  StatusChip,
-} from "../../../components/ui/DashboardPrimitives";
+import { StatusChip } from "../../../components/ui/DashboardPrimitives";
 import type { LocalActivity } from "../../../types/local";
 import { formatMinutes, formatTime } from "../../../utils/date";
 
@@ -65,6 +59,7 @@ export function CurrentActivityCard({
   activity: LocalActivity | null;
   onChange: (activity: LocalActivity | null) => void;
 }) {
+  const headingId = useId();
   const elapsedMinutes = useElapsedMinutes(activity);
   const goToQuickStart = () =>
     document
@@ -110,40 +105,47 @@ export function CurrentActivityCard({
   };
 
   return (
-    <DashboardCard
-      title="現在の活動"
-      icon={Activity}
-      tone="red"
-      density="compact"
+    <section
+      aria-labelledby={headingId}
+      className="mb-2.5 flex flex-wrap items-center gap-2.5 rounded-3xl border-[1.5px] bg-[var(--surface)] px-3 py-1.5 shadow-[var(--card-shadow)] sm:rounded-full sm:px-4 sm:py-1.5"
+      style={{
+        borderColor: "color-mix(in srgb, var(--primary) 28%, var(--line))",
+      }}
     >
+      <h2 id={headingId} className="sr-only">
+        現在の活動
+      </h2>
       {activity ? (
-        <div className="space-y-2.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <p className="min-w-0 truncate text-lg font-black text-[var(--text)]">
-              {activity.title}
-            </p>
-            <StatusChip tone={activity.status === "paused" ? "yellow" : "red"}>
-              <span
-                aria-hidden="true"
-                className={`size-1.5 rounded-full ${activity.status === "running" ? "animate-pulse bg-current" : "bg-current"}`}
-              />
-              {statusLabels[activity.status]}
-            </StatusChip>
-          </div>
-          <dl className="grid grid-cols-3 gap-2">
-            <MetricTile label="開始" value={formatTime(activity.startedAt)} />
-            <MetricTile label="経過" value={formatMinutes(elapsedMinutes)} />
-            <MetricTile
-              label="関連予定"
-              value={activity.relatedPlanTitle || "なし"}
+        <>
+          {activity.status === "running" && (
+            <span
+              aria-hidden="true"
+              className="size-2.5 shrink-0 animate-pulse rounded-full bg-[var(--green)]"
             />
-          </dl>
+          )}
+          <p className="min-w-0 truncate text-[15px] font-extrabold text-[var(--ink)]">
+            {activity.title}
+          </p>
+          <StatusChip tone={activity.status === "paused" ? "yellow" : "red"}>
+            {statusLabels[activity.status]}
+          </StatusChip>
+          <p className="text-xs text-[var(--muted)] tabular-nums">
+            開始 {formatTime(activity.startedAt)} ・ 関連予定{" "}
+            {activity.relatedPlanTitle || "なし"}
+          </p>
+          <span className="hidden flex-1 sm:block" />
+          <p className="text-xs font-bold text-[var(--muted)]">
+            経過{" "}
+            <strong className="ml-1 text-[19px] font-extrabold tabular-nums text-[var(--ink)]">
+              {formatMinutes(elapsedMinutes)}
+            </strong>
+          </p>
           <div className="flex flex-wrap gap-2">
             {activity.status === "running" && (
               <Button
                 onClick={pause}
-                variant="outline"
-                tone="red"
+                variant="soft"
+                tone="blue"
                 size="compact"
                 icon={CirclePause}
               >
@@ -153,7 +155,7 @@ export function CurrentActivityCard({
             {activity.status === "paused" && (
               <Button
                 onClick={resume}
-                variant="outline"
+                variant="soft"
                 tone="blue"
                 size="compact"
                 icon={CirclePlay}
@@ -165,7 +167,7 @@ export function CurrentActivityCard({
               <Button
                 onClick={complete}
                 variant="solid"
-                tone="red"
+                tone="blue"
                 size="compact"
                 icon={CircleStop}
               >
@@ -174,7 +176,7 @@ export function CurrentActivityCard({
             )}
             <Button
               onClick={goToQuickStart}
-              variant="outline"
+              variant="ghost"
               tone="neutral"
               size="compact"
               icon={ArrowRightLeft}
@@ -182,21 +184,24 @@ export function CurrentActivityCard({
               切り替える
             </Button>
           </div>
-        </div>
+        </>
       ) : (
-        <div className="space-y-2.5">
-          <EmptyState>現在、進行中の活動はありません。</EmptyState>
+        <>
+          <p className="text-sm text-[var(--muted)]">
+            現在、進行中の活動はありません。
+          </p>
+          <span className="hidden flex-1 sm:block" />
           <Button
             onClick={goToQuickStart}
             variant="solid"
-            tone="red"
+            tone="blue"
             size="compact"
             icon={CirclePlay}
           >
             活動を始める
           </Button>
-        </div>
+        </>
       )}
-    </DashboardCard>
+    </section>
   );
 }

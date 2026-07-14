@@ -68,7 +68,7 @@ export function MetricTile({
   className?: string;
 }) {
   return (
-    <div className={`rounded-xl bg-white/80 px-2.5 py-2 ${className}`}>
+    <div className={`rounded-xl bg-[var(--neutral-soft)] px-2.5 py-2 ${className}`}>
       <dt className="text-[0.7rem] font-bold text-[var(--muted-text)]">
         {label}
       </dt>

@@ -54,10 +54,10 @@ describe("くらしリレー SPA", () => {
         (heading) => heading.textContent,
       ),
     ).toEqual([
+      "現在の活動",
       "クイック活動記録",
       "クイック記録",
       "母の体調と気分",
-      "現在の活動",
       "次の予定",
       "時間の内訳",
     ]);
@@ -76,13 +76,7 @@ describe("くらしリレー SPA", () => {
       expect.stringContaining("/api/dashboard?date="),
       expect.objectContaining({ method: "GET" }),
     );
-    expect(screen.getByTestId("home-dashboard-grid")).toHaveClass(
-      "grid",
-      "min-w-0",
-      "xl:grid-cols-3",
-      "xl:items-stretch",
-      "gap-3",
-    );
+    expect(screen.getByTestId("home-dashboard-grid")).toHaveClass("home-grid");
   });
 
   it("ホームは記録タブを初期表示し、URLへ同期する", async () => {
@@ -327,7 +321,7 @@ describe("くらしリレー SPA", () => {
     expect(drawerElement).toHaveAttribute("inert");
   });
 
-  it("PCサイドバーには専用ページ、モバイル下部には6項目だけを表示する", () => {
+  it("PCサイドバーには専用ページ、モバイル下部には5項目だけを表示する", () => {
     fetchMock.mockImplementation(() => new Promise<Response>(() => undefined));
     renderApp();
 
@@ -345,7 +339,7 @@ describe("くらしリレー SPA", () => {
       within(
         screen.getByRole("navigation", { name: "モバイルメニュー" }),
       ).getAllByRole("link"),
-    ).toHaveLength(6);
+    ).toHaveLength(5);
   });
 
   it("予定なしの時間を空白にせず、予定外の活動と実績記録なしを表示する", async () => {

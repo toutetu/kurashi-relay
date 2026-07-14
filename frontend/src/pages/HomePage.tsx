@@ -1,4 +1,4 @@
-import { CalendarDays, RefreshCcw, Sparkles } from "lucide-react";
+import { CalendarDays, RefreshCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SegmentedTabs } from "../components/ui/SegmentedTabs";
@@ -13,6 +13,7 @@ import {
   TimeBalanceCard,
 } from "../features/dashboard/components/DashboardCards";
 import { useDashboardQuery } from "../features/dashboard/queries/useDashboardQuery";
+import { MoodPicker } from "../features/mood/mood";
 import type { DashboardData } from "../types/dashboard";
 import { createLocalActivity, type LocalActivity } from "../types/local";
 import { formatDate, getTokyoToday } from "../utils/date";
@@ -37,6 +38,8 @@ function HomeDashboard({ data }: { data: DashboardData }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get("tab");
   const activeTab = getDashboardTab(rawTab);
+  const runningCategory =
+    currentActivity?.status === "running" ? currentActivity.category : null;
 
   useEffect(() => {
     if (rawTab === activeTab) return;
@@ -53,6 +56,10 @@ function HomeDashboard({ data }: { data: DashboardData }) {
 
   return (
     <div>
+      <CurrentActivityCard
+        activity={currentActivity}
+        onChange={setCurrentActivity}
+      />
       <SegmentedTabs
         tabs={dashboardTabs}
         value={activeTab}
@@ -65,38 +72,35 @@ function HomeDashboard({ data }: { data: DashboardData }) {
         role="tabpanel"
         aria-labelledby={`dashboard-tab-${activeTab}`}
         data-testid="home-dashboard-grid"
-        className="grid min-w-0 gap-3 xl:grid-cols-3 xl:items-stretch"
+        className="home-grid min-w-0"
       >
+        <p className="zone-label area-z1 hidden xl:flex">✏️ きろくする</p>
+        <p className="zone-label area-z2 hidden xl:flex">👀 きょうのようす</p>
         <div
-          className={`${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+          className={`area-qs ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
         >
-          <QuickStartCard onStart={setCurrentActivity} />
+          <QuickStartCard
+            onStart={setCurrentActivity}
+            runningCategory={runningCategory}
+          />
         </div>
         <div
-          className={`${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+          className={`area-ql ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
         >
           <QuickLogsCard initialLogs={data.quickLogs} />
         </div>
         <div
-          className={`${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+          className={`area-cd ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
         >
           <MotherConditionsCard initialCondition={data.conditions.mother} />
         </div>
         <div
-          className={`${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
-        >
-          <CurrentActivityCard
-            activity={currentActivity}
-            onChange={setCurrentActivity}
-          />
-        </div>
-        <div
-          className={`${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+          className={`area-pl ${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
         >
           <NextPlansCard plans={data.nextPlans} />
         </div>
         <div
-          className={`${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+          className={`area-tb ${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
         >
           <TimeBalanceCard balance={data.timeBalance} />
         </div>
@@ -111,33 +115,32 @@ export function HomePage() {
 
   return (
     <div className="mx-auto max-w-[1420px]">
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between xl:mb-2">
+      <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between xl:mb-1.5">
         <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-[var(--mother-blue-strong)]">
-            <Sparkles aria-hidden="true" size={17} />
-            今日のくらしを、見えるかたちに
-          </p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-[var(--text)] sm:text-3xl">
-            ホーム
-          </h1>
-          <p className="mt-1 flex items-center gap-2 text-sm font-bold text-[var(--muted-text)]">
-            <CalendarDays aria-hidden="true" size={17} />
+          <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--muted)]">
+            <CalendarDays aria-hidden="true" size={14} />
             {query.data ? formatDate(query.data.date) : formatDate(today)}
           </p>
+          <h1 className="mt-0.5 text-[18px] font-extrabold tracking-tight text-[var(--ink)]">
+            今日のくらしを、見えるかたちに
+          </h1>
         </div>
-        <Button
-          onClick={() => void query.refetch()}
-          disabled={query.isFetching}
-          variant="outline"
-          tone="blue"
-          icon={RefreshCcw}
-          loading={query.isFetching && !query.isPending}
-          className="self-start sm:self-auto"
-        >
-          {query.isFetching && !query.isPending
-            ? "更新中…"
-            : "最新の情報に更新"}
-        </Button>
+        <div className="flex flex-col items-start gap-1.5 sm:items-end">
+          <MoodPicker />
+          <Button
+            onClick={() => void query.refetch()}
+            disabled={query.isFetching}
+            variant="ghost"
+            tone="blue"
+            size="compact"
+            icon={RefreshCcw}
+            loading={query.isFetching && !query.isPending}
+          >
+            {query.isFetching && !query.isPending
+              ? "更新中…"
+              : "最新の情報に更新"}
+          </Button>
+        </div>
       </div>
 
       {query.isPending && <DashboardLoading />}

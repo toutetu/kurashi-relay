@@ -25,6 +25,7 @@ import type {
 import { formatTime, formatTimeRange } from "../../../utils/date";
 
 export function NextPlansCard({ plans }: { plans: SchedulePlan[] }) {
+  const visiblePlans = plans.slice(0, 2);
   return (
     <DashboardCard
       title="次の予定"
@@ -33,26 +34,32 @@ export function NextPlansCard({ plans }: { plans: SchedulePlan[] }) {
       density="compact"
       action={<SectionLink to="/schedule">詳しく見る</SectionLink>}
     >
-      {plans.length > 0 ? (
-        <ol className="space-y-1.5">
-          {plans.slice(0, 2).map((plan) => (
-            <li
-              key={plan.id}
-              className="flex min-w-0 items-center gap-2 rounded-xl border border-[var(--mother-blue)] bg-white/85 px-2.5 py-2"
-            >
-              <time className="w-11 shrink-0 text-center text-sm font-black text-[var(--mother-blue-strong)]">
-                {formatTime(plan.startAt)}
-              </time>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold text-[var(--text)]">
-                  {plan.title}
+      {visiblePlans.length > 0 ? (
+        <ol className="list-none space-y-0 p-0">
+          {visiblePlans.map((plan, index) => {
+            const isLast = index === visiblePlans.length - 1;
+            return (
+              <li key={plan.id} className="flex gap-3 pb-3 last:pb-1">
+                <time className="w-11 shrink-0 pt-0.5 text-right text-[13.5px] font-extrabold tabular-nums text-[var(--primary-deep)]">
+                  {formatTime(plan.startAt)}
+                </time>
+                <span className="flex w-3.5 shrink-0 flex-col items-center">
+                  <span className="mt-1 size-2.5 rounded-full border-[2.5px] border-[var(--primary)] bg-white" />
+                  {!isLast && (
+                    <span className="mt-0.5 w-0.5 flex-1 rounded-sm bg-[var(--line)]" />
+                  )}
                 </span>
-                <span className="block text-xs text-[var(--muted-text)]">
-                  {formatTimeRange(plan.startAt, plan.endAt)}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13.5px] font-bold text-[var(--ink)]">
+                    {plan.title}
+                  </span>
+                  <span className="mt-0.5 block text-[11.5px] text-[var(--muted)] tabular-nums">
+                    {formatTimeRange(plan.startAt, plan.endAt)}
+                  </span>
                 </span>
-              </span>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ol>
       ) : (
         <EmptyState>次の予定はありません。</EmptyState>
@@ -84,7 +91,8 @@ export function MotherConditionsCard({
           value={condition.physical}
           onChange={(score) => update("physical", score)}
           icon={Heart}
-          tone="red"
+          tone="primary"
+          appearance="hearts"
         />
         <ScoreControl
           personLabel="母"
@@ -92,7 +100,8 @@ export function MotherConditionsCard({
           value={condition.mood}
           onChange={(score) => update("mood", score)}
           icon={SunMedium}
-          tone="red"
+          tone="primary"
+          appearance="faces"
         />
       </div>
       <p className="mt-2 text-xs text-[var(--muted-text)]">
@@ -141,6 +150,7 @@ export function DaughterConditionsCard({
           onChange={(score) => update("physical", score)}
           icon={Heart}
           tone="daughter"
+          appearance="hearts"
         />
         <ScoreControl
           personLabel="娘"
@@ -149,6 +159,7 @@ export function DaughterConditionsCard({
           onChange={(score) => update("mood", score)}
           icon={SunMedium}
           tone="daughter"
+          appearance="faces"
         />
         <fieldset>
           <legend className="mb-1 text-xs font-bold text-[var(--muted-text)]">

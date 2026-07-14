@@ -1,16 +1,11 @@
 import {
-  Activity,
-  BadgeCheck,
-  Bell,
-  Bike,
+  Backpack,
   BriefcaseBusiness,
-  CirclePlay,
   Clock3,
   Gamepad2,
-  Heart,
   House,
-  Phone,
-  Sparkles,
+  Moon,
+  Plus,
   TimerReset,
   Undo2,
 } from "lucide-react";
@@ -18,10 +13,7 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { DashboardCard } from "../../../components/ui/DashboardCard";
 import { Button } from "../../../components/ui/Button";
-import {
-  EmptyState,
-  QuickActionButton,
-} from "../../../components/ui/DashboardPrimitives";
+import { EmptyState } from "../../../components/ui/DashboardPrimitives";
 import type {
   ActivityCategory,
   QuickLog,
@@ -33,39 +25,52 @@ const quickActivities: Array<{
   category: ActivityCategory;
   label: string;
   icon: LucideIcon;
-  tone: "blue" | "yellow" | "red";
+  chipClass: string;
 }> = [
   {
     category: "work_preparation",
     label: "就労準備",
     icon: BriefcaseBusiness,
-    tone: "blue",
+    chipClass: "bg-[var(--cat-blue-soft)] text-[var(--cat-blue)]",
   },
-  { category: "housework", label: "家事", icon: House, tone: "yellow" },
+  {
+    category: "housework",
+    label: "家事",
+    icon: House,
+    chipClass: "bg-[var(--amber-soft)] text-[var(--amber)]",
+  },
   {
     category: "school_support",
     label: "登校支援",
-    icon: Sparkles,
-    tone: "red",
+    icon: Backpack,
+    chipClass: "bg-[var(--green-soft)] text-[var(--green)]",
   },
-  { category: "waiting", label: "待機", icon: Clock3, tone: "yellow" },
-  { category: "recovery", label: "回復・休息", icon: Heart, tone: "red" },
-  { category: "last_war", label: "ラストウォー", icon: Gamepad2, tone: "blue" },
+  {
+    category: "waiting",
+    label: "待機",
+    icon: Clock3,
+    chipClass: "bg-[var(--cat-blue-soft)] text-[var(--cat-blue)]",
+  },
+  {
+    category: "recovery",
+    label: "回復・休息",
+    icon: Moon,
+    chipClass: "bg-[var(--fuji-soft)] text-[var(--fuji)]",
+  },
+  {
+    category: "last_war",
+    label: "ラストウォー",
+    icon: Gamepad2,
+    chipClass: "bg-[var(--coral-soft)] text-[var(--coral)]",
+  },
 ];
-
-const quickLogIcons: Record<QuickLogType, LucideIcon> = {
-  wake_prompt: Bell,
-  change_clothes_prompt: Sparkles,
-  school_contact: Phone,
-  stomachache_support: Activity,
-  transport: Bike,
-  school_handoff: BadgeCheck,
-};
 
 export function QuickStartCard({
   onStart,
+  runningCategory = null,
 }: {
   onStart: (activity: LocalActivity) => void;
+  runningCategory?: ActivityCategory | null;
 }) {
   const startActivity = (category: ActivityCategory, label: string) =>
     onStart({
@@ -84,22 +89,47 @@ export function QuickStartCard({
     <DashboardCard
       id="quick-start"
       title="クイック活動記録"
-      icon={CirclePlay}
+      icon={Clock3}
       tone="blue"
       density="compact"
     >
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {quickActivities.map(({ category, label, icon, tone }) => (
-          <QuickActionButton
-            key={category}
-            icon={icon}
-            label={label}
-            tone={tone}
-            onClick={() => startActivity(category, label)}
-          />
-        ))}
+      <div className="grid grid-cols-3 gap-2">
+        {quickActivities.map(({ category, label, icon: Icon, chipClass }) => {
+          const running = runningCategory === category;
+          return (
+            <button
+              key={category}
+              type="button"
+              onClick={() => startActivity(category, label)}
+              className="pressable relative flex flex-col items-center gap-1 rounded-2xl border-[1.5px] bg-[var(--surface)] px-1 py-1.5 text-[11px] font-bold text-[var(--ink)] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+              style={
+                running
+                  ? {
+                      borderColor:
+                        "color-mix(in srgb, var(--green) 45%, var(--line))",
+                      background:
+                        "color-mix(in srgb, var(--green-soft) 45%, var(--surface))",
+                    }
+                  : { borderColor: "var(--line)" }
+              }
+            >
+              {running && (
+                <span
+                  aria-hidden="true"
+                  className="absolute top-1.5 right-2 size-2 rounded-full bg-[var(--green)]"
+                />
+              )}
+              <span
+                className={`grid size-[34px] place-items-center rounded-full ${chipClass}`}
+              >
+                <Icon aria-hidden="true" size={15} />
+              </span>
+              {label}
+            </button>
+          );
+        })}
       </div>
-      <p className="mt-2 text-xs text-[var(--muted-text)]">
+      <p className="mt-2 text-[10.5px] text-[var(--faint)]">
         この画面での変更は、まだサーバーには保存されません。
       </p>
     </DashboardCard>
@@ -108,6 +138,9 @@ export function QuickStartCard({
 
 export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
   const [logs, setLogs] = useState(initialLogs);
+  const [flyKeys, setFlyKeys] = useState<Partial<Record<QuickLogType, number>>>(
+    {},
+  );
   const [lastAction, setLastAction] = useState<{
     type: QuickLogType;
     label: string;
@@ -127,6 +160,10 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
         item.type === log.type ? { ...item, count: item.count + 1 } : item,
       ),
     );
+    setFlyKeys((current) => ({
+      ...current,
+      [log.type]: (current[log.type] ?? 0) + 1,
+    }));
     setLastAction({ type: log.type, label: log.label });
     if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
     undoTimer.current = window.setTimeout(() => setLastAction(null), 5_000);
@@ -153,23 +190,48 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
         density="compact"
       >
         {logs.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-2">
-            {logs.map((log) => (
-              <QuickActionButton
-                key={log.type}
-                icon={quickLogIcons[log.type]}
-                label={log.label}
-                tone="yellow"
-                onClick={() => addLog(log)}
-                ariaLabel={`${log.label}を記録。現在${log.count}件`}
-                detail={
-                  <span className="ml-auto rounded-full bg-white/80 px-1.5 py-0.5 text-xs font-black">
-                    {log.count}件
-                  </span>
-                }
-              />
-            ))}
-          </div>
+          <ul className="-mx-1.5 list-none p-0">
+            {logs.map((log) => {
+              const flyKey = flyKeys[log.type];
+              return (
+                <li
+                  key={log.type}
+                  className="border-t border-[var(--line-soft)] first:border-t-0"
+                >
+                  <button
+                    type="button"
+                    aria-label={`${log.label}を記録。現在${log.count}件`}
+                    onClick={() => addLog(log)}
+                    className="pressable group relative flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-[13px] font-semibold text-[var(--ink)] transition hover:bg-[color-mix(in_srgb,var(--primary-soft)_65%,var(--surface))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                  >
+                    <span className="min-w-0 flex-1 truncate">{log.label}</span>
+                    <span
+                      key={log.count}
+                      className={`count-bump rounded-full px-2.5 text-xs font-black tabular-nums ${
+                        log.count === 0
+                          ? "bg-[var(--neutral-soft)] text-[var(--faint)]"
+                          : "bg-[var(--primary-soft)] text-[var(--primary-deep)]"
+                      }`}
+                    >
+                      {log.count}件
+                    </span>
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--primary-soft)] text-[var(--primary-deep)] transition group-hover:bg-[var(--primary)] group-hover:text-white">
+                      <Plus aria-hidden="true" size={14} strokeWidth={2.4} />
+                    </span>
+                    {flyKey !== undefined && flyKey > 0 && (
+                      <span
+                        key={flyKey}
+                        className="fly"
+                        aria-hidden="true"
+                      >
+                        +1
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <EmptyState>記録できる項目はありません。</EmptyState>
         )}
