@@ -1,0 +1,7 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="おうちハート">
+  <defs><linearGradient id="ga" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#FFB4D2"/><stop offset="1" stop-color="#FF7EAF"/></linearGradient></defs>
+  <rect width="512" height="512" rx="116" fill="url(#ga)"/>
+  <path d="M256 112 C244 112 233 116 224 124 L120 214 C112 221 108 231 108 242 L108 372 C108 392 124 408 144 408 L368 408 C388 408 404 392 404 372 L404 242 C404 231 400 221 392 214 L288 124 C279 116 268 112 256 112 Z" fill="#ffffff"/>
+  <path d="M256 340 C214 308 190 288 190 258 C190 240 204 228 221 228 C235 228 247 236 256 250 C265 236 277 228 291 228 C308 228 322 240 322 258 C322 288 298 308 256 340 Z" fill="#E85E97"/>
+</svg>

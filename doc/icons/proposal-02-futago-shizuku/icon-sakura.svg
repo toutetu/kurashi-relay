@@ -1,0 +1,22 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="くらしリレー">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFB4D2"/><stop offset="1" stop-color="#FF7EAF"/>
+    </linearGradient>
+    <radialGradient id="h" cx="0.32" cy="0.24" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#g)"/>
+  <rect width="512" height="512" rx="116" fill="url(#h)"/>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="11" stroke-linecap="round">
+    <ellipse cx="256" cy="256" rx="188" ry="112" transform="rotate(-18 256 256)"/>
+  </g>
+  <circle cx="398" cy="158" r="14" fill="#ffffff"/>
+  <circle cx="116" cy="352" r="9" fill="#ffffff" fill-opacity="0.85"/>
+  <g transform="translate(214 254) rotate(-20)"><path d="M0 -132 C40 -82 70 -46 70 0 C70 40 40 70 0 70 C-40 70 -70 40 -70 0 C-70 -46 -40 -82 0 -132 Z" fill="#ffffff"/></g>
+  <g transform="translate(300 262) rotate(20)"><path d="M0 -132 C40 -82 70 -46 70 0 C70 40 40 70 0 70 C-40 70 -70 40 -70 0 C-70 -46 -40 -82 0 -132 Z" fill="#ffffff" stroke="#FF7EAF" stroke-opacity="0.16" stroke-width="5"/></g>
+  <path d="M256 292 C233 275 219 264 219 248 C219 238 227 231 237 231 C245 231 252 236 256 244 C260 236 267 231 275 231 C285 231 293 238 293 248 C293 264 279 275 256 292 Z" fill="#E85E97"/>
+  <path d="M120 150 l6 16 16 6 -16 6 -6 16 -6 -16 -16 -6 16 -6 Z" fill="#ffffff" fill-opacity="0.92"/>
+</svg>

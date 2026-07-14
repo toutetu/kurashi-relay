@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>くらしリレー アイコン（第1案：リレーハート）</title>
+<style>
+  :root{
+    --bg:#fff6f9;
+    --panel:#ffffff;
+    --line:#f2dce6;
+    --ink:#4a3743;
+    --muted:#9a8390;
+    --accent:#ff6fa8;
+    --accent-deep:#e85e97;
+    --shadow:0 10px 30px rgba(232,94,151,.14);
+    --dotbg:#ffe3ef;
+    --radius:22px;
+    --font:"Hiragino Maru Gothic ProN","Zen Maru Gothic","BIZ UDPGothic","Rounded Mgen+ 1c","Meiryo",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#171219;--panel:#211a22;--line:#37293440;--ink:#f4e7ef;--muted:#b79fac;
+      --accent:#ff8fbf;--accent-deep:#ff9ec8;--shadow:0 14px 40px rgba(0,0,0,.45);--dotbg:#3a2733;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#171219;--panel:#211a22;--line:#37293440;--ink:#f4e7ef;--muted:#b79fac;
+    --accent:#ff8fbf;--accent-deep:#ff9ec8;--shadow:0 14px 40px rgba(0,0,0,.45);--dotbg:#3a2733;
+  }
+  :root[data-theme="light"]{
+    --bg:#fff6f9;--panel:#ffffff;--line:#f2dce6;--ink:#4a3743;--muted:#9a8390;
+    --accent:#ff6fa8;--accent-deep:#e85e97;--shadow:0 10px 30px rgba(232,94,151,.14);--dotbg:#ffe3ef;
+  }
+
+  *{box-sizing:border-box}
+  body,.wrap{margin:0}
+  .wrap{
+    font-family:var(--font);color:var(--ink);background:var(--bg);
+    -webkit-font-smoothing:antialiased;line-height:1.6;
+    padding:clamp(20px,5vw,56px) clamp(16px,4vw,40px) 72px;
+  }
+  .inner{max-width:960px;margin:0 auto}
+
+  .kicker{
+    font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent-deep);font-weight:700;margin:0 0 6px;
+  }
+  h1{font-size:clamp(26px,5vw,40px);margin:0 0 8px;letter-spacing:.01em;text-wrap:balance}
+  .lead{color:var(--muted);font-size:clamp(14px,2.4vw,17px);max-width:56ch;margin:0}
+
+  section{margin-top:clamp(40px,7vw,72px)}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin:0 0 20px}
+  .sec-head h2{font-size:clamp(18px,3vw,23px);margin:0}
+  .sec-head span{color:var(--muted);font-size:13px}
+
+  .hero{
+    display:grid;grid-template-columns:auto 1fr;gap:clamp(20px,4vw,44px);
+    align-items:center;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:clamp(22px,4vw,40px);box-shadow:var(--shadow);
+  }
+  .hero-mark{width:clamp(140px,26vw,196px);filter:drop-shadow(0 16px 26px rgba(232,94,151,.28))}
+  .hero-copy h3{margin:0 0 6px;font-size:clamp(20px,3vw,26px)}
+  .hero-copy p{margin:0 0 18px;color:var(--muted);font-size:14.5px;max-width:44ch}
+  .btns{display:flex;flex-wrap:wrap;gap:10px}
+  button{
+    font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;
+    border:0;border-radius:14px;padding:11px 18px;color:#fff;
+    background:linear-gradient(180deg,#ff86ba,#ff6fa8);
+    box-shadow:0 4px 0 #e85e97,0 8px 16px rgba(232,94,151,.3);
+    transition:transform .08s ease,box-shadow .08s ease;
+  }
+  button.ghost{
+    color:var(--accent-deep);background:var(--panel);
+    box-shadow:0 3px 0 var(--line),inset 0 0 0 1.5px var(--line);
+  }
+  button:hover{transform:translateY(-2px)}
+  button:active{transform:translateY(2px);box-shadow:0 1px 0 #e85e97}
+  button.ghost:active{box-shadow:0 1px 0 var(--line),inset 0 0 0 1.5px var(--line)}
+  button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  .themes{display:grid;grid-template-columns:repeat(5,1fr);gap:clamp(10px,2vw,18px)}
+  @media(max-width:620px){.themes{grid-template-columns:repeat(3,1fr)}}
+  .swatch{text-align:center}
+  .swatch svg{width:100%;max-width:150px;border-radius:24%;box-shadow:0 8px 18px rgba(0,0,0,.12)}
+  .swatch .name{margin-top:9px;font-weight:700;font-size:14px}
+  .swatch .name small{display:block;color:var(--muted);font-weight:400;font-size:11.5px;letter-spacing:.04em}
+
+  .sizes{display:flex;flex-wrap:wrap;gap:clamp(14px,3vw,30px);align-items:flex-end;
+    padding:24px clamp(16px,3vw,30px);border-radius:var(--radius);border:1px solid var(--line)}
+  .sizes.light{background:#fbe9f1}
+  .sizes.dark{background:#241a22;margin-top:16px}
+  .size{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .size svg{border-radius:24%;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+  .size b{font-size:12px;font-weight:700}
+  .sizes.light .size b{color:#8a5c72}
+  .sizes.dark .size b{color:#d9b9c8}
+
+  .alts{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(14px,3vw,22px)}
+  @media(max-width:560px){.alts{grid-template-columns:1fr}}
+  .alt{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;display:flex;gap:18px;align-items:center;box-shadow:var(--shadow)}
+  .alt svg{width:96px;flex:0 0 auto;border-radius:24%}
+  .alt h4{margin:0 0 4px;font-size:16px}
+  .alt p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+
+  .notes{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:clamp(20px,3vw,30px);box-shadow:var(--shadow)}
+  .notes ul{margin:0;padding:0;list-style:none;display:grid;gap:14px}
+  .notes li{display:flex;gap:12px;align-items:flex-start}
+  .notes .dot{flex:0 0 auto;width:26px;height:26px;border-radius:50%;
+    display:grid;place-items:center;font-size:14px;margin-top:1px;
+    background:var(--dotbg);color:var(--accent-deep)}
+  .notes b{font-weight:700}
+  .notes small{color:var(--muted)}
+
+  .banner{margin-top:24px;background:var(--panel);border:1px dashed var(--line);border-radius:var(--radius);
+    padding:16px 20px;color:var(--muted);font-size:13px}
+  footer{margin-top:56px;text-align:center;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="inner">
+  <p class="kicker">App Icon · 第1案（不採用）</p>
+  <h1>くらしリレー アイコン — リレーハート</h1>
+  <p class="lead">毎日のケアを、やさしく手わたししていく。ハート＝くらし、にっこり＝やさしさ、うしろの輪＝リレー。既定のさくらを主役に、5つのきぶんカラーをそろえました。</p>
+  <div class="banner">これは最初の提案（リレーハート）です。にっこり顔が不採用となり、<b>第2案「ふたごしずく」</b>を採用しました。記録として保存しています。</div>
+
+  <section>
+    <div class="hero">
+      <div class="hero-mark" id="heroMark"></div>
+      <div class="hero-copy">
+        <h3>リレーハート</h3>
+        <p>ひと目で伝わる、まるくてやわらかいマーク。角丸タイルはOSのマスクにも自然になじみます。40pxでも笑顔が読めるよう、線と余白を調整しました。</p>
+        <div class="btns">
+          <button id="dlSvg">SVGをダウンロード</button>
+          <button class="ghost" id="dlPng">PNG（1024px）</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>きぶんカラー 5テーマ</h2><span>CSS変数で切り替え</span></div>
+    <div class="themes" id="themes"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>サイズ確認</h2><span>ホーム画面での見え方</span></div>
+    <div class="sizes light" id="sizesLight"></div>
+    <div class="sizes dark" id="sizesDark"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>べつあん</h2><span>好みで選べる方向ちがい</span></div>
+    <div class="alts">
+      <div class="alt"><div id="altHouse"></div><div><h4>おうちハート</h4><p>「くらし＝おうち」をそのまま。まどのハートで、暮らしのぬくもりを素直に。</p></div></div>
+      <div class="alt"><div id="altDrops"></div><div><h4>ふたごしずく</h4><p>2つのきぶんしずくが重なり、あいだにハート。すこし大人っぽく“受け渡し”を抽象化。</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="notes">
+      <ul>
+        <li><span class="dot">&#9829;</span><div><b>ハート＝くらし・ケア</b><br><small>体調や気分など、毎日の「気にかけ」を象徴。</small></div></li>
+        <li><span class="dot">&#9825;</span><div><b>にっこり＝やさしさ</b><br><small>顔があるだけでかわいく、家族向けの安心感が出ます。</small></div></li>
+        <li><span class="dot">&#8635;</span><div><b>うしろの輪＝リレー</b><br><small>たすきのループで「受け渡し・つながり」を表現。</small></div></li>
+        <li><span class="dot">&#10047;</span><div><b>さくら＝既定テーマ</b><br><small>アプリの世界観に合わせ、やわらかいピンクを基準色に。</small></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>くらしリレー / kurashi-relay · アイコン提案（第1案）</footer>
+ </div>
+</div>
+
+<script>
+(function(){
+  // ---- primary mark: relay-heart with smile ----
+  function primary(t1,t2,ink,blush,gid){
+    return '<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="くらしリレー">'
+      +'<defs>'
+      +'<linearGradient id="g'+gid+'" x1="0" y1="0" x2="1" y2="1">'
+      +'<stop offset="0" stop-color="'+t1+'"/><stop offset="1" stop-color="'+t2+'"/></linearGradient>'
+      +'<radialGradient id="h'+gid+'" cx="0.32" cy="0.24" r="0.9">'
+      +'<stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>'
+      +'<stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/></radialGradient>'
+      +'</defs>'
+      +'<rect width="512" height="512" rx="116" fill="url(#g'+gid+')"/>'
+      +'<rect width="512" height="512" rx="116" fill="url(#h'+gid+')"/>'
+      +'<g fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="11" stroke-linecap="round">'
+      +'<ellipse cx="256" cy="252" rx="190" ry="116" transform="rotate(-18 256 252)"/></g>'
+      +'<circle cx="400" cy="150" r="15" fill="#ffffff"/>'
+      +'<circle cx="112" cy="356" r="10" fill="#ffffff" fill-opacity="0.85"/>'
+      +'<path d="M256 428 C150 348 72 282 72 198 C72 134 120 100 174 100 C214 100 245 122 256 152 C267 122 298 100 338 100 C392 100 440 134 440 198 C440 282 362 348 256 428 Z" fill="#ffffff"/>'
+      +'<g fill="'+blush+'"><circle cx="188" cy="276" r="17"/><circle cx="324" cy="276" r="17"/></g>'
+      +'<g fill="'+ink+'"><ellipse cx="214" cy="240" rx="15" ry="19"/><ellipse cx="298" cy="240" rx="15" ry="19"/></g>'
+      +'<circle cx="219" cy="234" r="4.5" fill="#ffffff"/><circle cx="303" cy="234" r="4.5" fill="#ffffff"/>'
+      +'<path d="M224 274 Q256 306 288 274" fill="none" stroke="'+ink+'" stroke-width="10" stroke-linecap="round"/>'
+      +'<path d="M118 150 l6 16 16 6 -16 6 -6 16 -6 -16 -16 -6 16 -6 Z" fill="#ffffff" fill-opacity="0.92"/>'
+      +'</svg>';
+  }
+
+  // ---- alt 1: house-heart ----
+  function house(t1,t2,ink,gid){
+    return '<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-label="おうちハート">'
+      +'<defs><linearGradient id="ga'+gid+'" x1="0" y1="0" x2="1" y2="1">'
+      +'<stop offset="0" stop-color="'+t1+'"/><stop offset="1" stop-color="'+t2+'"/></linearGradient></defs>'
+      +'<rect width="512" height="512" rx="116" fill="url(#ga'+gid+')"/>'
+      +'<path d="M256 112 C244 112 233 116 224 124 L120 214 C112 221 108 231 108 242 L108 372 C108 392 124 408 144 408 L368 408 C388 408 404 392 404 372 L404 242 C404 231 400 221 392 214 L288 124 C279 116 268 112 256 112 Z" fill="#ffffff"/>'
+      +'<path d="M256 340 C214 308 190 288 190 258 C190 240 204 228 221 228 C235 228 247 236 256 250 C265 236 277 228 291 228 C308 228 322 240 322 258 C322 288 298 308 256 340 Z" fill="'+ink+'"/>'
+      +'</svg>';
+  }
+
+  // ---- alt 2: two mood-drops with heart ----
+  function drops(t1,t2,ink,gid){
+    return '<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-label="ふたごしずく">'
+      +'<defs><linearGradient id="gd'+gid+'" x1="0" y1="0" x2="1" y2="1">'
+      +'<stop offset="0" stop-color="'+t1+'"/><stop offset="1" stop-color="'+t2+'"/></linearGradient></defs>'
+      +'<rect width="512" height="512" rx="116" fill="url(#gd'+gid+')"/>'
+      +'<path d="M206 118 C246 168 278 206 278 252 C278 296 246 328 206 328 C166 328 134 296 134 252 C134 206 166 168 206 118 Z" fill="#ffffff" fill-opacity="0.92"/>'
+      +'<path d="M306 184 C346 234 378 272 378 318 C378 362 346 394 306 394 C266 394 234 362 234 318 C234 272 266 234 306 184 Z" fill="#ffffff" fill-opacity="0.82"/>'
+      +'<path d="M256 300 C232 282 218 271 218 254 C218 244 226 237 236 237 C244 237 251 242 256 250 C261 242 268 237 276 237 C286 237 294 244 294 254 C294 271 280 282 256 300 Z" fill="'+ink+'"/>'
+      +'</svg>';
+  }
+
+  var THEMES=[
+    {key:'sakura',emoji:'🌸',name:'さくら',t1:'#FFB4D2',t2:'#FF7EAF',ink:'#E85E97',blush:'rgba(255,110,168,.5)'},
+    {key:'ai',    emoji:'💙',name:'あい',  t1:'#7C89D8',t2:'#4B58A6',ink:'#3D4A9E',blush:'rgba(255,246,230,.55)'},
+    {key:'sora',  emoji:'💧',name:'そら',  t1:'#7FCBF2',t2:'#3F9FE4',ink:'#2A7CC0',blush:'rgba(255,255,255,.45)'},
+    {key:'mori',  emoji:'🌿',name:'もり',  t1:'#8FD6A8',t2:'#46B078',ink:'#2E9160',blush:'rgba(255,255,255,.45)'},
+    {key:'yoru',  emoji:'🌙',name:'よる',  t1:'#414574',t2:'#23264A',ink:'#3A3D66',blush:'rgba(150,160,220,.4)'}
+  ];
+  var S=THEMES[0];
+
+  document.getElementById('heroMark').innerHTML=primary(S.t1,S.t2,S.ink,S.blush,'hero');
+
+  var tg=document.getElementById('themes');
+  THEMES.forEach(function(t,i){
+    var d=document.createElement('div');d.className='swatch';
+    d.innerHTML=primary(t.t1,t.t2,t.ink,t.blush,'t'+i)+
+      '<div class="name">'+t.emoji+' '+t.name+'<small>'+t.key+'</small></div>';
+    tg.appendChild(d);
+  });
+
+  function sizeRow(el){
+    [180,120,80,60,40,32].forEach(function(px,i){
+      var s=document.createElement('div');s.className='size';
+      s.innerHTML=primary(S.t1,S.t2,S.ink,S.blush,el.id+i).replace('<svg ','<svg width="'+px+'" height="'+px+'" ')+
+        '<b>'+px+'px</b>';
+      el.appendChild(s);
+    });
+  }
+  sizeRow(document.getElementById('sizesLight'));
+  sizeRow(document.getElementById('sizesDark'));
+
+  document.getElementById('altHouse').innerHTML=house(S.t1,S.t2,S.ink,'ah');
+  document.getElementById('altDrops').innerHTML=drops(S.t1,S.t2,S.ink,'ad');
+
+  function svgString(){return primary(S.t1,S.t2,S.ink,S.blush,'dl').trim();}
+  function download(blob,name){
+    var u=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=u;a.download=name;document.body.appendChild(a);a.click();
+    a.remove();setTimeout(function(){URL.revokeObjectURL(u);},1000);
+  }
+  document.getElementById('dlSvg').onclick=function(){
+    download(new Blob([svgString()],{type:'image/svg+xml'}),'kurashi-relay-icon-relayheart.svg');
+  };
+  document.getElementById('dlPng').onclick=function(){
+    var size=1024,c=document.createElement('canvas');c.width=c.height=size;
+    var ctx=c.getContext('2d'),img=new Image();
+    var svg64='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgString());
+    img.onload=function(){ctx.drawImage(img,0,0,size,size);
+      c.toBlob(function(b){download(b,'kurashi-relay-icon-relayheart-1024.png');},'image/png');};
+    img.src=svg64;
+  };
+})();
+</script>
+</body>
+</html>

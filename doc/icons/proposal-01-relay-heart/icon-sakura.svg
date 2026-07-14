@@ -1,0 +1,24 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="くらしリレー（リレーハート案）">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFB4D2"/><stop offset="1" stop-color="#FF7EAF"/>
+    </linearGradient>
+    <radialGradient id="h" cx="0.32" cy="0.24" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#g)"/>
+  <rect width="512" height="512" rx="116" fill="url(#h)"/>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="11" stroke-linecap="round">
+    <ellipse cx="256" cy="252" rx="190" ry="116" transform="rotate(-18 256 252)"/>
+  </g>
+  <circle cx="400" cy="150" r="15" fill="#ffffff"/>
+  <circle cx="112" cy="356" r="10" fill="#ffffff" fill-opacity="0.85"/>
+  <path d="M256 428 C150 348 72 282 72 198 C72 134 120 100 174 100 C214 100 245 122 256 152 C267 122 298 100 338 100 C392 100 440 134 440 198 C440 282 362 348 256 428 Z" fill="#ffffff"/>
+  <g fill="rgba(255,110,168,.5)"><circle cx="188" cy="276" r="17"/><circle cx="324" cy="276" r="17"/></g>
+  <g fill="#E85E97"><ellipse cx="214" cy="240" rx="15" ry="19"/><ellipse cx="298" cy="240" rx="15" ry="19"/></g>
+  <circle cx="219" cy="234" r="4.5" fill="#ffffff"/><circle cx="303" cy="234" r="4.5" fill="#ffffff"/>
+  <path d="M224 274 Q256 306 288 274" fill="none" stroke="#E85E97" stroke-width="10" stroke-linecap="round"/>
+  <path d="M118 150 l6 16 16 6 -16 6 -6 16 -6 -16 -16 -6 16 -6 Z" fill="#ffffff" fill-opacity="0.92"/>
+</svg>
