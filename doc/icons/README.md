@@ -1,51 +1,50 @@
 # くらしリレー アプリアイコン
 
-くらしリレーのアプリアイコン提案をまとめたフォルダです。ギャラリーHTML（各テーマ・サイズ確認・ダウンロード付き）と、書き出し済みのSVGを収めています。
+くらしリレーのアプリアイコン提案と成果物をまとめたフォルダです。各 `gallery.html` はブラウザで開くと全体像（ヒーロー・5テーマ・サイズ確認）を確認でき、単体の `icon-*.svg` はそのままアイコン素材として使えます。
 
-## 採用マーク：ふたごしずく（proposal-02）
+## ★ 採用：おやこしずく（きらきら） — `final-oyako-shizuku/`
 
-- **ふたつのきぶんしずく** ＝ ふたりの毎日（気分・体調が重なり合う）
-- **うしろの輪（たすきループ）** ＝ リレー（受け渡し・つながり）
-- **まん中のハート** ＝ くらし・ケア
-- 既定テーマは **さくら**。顔マークは入れない方針（第1案の笑顔は不採用）。
+**最終採用デザイン。** ふたつの「きぶんしずく」を立体的（つや・陰影）に、大小で並べて親子（大＝ママ／小＝あきちゃん、あきちゃんはママの80%サイズ）を表現。うしろの輪＝リレー（受け渡し）を真珠でそっと縁取り、8方向にひかる大きめのきらきらを主役に効かせています。顔・中央ハートは無し。
+
+- 意味：**しずく2つ＝おやこの毎日／うしろの輪＝リレー／きらきら＝毎日のきらめき**
+- ファイル：`gallery.html` ＋ `icon-sakura.svg`（既定）`icon-ai.svg` `icon-sora.svg` `icon-mori.svg` `icon-yoru.svg`
 
 ## きぶんカラー（5テーマ）
 
-| キー | 名前 | tile1 | tile2 | ink（差し色） |
-|------|------|-------|-------|--------------|
-| sakura | さくら🌸 | `#FFB4D2` | `#FF7EAF` | `#E85E97` |
-| ai     | あい💙   | `#7C89D8` | `#4B58A6` | `#3D4A9E` |
-| sora   | そら💧   | `#7FCBF2` | `#3F9FE4` | `#2A7CC0` |
-| mori   | もり🌿   | `#8FD6A8` | `#46B078` | `#2E9160` |
-| yoru   | よる🌙   | `#414574` | `#23264A` | `#3A3D66` |
-
-SVG内のこの3色（tile1=`#FFB4D2` / tile2=`#FF7EAF` / ink=`#E85E97`）を置換するだけでテーマを切り替えられます。`#ffffff` とパスの座標は共通です。
+| キー | 名前 | tile1 | tile2 | しずく陰影(tint) |
+|------|------|-------|-------|------------------|
+| sakura | さくら🌸 | `#FFB4D2` | `#FF7EAF` | `#FFC9DE` |
+| ai     | あい💙   | `#7C89D8` | `#4B58A6` | `#C7CEEC` |
+| sora   | そら💧   | `#7FCBF2` | `#3F9FE4` | `#C7E6FA` |
+| mori   | もり🌿   | `#8FD6A8` | `#46B078` | `#CDEBD9` |
+| yoru   | よる🌙   | `#414574` | `#23264A` | `#AAB0E4` |
 
 ## フォルダ構成
 
 ```
 doc/icons/
 ├── README.md
-├── proposal-01-relay-heart/        第1案（不採用・記録用）
-│   ├── gallery.html                提案ギャラリー（5テーマ/サイズ/DL）
-│   └── icon-sakura.svg             さくら（笑顔ハート）
-└── proposal-02-futago-shizuku/     第2案（採用）
-    ├── gallery.html                提案ギャラリー（5テーマ/サイズ/DL）
-    ├── icon-sakura.svg             さくら（採用・既定）
-    ├── icon-ai.svg                 あい
-    ├── icon-sora.svg               そら
-    ├── icon-mori.svg               もり
-    ├── icon-yoru.svg               よる
-    ├── icon-clean.svg              べつあん：ハートなし（すっきり）
-    └── icon-house.svg              べつあん：おうちハート
+├── final-oyako-shizuku/            ★採用（おやこしずく・きらきら）
+│   ├── gallery.html
+│   ├── icon-sakura.svg（既定）
+│   ├── icon-ai.svg / icon-sora.svg / icon-mori.svg / icon-yoru.svg
+├── proposal-02-futago-shizuku/     検討：ふたごしずく（均等サイズ）
+│   └── gallery.html ほか
+└── proposal-01-relay-heart/        検討：リレーハート（笑顔・不採用）
+    └── gallery.html ほか
 ```
+
+## 経緯（採用までの流れ）
+
+1. **proposal-01 リレーハート**（笑顔つきハート）→ 顔マークが不採用
+2. **proposal-02 ふたごしずく**（均等サイズの2しずく＋中央ハート）→ 方向は好評
+3. **final-oyako-shizuku**（採用）→ しずくを大小（おやこ）＆立体に、中央ハートをやめて、リレーの輪を真珠で縁取り＋きらきらを主役に
 
 ## 使い方
 
-- `gallery.html` をブラウザで開くと全体像を確認でき、SVG / PNG(1024px) をその場でダウンロードできます。
-- 単体の `icon-*.svg` はそのままアプリのアイコン素材として利用できます（viewBox 512×512、角丸タイル込み）。
-- PNGやfavicon等が必要な場合は各SVGから書き出してください。
+- ブラウザで `final-oyako-shizuku/gallery.html` を開くと、5テーマとサイズ感を確認できます。
+- 単体 `icon-*.svg`（viewBox 512×512、角丸タイル込み）をアプリ／favicon／ストア用に、必要な解像度でPNG書き出しして利用してください。
 
 ## 出典
 
-- デザイン提案のArtifact（採用版）: https://claude.ai/code/artifact/31814867-fea4-4e24-bc8f-873d35614ad7
+- 採用版デザインのArtifact: https://claude.ai/code/artifact/70498bc2-e912-4686-8edc-f368be5f4cef
