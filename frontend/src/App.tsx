@@ -3,6 +3,9 @@ import { AppShell } from "./components/layout/AppShell";
 import { ChildPlanPage } from "./pages/ChildPlanPage";
 import { HomePage } from "./pages/HomePage";
 import { LastWarPage } from "./pages/LastWarPage";
+import { MamaKajiLayout } from "./pages/MamaKajiLayout";
+import { MamaKajiPage } from "./pages/MamaKajiPage";
+import { MamaKajiZukanPage } from "./pages/MamaKajiZukanPage";
 import { OshigotoPage } from "./pages/OshigotoPage";
 import { OshigotoUsjPage } from "./pages/OshigotoUsjPage";
 import { OshigotoZukanPage } from "./pages/OshigotoZukanPage";
@@ -21,6 +24,10 @@ export default function App() {
         />
         <Route path="schedule" element={<PlaceholderPage page="schedule" />} />
         <Route path="records" element={<PlaceholderPage page="records" />} />
+        <Route path="mama-kaji" element={<MamaKajiLayout />}>
+          <Route index element={<MamaKajiPage />} />
+          <Route path="zukan" element={<MamaKajiZukanPage />} />
+        </Route>
         <Route path="child-plan" element={<ChildPlanPage />} />
         <Route path="oshigoto" element={<OshigotoPage />} />
         <Route path="oshigoto/zukan" element={<OshigotoZukanPage />} />
