@@ -1,0 +1,96 @@
+.oshigoto-page {
+  --osh-page1: #e7e1f4;
+  --osh-page2: #f6f4fc;
+  --osh-ink: #443a63;
+  --osh-ink-soft: #867aa6;
+  --osh-ink-faint: #b3a8cc;
+  --osh-card: #ffffff;
+  --osh-card2: #f5f2fc;
+  --osh-line: #e6dff4;
+  --osh-line2: #d6ccec;
+  --osh-violet: #7c66c0;
+  --osh-violet-deep: #54408e;
+  --osh-violet-soft: #ece6fa;
+  --osh-rose: #c77fbe;
+  --osh-rose-soft: #f4e6f3;
+  --osh-peri: #dee4f7;
+  --osh-mint: #deede9;
+  --osh-lav: #e9e2f6;
+  --osh-moon-lit: #f0e7ff;
+  --osh-moon-dark: #b7a4de;
+  --osh-pump: #e39a3c;
+  --osh-pump-soft: #f7e7cf;
+  --osh-pump-ink: #8a5e22;
+  --osh-shadow: 0 16px 40px rgba(84, 64, 142, 0.15);
+  --osh-shadow-sm: 0 6px 18px rgba(84, 64, 142, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .oshigoto-page {
+    --osh-page1: #171124;
+    --osh-page2: #211934;
+    --osh-ink: #eee8fa;
+    --osh-ink-soft: #b3a6d4;
+    --osh-ink-faint: #7c6f98;
+    --osh-card: #271d3d;
+    --osh-card2: #2f2547;
+    --osh-line: #3b3056;
+    --osh-line2: #4e4270;
+    --osh-violet: #b7a2ee;
+    --osh-violet-deep: #d6c9fb;
+    --osh-violet-soft: #31264b;
+    --osh-rose: #da98ce;
+    --osh-rose-soft: #3a2942;
+    --osh-peri: #28324e;
+    --osh-mint: #26382f;
+    --osh-lav: #312747;
+    --osh-moon-lit: #dbccff;
+    --osh-moon-dark: #544784;
+    --osh-pump: #e8ae5a;
+    --osh-pump-soft: #3a2e1c;
+    --osh-pump-ink: #e8ae5a;
+    --osh-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+    --osh-shadow-sm: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@keyframes osh-floatup {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes osh-twinkle {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.osh-plus-one {
+  animation: osh-floatup 2.4s ease-in-out forwards;
+}
+
+.osh-twinkle {
+  animation: osh-twinkle 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osh-plus-one,
+  .osh-twinkle {
+    animation: none;
+  }
+}
