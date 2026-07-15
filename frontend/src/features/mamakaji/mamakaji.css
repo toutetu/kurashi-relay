@@ -151,7 +151,34 @@
   .mkj-plus-one,
   .mkj-twinkle,
   .mkj-lid-anim,
-  .mkj-candy-fall-anim {
+  .mkj-candy-fall-anim,
+  .mkj-cheer-pop-in,
+  .mkj-cheer-fade-out {
     animation: none;
   }
+}
+
+@keyframes mkj-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.mkj-cheer-pop-in {
+  animation: mkj-pop-in 200ms ease forwards;
+}
+
+@keyframes mkj-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.mkj-cheer-fade-out {
+  animation: mkj-fade-out 150ms ease forwards;
 }

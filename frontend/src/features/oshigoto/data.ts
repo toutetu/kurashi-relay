@@ -2,6 +2,7 @@ export type Task = {
   id: string;
   emoji: string;
   label: string;
+  praise: string;
   done: boolean;
   tone: "lav" | "peri" | "mint";
 };
@@ -14,11 +15,46 @@ export type Zombie = {
 };
 
 export const INITIAL_TASKS: Task[] = [
-  { id: "kigae", emoji: "👚", label: "自分で着替えた", done: true, tone: "lav" },
-  { id: "fuku", emoji: "👕", label: "脱いだ服をかごに入れた", done: false, tone: "peri" },
-  { id: "shokki", emoji: "🥛", label: "食器を流しに運んだ", done: false, tone: "mint" },
-  { id: "kaban", emoji: "🎒", label: "カバンを棚に置いた", done: false, tone: "lav" },
-  { id: "suito", emoji: "🧴", label: "水筒を流しに出した", done: false, tone: "peri" },
+  {
+    id: "kigae",
+    emoji: "👚",
+    label: "自分で着替えた",
+    praise: "自分で着替えられたね！",
+    done: true,
+    tone: "lav",
+  },
+  {
+    id: "fuku",
+    emoji: "👕",
+    label: "脱いだ服をかごに入れた",
+    praise: "お洗濯の準備、ばっちり！",
+    done: false,
+    tone: "peri",
+  },
+  {
+    id: "shokki",
+    emoji: "🥛",
+    label: "食器を流しに運んだ",
+    praise: "食器を運べたね！",
+    done: false,
+    tone: "mint",
+  },
+  {
+    id: "kaban",
+    emoji: "🎒",
+    label: "カバンを棚に置いた",
+    praise: "カバン、ちゃんと定位置！",
+    done: false,
+    tone: "lav",
+  },
+  {
+    id: "suito",
+    emoji: "🧴",
+    label: "水筒を流しに出した",
+    praise: "水筒、出せたね！",
+    done: false,
+    tone: "peri",
+  },
 ];
 
 export const CHALLENGE = { emoji: "🕯️", label: "明日の支度をする" };

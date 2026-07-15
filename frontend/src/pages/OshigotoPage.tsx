@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChallengeCard } from "../features/oshigoto/components/ChallengeCard";
+import { CheerOverlay } from "../features/oshigoto/components/CheerOverlay";
 import { OshigotoPageShell } from "../features/oshigoto/components/OshigotoPageShell";
 import { OshigotoTabs } from "../features/oshigoto/components/OshigotoTabs";
 import { ProgressHero } from "../features/oshigoto/components/ProgressHero";
@@ -69,9 +70,13 @@ export function OshigotoPage() {
     () => INITIAL_JAR + countCompletedTasks(INITIAL_TASKS),
   );
   const [revealed, setRevealed] = useState<Zombie | null>(null);
+  const [cheer, setCheer] = useState<{ taskId: string } | null>(null);
   const [collectedZombies, setCollectedZombies] = useState<Zombie[]>([]);
   const [plusOneTaskId, setPlusOneTaskId] = useState<string | null>(null);
+  const [dropTick, setDropTick] = useState(0);
   const plusOneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countRef = useRef(0);
 
   const handleToggleTask = (id: string) => {
     const task = tasks.find((item) => item.id === id);
@@ -87,13 +92,23 @@ export function OshigotoPage() {
 
     setCount((current) => {
       const nextCount = nextDone ? current + 1 : Math.max(0, current - 1);
+      countRef.current = nextCount;
       if (nextDone && nextCount >= STAMP_SIZE) {
-        setRevealed(pickRandomZombie());
+        if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+        revealTimerRef.current = setTimeout(() => {
+          revealTimerRef.current = null;
+          if (countRef.current >= STAMP_SIZE) {
+            setCheer(null);
+            setRevealed(pickRandomZombie());
+          }
+        }, 800);
       }
       return nextCount;
     });
 
     if (nextDone) {
+      setCheer({ taskId: id });
+      setDropTick((tick) => tick + 1);
       if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
       setPlusOneTaskId(id);
       plusOneTimerRef.current = setTimeout(() => {
@@ -116,6 +131,7 @@ export function OshigotoPage() {
   useEffect(() => {
     return () => {
       if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     };
   }, []);
 
@@ -180,6 +196,20 @@ export function OshigotoPage() {
           </p>
         )}
     </OshigotoPageShell>
+
+      {cheer && (() => {
+        const cheerTask = tasks.find((item) => item.id === cheer.taskId);
+        if (!cheerTask) return null;
+        return (
+          <CheerOverlay
+            key={`${cheer.taskId}-${dropTick}`}
+            task={cheerTask}
+            count={count}
+            onUndo={() => handleToggleTask(cheer.taskId)}
+            onClose={() => setCheer(null)}
+          />
+        );
+      })()}
 
       {revealed && (
         <ZombieRevealModal

@@ -2,16 +2,52 @@ export type KajiTask = {
   id: string;
   emoji: string;
   label: string;
+  praise: string;
   done: boolean;
   tone: "rasp" | "cara" | "sage" | "plum";
 };
 
 export const INITIAL_KAJI: KajiTask[] = [
-  { id: "shokki", emoji: "🍽️", label: "食器を洗った", done: true, tone: "rasp" },
-  { id: "sentaku", emoji: "🧺", label: "洗濯を回して干した", done: false, tone: "sage" },
-  { id: "nanashi", emoji: "✨", label: "名もなき家事をやった", done: false, tone: "plum" },
-  { id: "soji", emoji: "🧹", label: "床に掃除機をかけた", done: false, tone: "cara" },
-  { id: "yuhan", emoji: "🍳", label: "夕飯を作った", done: false, tone: "rasp" },
+  {
+    id: "shokki",
+    emoji: "🍽️",
+    label: "食器を洗った",
+    praise: "食器、ぴかぴかになった！",
+    done: true,
+    tone: "rasp",
+  },
+  {
+    id: "sentaku",
+    emoji: "🧺",
+    label: "洗濯を回して干した",
+    praise: "洗濯物、おひさまの香り！",
+    done: false,
+    tone: "sage",
+  },
+  {
+    id: "nanashi",
+    emoji: "✨",
+    label: "名もなき家事をやった",
+    praise: "名もなき家事も、ちゃんと1個！",
+    done: false,
+    tone: "plum",
+  },
+  {
+    id: "soji",
+    emoji: "🧹",
+    label: "床に掃除機をかけた",
+    praise: "床、きれいになった！",
+    done: false,
+    tone: "cara",
+  },
+  {
+    id: "yuhan",
+    emoji: "🍳",
+    label: "夕飯を作った",
+    praise: "今日のごはんも、ありがとう！",
+    done: false,
+    tone: "rasp",
+  },
 ];
 
 export const KAJI_CHALLENGE = { emoji: "🫧", label: "換気扇をさっと拭く" };

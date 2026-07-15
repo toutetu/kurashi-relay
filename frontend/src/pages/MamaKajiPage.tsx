@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { KajiChallengeCard } from "../features/mamakaji/components/KajiChallengeCard";
+import { KajiCheerOverlay } from "../features/mamakaji/components/KajiCheerOverlay";
 import { KajiProgressHero } from "../features/mamakaji/components/KajiProgressHero";
 import { KajiTaskRow } from "../features/mamakaji/components/KajiTaskRow";
 import { MamaKajiPageShell } from "../features/mamakaji/components/MamaKajiPageShell";
@@ -72,6 +73,7 @@ export function MamaKajiPage() {
     () => INITIAL_JAR + countCompletedKaji(INITIAL_KAJI),
   );
   const [revealed, setRevealed] = useState<Sweet | null>(null);
+  const [cheer, setCheer] = useState<{ taskId: string } | null>(null);
   const [plusOneTaskId, setPlusOneTaskId] = useState<string | null>(null);
   const [dropTick, setDropTick] = useState(0);
   const plusOneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,6 +101,7 @@ export function MamaKajiPage() {
         revealTimerRef.current = setTimeout(() => {
           revealTimerRef.current = null;
           if (countRef.current >= STAMP_SIZE) {
+            setCheer(null);
             setRevealed(pickRandomSweet());
           }
         }, 800);
@@ -107,6 +110,7 @@ export function MamaKajiPage() {
     });
 
     if (nextDone) {
+      setCheer({ taskId: id });
       setDropTick((tick) => tick + 1);
       if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
       setPlusOneTaskId(id);
@@ -156,7 +160,7 @@ export function MamaKajiPage() {
 
         <MamaKajiTabs />
 
-        <KajiProgressHero count={count} dropTick={dropTick} />
+        <KajiProgressHero count={count} />
 
         <PointsChip />
 
@@ -190,6 +194,21 @@ export function MamaKajiPage() {
           </span>
         </p>
       </MamaKajiPageShell>
+
+      {cheer && (() => {
+        const cheerTask = tasks.find((item) => item.id === cheer.taskId);
+        if (!cheerTask) return null;
+        return (
+          <KajiCheerOverlay
+            key={`${cheer.taskId}-${dropTick}`}
+            task={cheerTask}
+            count={count}
+            dropTick={dropTick}
+            onUndo={() => handleToggleTask(cheer.taskId)}
+            onClose={() => setCheer(null)}
+          />
+        );
+      })()}
 
       {revealed && (
         <SweetRevealModal

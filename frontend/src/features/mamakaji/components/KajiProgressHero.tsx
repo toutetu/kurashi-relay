@@ -3,15 +3,14 @@ import { JarGauge } from "./JarGauge";
 
 type KajiProgressHeroProps = {
   count: number;
-  dropTick?: number;
 };
 
-export function KajiProgressHero({ count, dropTick }: KajiProgressHeroProps) {
+export function KajiProgressHero({ count }: KajiProgressHeroProps) {
   const remaining = Math.max(0, STAMP_SIZE - count);
 
   return (
     <div className="flex items-center gap-2.5 rounded-[22px] border border-[var(--mkj-line)] bg-[var(--mkj-card2)] px-4 py-3.5">
-      <JarGauge count={count} dropTick={dropTick} />
+      <JarGauge count={count} />
       <div className="min-w-0 flex-1">
         <p className="text-xs text-[var(--mkj-ink-soft)]">世界のおやつまで</p>
         <p className="text-[33px] font-extrabold leading-tight text-[var(--mkj-rasp)]">

@@ -90,7 +90,34 @@
 
 @media (prefers-reduced-motion: reduce) {
   .osh-plus-one,
-  .osh-twinkle {
+  .osh-twinkle,
+  .osh-cheer-pop-in,
+  .osh-cheer-fade-out {
     animation: none;
   }
+}
+
+@keyframes osh-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.osh-cheer-pop-in {
+  animation: osh-pop-in 200ms ease forwards;
+}
+
+@keyframes osh-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.osh-cheer-fade-out {
+  animation: osh-fade-out 150ms ease forwards;
 }
