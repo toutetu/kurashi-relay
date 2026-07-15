@@ -73,7 +73,10 @@ export function MamaKajiPage() {
   );
   const [revealed, setRevealed] = useState<Sweet | null>(null);
   const [plusOneTaskId, setPlusOneTaskId] = useState<string | null>(null);
+  const [dropTick, setDropTick] = useState(0);
   const plusOneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countRef = useRef(0);
 
   const handleToggleTask = (id: string) => {
     const task = tasks.find((item) => item.id === id);
@@ -89,13 +92,22 @@ export function MamaKajiPage() {
 
     setCount((current) => {
       const nextCount = nextDone ? current + 1 : Math.max(0, current - 1);
+      countRef.current = nextCount;
       if (nextDone && nextCount >= STAMP_SIZE) {
-        setRevealed(pickRandomSweet());
+        // キャンディが着地するのを見せてから、おやつ登場
+        if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+        revealTimerRef.current = setTimeout(() => {
+          revealTimerRef.current = null;
+          if (countRef.current >= STAMP_SIZE) {
+            setRevealed(pickRandomSweet());
+          }
+        }, 800);
       }
       return nextCount;
     });
 
     if (nextDone) {
+      setDropTick((tick) => tick + 1);
       if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
       setPlusOneTaskId(id);
       plusOneTimerRef.current = setTimeout(() => {
@@ -118,6 +130,7 @@ export function MamaKajiPage() {
   useEffect(() => {
     return () => {
       if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     };
   }, []);
 
@@ -143,7 +156,7 @@ export function MamaKajiPage() {
 
         <MamaKajiTabs />
 
-        <KajiProgressHero count={count} />
+        <KajiProgressHero count={count} dropTick={dropTick} />
 
         <PointsChip />
 

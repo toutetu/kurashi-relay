@@ -106,9 +106,52 @@
   animation: mkj-twinkle 2s ease-in-out infinite;
 }
 
+@keyframes mkj-lid-tilt {
+  0% {
+    transform: rotate(0deg);
+  }
+  22% {
+    transform: rotate(-26deg);
+  }
+  62% {
+    transform: rotate(-26deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.mkj-lid-anim {
+  animation: mkj-lid-tilt 1s ease;
+  transform-origin: 25px 38px;
+  transform-box: view-box;
+}
+
+@keyframes mkj-candy-fall {
+  0% {
+    transform: translateY(var(--mkj-fall-from, -70px));
+  }
+  62% {
+    transform: translateY(0);
+  }
+  78% {
+    transform: translateY(-7px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.mkj-candy-fall-anim {
+  animation: mkj-candy-fall 0.85s cubic-bezier(0.34, 0.06, 0.66, 1) 0.16s
+    backwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mkj-plus-one,
-  .mkj-twinkle {
+  .mkj-twinkle,
+  .mkj-lid-anim,
+  .mkj-candy-fall-anim {
     animation: none;
   }
 }
