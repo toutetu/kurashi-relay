@@ -1,0 +1,557 @@
+<title>くらしのおしごと 体験設計 — よるのハロウィン・ラリー（娘バージョン）</title>
+<style>
+  :root{
+    --page1:#E7E1F4; --page2:#F6F4FC;
+    --ink:#443A63; --ink-soft:#867AA6; --ink-faint:#B3A8CC;
+    --card:#FFFFFF; --card2:#F5F2FC;
+    --line:#E6DFF4; --line2:#D6CCEC;
+    --violet:#7C66C0; --violet-deep:#54408E; --violet-soft:#ECE6FA;
+    --rose:#C77FBE; --rose-soft:#F4E6F3;
+    --peri:#DEE4F7; --mint:#DEEDE9; --lav:#E9E2F6;
+    --moon-lit:#F0E7FF; --moon-dark:#B7A4DE;
+    --pump:#E39A3C; --pump-soft:#F7E7CF; --pump-ink:#8A5A12;
+    --shadow:0 16px 40px rgba(84,64,142,.15);
+    --shadow-sm:0 6px 18px rgba(84,64,142,.10);
+    --font:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","M PLUS Rounded 1c","Yu Gothic","YuGothic","Meiryo",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --page1:#171124; --page2:#211934;
+      --ink:#EEE8FA; --ink-soft:#B3A6D4; --ink-faint:#7C6F98;
+      --card:#271D3D; --card2:#2F2547;
+      --line:#3B3056; --line2:#4E4270;
+      --violet:#B7A2EE; --violet-deep:#D6C9FB; --violet-soft:#31264B;
+      --rose:#DA98CE; --rose-soft:#3A2942;
+      --peri:#28324E; --mint:#26382F; --lav:#312747;
+      --moon-lit:#DBCCFF; --moon-dark:#544784;
+      --pump:#E8AE5A; --pump-soft:#3A2E1C; --pump-ink:#E8AE5A;
+      --shadow:0 18px 44px rgba(0,0,0,.5); --shadow-sm:0 6px 20px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --page1:#171124; --page2:#211934;
+    --ink:#EEE8FA; --ink-soft:#B3A6D4; --ink-faint:#7C6F98;
+    --card:#271D3D; --card2:#2F2547;
+    --line:#3B3056; --line2:#4E4270;
+    --violet:#B7A2EE; --violet-deep:#D6C9FB; --violet-soft:#31264B;
+    --rose:#DA98CE; --rose-soft:#3A2942;
+    --peri:#28324E; --mint:#26382F; --lav:#312747;
+    --moon-lit:#DBCCFF; --moon-dark:#544784;
+    --pump:#E8AE5A; --pump-soft:#3A2E1C; --pump-ink:#E8AE5A;
+    --shadow:0 18px 44px rgba(0,0,0,.5); --shadow-sm:0 6px 20px rgba(0,0,0,.4);
+  }
+  :root[data-theme="light"]{
+    --page1:#E7E1F4; --page2:#F6F4FC;
+    --ink:#443A63; --ink-soft:#867AA6; --ink-faint:#B3A8CC;
+    --card:#FFFFFF; --card2:#F5F2FC;
+    --line:#E6DFF4; --line2:#D6CCEC;
+    --violet:#7C66C0; --violet-deep:#54408E; --violet-soft:#ECE6FA;
+    --rose:#C77FBE; --rose-soft:#F4E6F3;
+    --peri:#DEE4F7; --mint:#DEEDE9; --lav:#E9E2F6;
+    --moon-lit:#F0E7FF; --moon-dark:#B7A4DE;
+    --pump:#E39A3C; --pump-soft:#F7E7CF; --pump-ink:#8A5A12;
+    --shadow:0 16px 40px rgba(84,64,142,.15); --shadow-sm:0 6px 18px rgba(84,64,142,.10);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0}
+  .page{
+    font-family:var(--font); color:var(--ink); line-height:1.7;
+    background:
+      radial-gradient(760px 360px at 82% -4%, var(--violet-soft), transparent 62%),
+      radial-gradient(680px 340px at 12% 4%, #fff4, transparent 60%),
+      linear-gradient(180deg, var(--page1), var(--page2) 42%);
+    padding:52px 20px 76px;
+  }
+  .wrap{max-width:1120px; margin:0 auto}
+
+  .eyebrow{display:flex; align-items:center; gap:10px; justify-content:center; font-size:12.5px; letter-spacing:.16em; color:var(--violet); font-weight:800; margin:0 0 16px; text-align:center}
+  .eyebrow::before,.eyebrow::after{content:""; width:30px; height:1px; background:var(--line2)}
+  h1{font-size:clamp(28px,5vw,50px); margin:0 auto 4px; max-width:18ch; text-align:center; font-weight:800; letter-spacing:.02em; color:var(--ink); text-wrap:balance; line-height:1.28}
+  h1 .g{color:var(--violet)}
+  .sub-h{text-align:center; font-size:13px; color:var(--ink-soft); letter-spacing:.2em; margin:2px 0 20px}
+  .lede{max-width:62ch; margin:0 auto; text-align:center; font-size:clamp(15px,2vw,18px); color:var(--ink-soft)}
+  .lede b{color:var(--violet-deep); font-weight:800}
+
+  .rib{display:flex; align-items:center; justify-content:center; gap:12px; margin:30px auto}
+  .rib .ln{height:1px; width:min(120px,22vw); background:linear-gradient(90deg,transparent,var(--line2))}
+  .rib .ln.r{background:linear-gradient(90deg,var(--line2),transparent)}
+
+  .pills{display:flex; flex-wrap:wrap; gap:14px; margin:8px 0 0; justify-content:center}
+  .pill{display:flex; align-items:center; gap:13px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 18px; box-shadow:var(--shadow-sm); flex:1 1 230px; min-width:210px; max-width:320px}
+  .pill .e{width:42px; height:42px; border-radius:13px; display:grid; place-items:center; font-size:22px; flex:none}
+  .pill b{display:block; font-size:15px; font-weight:800; color:var(--ink)}
+  .pill span{display:block; font-size:12.5px; color:var(--ink-soft)}
+  .e-fun{background:var(--rose-soft)} .e-push{background:var(--violet-soft)} .e-soft{background:var(--peri)}
+
+  .band{margin:64px 0 24px; text-align:center}
+  .band .k{font-size:12.5px; letter-spacing:.16em; color:var(--rose); font-weight:800; margin:0 0 7px}
+  .band h2{font-size:clamp(22px,3.2vw,30px); margin:0; font-weight:800; color:var(--ink); letter-spacing:.02em}
+
+  .board{display:grid; gap:30px; grid-template-columns:repeat(auto-fit,minmax(322px,1fr)); align-items:start}
+  .scene{display:flex; flex-direction:column; align-items:center; gap:18px}
+  .step{align-self:flex-start; display:inline-flex; align-items:center; gap:11px; font-size:14px; color:var(--ink-soft); font-weight:800}
+  .step i{width:27px; height:27px; border-radius:50%; background:var(--violet); color:#fff; display:grid; place-items:center; font-size:13px; font-style:normal}
+
+  .phone{width:100%; max-width:336px; background:var(--card); border:1px solid var(--line2); border-radius:40px; padding:10px; box-shadow:var(--shadow)}
+  .screen{background:linear-gradient(180deg,var(--page1),var(--card) 26%); border-radius:31px; padding:16px 16px 20px; overflow:hidden; position:relative}
+
+  .greet{display:flex; align-items:center; gap:10px; margin:6px 0 16px}
+  .greet .hi{font-size:16px; font-weight:800; color:var(--ink)}
+  .greet .hi small{display:block; font-size:12px; font-weight:500; color:var(--ink-soft)}
+  .chip{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:800; color:var(--violet-deep); background:var(--violet-soft); border:1px solid var(--line2); padding:5px 11px; border-radius:999px}
+  .greet .chip{margin-left:auto}
+  .scr-top{display:flex; align-items:center; gap:8px; margin-bottom:14px}
+  .scr-top .tt{font-size:15px; font-weight:800; color:var(--ink)}
+  .scr-top .chip{margin-left:auto}
+
+  .hero{display:flex; align-items:center; gap:10px; background:var(--card2); border:1px solid var(--line); border-radius:22px; padding:14px 16px; margin-bottom:18px}
+  .hero .info{flex:1}
+  .hero .info .lab{font-size:12px; color:var(--ink-soft)}
+  .hero .info .big{font-size:33px; font-weight:800; color:var(--violet); line-height:1.05}
+  .hero .info .big small{font-size:14px; color:var(--ink-faint); font-weight:700; margin-left:2px}
+  .hero .info .cnt{font-size:12px; color:var(--ink-faint); font-weight:700}
+  .hero .info .tease{margin-top:7px; font-size:11.5px; color:var(--rose); font-weight:800}
+
+  .sec{display:flex; align-items:center; gap:9px; margin:0 2px 11px}
+  .sec .t{font-size:13px; font-weight:800; color:var(--ink); white-space:nowrap; letter-spacing:.02em}
+  .sec .rule{flex:1; height:1px; background:var(--line2)}
+
+  .task{display:flex; align-items:center; gap:12px; padding:10px 6px; border-bottom:1px solid var(--line)}
+  .task:last-of-type{border-bottom:0}
+  .task .tl{width:38px; height:38px; border-radius:12px; display:grid; place-items:center; font-size:19px; flex:none}
+  .task .nm{font-size:13.5px; color:var(--ink); font-weight:700; line-height:1.3}
+  .task .ck{margin-left:auto; width:27px; height:27px; border-radius:50%; flex:none; border:2px solid var(--line2); display:grid; place-items:center; color:transparent; font-size:13px; font-weight:900; background:var(--card)}
+  .task.done .nm{color:var(--violet-deep)}
+  .task.done .ck{background:var(--rose); border-color:var(--rose); color:#fff}
+  .task.done .tl{outline:2px solid var(--rose-soft)}
+  .tl-lav{background:var(--lav)} .tl-peri{background:var(--peri)} .tl-mint{background:var(--mint)} .tl-rose{background:var(--rose-soft)}
+
+  .chal{display:flex; align-items:center; gap:11px; border:1.5px dashed var(--line2); border-radius:16px; padding:11px 13px; margin-top:14px}
+  .chal .tl{width:36px; height:36px; border-radius:11px; display:grid; place-items:center; font-size:17px; background:var(--rose-soft); flex:none}
+  .chal b{font-size:11px; color:var(--rose); font-weight:800; display:block; letter-spacing:.03em}
+  .chal span{font-size:13px; color:var(--ink); font-weight:700}
+  .chal .st{margin-left:auto; font-size:12px; color:var(--rose); font-weight:800; white-space:nowrap}
+  .streak{display:inline-flex; align-items:center; gap:6px; margin-top:13px; font-size:12px; font-weight:800; color:var(--violet-deep); background:var(--violet-soft); border:1px solid var(--line2); padding:6px 12px; border-radius:999px}
+
+  .reward{text-align:center; padding:6px 0}
+  .reward .bub{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:var(--violet-deep); background:var(--violet-soft); border:1px solid var(--line2); padding:6px 14px; border-radius:999px; margin-bottom:6px}
+  .moonwrap{position:relative; width:150px; margin:0 auto}
+  .plus{position:absolute; top:8px; right:12px; font-size:19px; font-weight:900; color:var(--rose); animation:floatup 2.4s ease-in-out infinite; z-index:2}
+  .sp{position:absolute; animation:tw 2s ease-in-out infinite; z-index:2}
+  .reward .big{font-size:21px; font-weight:800; color:var(--ink); margin:6px 0 1px}
+  .reward .sub{font-size:12.5px; color:var(--ink-soft)}
+  .reward .mini{font-size:24px; font-weight:800; color:var(--violet); margin-top:8px}
+  .reward .mini small{font-size:12px; color:var(--ink-faint); font-weight:700}
+  .undo{display:flex; align-items:center; gap:10px; margin-top:16px; padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:var(--card2)}
+  .undo .tl{width:32px; height:32px; border-radius:10px; background:var(--lav); display:grid; place-items:center; font-size:16px; flex:none}
+  .undo span{font-size:13px; color:var(--ink-soft); font-weight:700}
+
+  .gacha{text-align:center; padding:6px 0; position:relative}
+  .gacha .ttl{font-size:15px; font-weight:800; color:var(--ink)}
+  .gacha .ttl .n{color:var(--violet)}
+  .medal{position:relative; width:150px; height:150px; margin:14px auto 12px}
+  .medal .disc{position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 50% 40%, var(--moon-lit), var(--violet-soft)); border:2px solid var(--line2); display:grid; place-items:center; font-size:62px}
+  .medal .ring{position:absolute; inset:-7px; border-radius:50%; border:2px dashed var(--moon-dark); opacity:.55}
+  .gacha .name{font-size:18px; font-weight:800; color:var(--rose)}
+  .gacha .coin{display:inline-flex; align-items:center; gap:6px; margin-top:9px; font-size:12.5px; font-weight:800; color:var(--pump-ink); background:var(--pump-soft); border:1px solid var(--line2); padding:5px 14px; border-radius:999px}
+  .gacha .carry{font-size:12.5px; color:var(--ink-soft); margin-top:13px}
+  .gacha .carry b{color:var(--violet); font-weight:800}
+  .cf{position:absolute; animation:tw 2.2s ease-in-out infinite}
+  .cf1{top:2px;left:22px}.cf2{top:20px;right:24px;animation-delay:.5s}.cf3{bottom:64px;left:14px;animation-delay:.9s}.cf4{bottom:52px;right:18px;animation-delay:.3s}
+
+  /* zombie zukan */
+  .leg{font-size:11px; color:var(--ink-soft); margin-bottom:14px}
+  .zgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px 8px; margin-bottom:12px}
+  .zcell{display:flex; flex-direction:column; align-items:center; gap:5px}
+  .zcell .cap{font-size:9.5px; color:var(--ink-soft); font-weight:700; text-align:center; line-height:1.2}
+  .med{position:relative; width:100%; aspect-ratio:1; border-radius:16px; display:grid; place-items:center; font-size:26px; border:2px solid var(--line)}
+  .med.got{background:var(--lav); border-color:var(--lav)}
+  .med.rare{background:var(--rose-soft); border-color:var(--rose)}
+  .med.empty{background:transparent; border-style:dashed; color:var(--ink-faint); font-size:18px}
+  .med.add{background:var(--pump-soft); border:2px dashed var(--pump); color:var(--pump-ink)}
+  .med .tagr{position:absolute; top:-7px; right:-6px; font-size:9px; font-weight:800; color:#fff; background:var(--rose); border-radius:999px; padding:1px 6px}
+  .zfoot{display:flex; justify-content:space-between; align-items:center; margin:4px 0 10px; font-size:12px; color:var(--ink-soft); border-top:1px solid var(--line); padding-top:11px}
+  .zfoot b{font-size:16px; color:var(--violet); font-weight:800}
+  .lock{display:flex; align-items:center; gap:10px; background:var(--card2); border:1px dashed var(--line2); border-radius:14px; padding:11px 13px}
+  .lock .ic{font-size:22px; flex:none}
+  .lock b{font-size:12.5px; color:var(--ink); font-weight:800; display:block}
+  .lock span{font-size:11px; color:var(--ink-soft)}
+
+  /* ride checklist */
+  .rprog{display:flex; align-items:center; gap:10px; background:var(--card2); border:1px solid var(--line); border-radius:16px; padding:11px 14px; margin-bottom:14px}
+  .rprog .n{font-size:24px; font-weight:800; color:var(--violet); line-height:1}
+  .rprog .n small{font-size:11px; color:var(--ink-faint); font-weight:700}
+  .rprog .rr{margin-left:auto; font-size:11px; color:var(--rose); font-weight:800; text-align:right; line-height:1.3}
+  .rlist{display:flex; flex-direction:column}
+  .ritem{display:flex; align-items:center; gap:10px; padding:8px 3px; border-bottom:1px solid var(--line)}
+  .ritem:last-child{border-bottom:0}
+  .rc{width:22px; height:22px; border-radius:7px; flex:none; border:2px solid var(--line2); display:grid; place-items:center; font-size:11px; font-weight:900; color:transparent; background:var(--card)}
+  .ritem.done .rc{background:var(--violet); border-color:var(--violet); color:#fff}
+  .rtext{flex:1; min-width:0}
+  .rn{font-size:11.5px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .ritem.done .rn{color:var(--violet-deep)}
+  .rs{font-size:10px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+
+  /* okozukai goal */
+  .goal .top{display:flex; align-items:center; gap:8px; font-size:14px; font-weight:800; color:var(--ink); margin-bottom:12px}
+  .gitem{display:flex; align-items:center; gap:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; padding:13px; margin-bottom:12px}
+  .gitem .ph{width:52px; height:52px; border-radius:13px; background:var(--pump-soft); display:grid; place-items:center; font-size:26px; flex:none}
+  .gitem .nm{font-size:14px; font-weight:800; color:var(--ink)}
+  .gitem .pr{font-size:12px; color:var(--ink-soft); font-weight:700}
+  .bar{height:13px; background:var(--violet-soft); border-radius:99px; overflow:hidden; margin:8px 0 6px}
+  .bar > i{display:block; height:100%; background:var(--pump); border-radius:99px}
+  .goal .now{font-size:12px; color:var(--ink-soft); font-weight:700}
+  .goal .now b{color:var(--pump-ink); font-weight:800}
+  .goal .pick{font-size:11.5px; color:var(--ink-soft); font-weight:800; margin:14px 0 8px}
+  .opts{display:flex; gap:8px; flex-wrap:wrap}
+  .opt{flex:1 1 86px; min-width:86px; text-align:center; background:var(--card); border:1px solid var(--line2); border-radius:13px; padding:9px 6px; font-size:11px; font-weight:700; color:var(--ink)}
+  .opt .ic{font-size:20px; display:block; margin-bottom:2px}
+  .opt.sel{border-color:var(--pump); background:var(--pump-soft)}
+  .opt small{display:block; color:var(--ink-soft); font-weight:700}
+
+  .note{width:100%; max-width:362px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px 18px; box-shadow:var(--shadow-sm)}
+  .note .tag{display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em; padding:3px 12px; border-radius:999px; margin-bottom:10px}
+  .tag.fun{color:var(--rose); background:var(--rose-soft)}
+  .tag.push{color:var(--violet-deep); background:var(--violet-soft)}
+  .tag.real{color:var(--pump-ink); background:var(--pump-soft)}
+  .note h3{font-size:15px; margin:0 0 6px; font-weight:800; color:var(--ink)}
+  .note p{font-size:13.5px; color:var(--ink-soft); margin:0}
+  .note p + p{margin-top:8px}
+  .note b{color:var(--ink); font-weight:800}
+
+  .two{display:grid; gap:22px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .wide{background:var(--card); border:1px solid var(--line); border-radius:22px; padding:26px; box-shadow:var(--shadow-sm)}
+  .reflect .q{font-size:17px; font-weight:800; color:var(--ink); margin:16px 0 14px; display:flex; align-items:center; gap:9px}
+  .dl{list-style:none; padding:0; margin:0 0 16px}
+  .dl li{display:flex; align-items:center; gap:11px; font-size:14px; color:var(--ink); padding:9px 0; border-bottom:1px solid var(--line)}
+  .dl li .c{color:var(--rose); font-weight:900}
+  .choices{display:flex; flex-wrap:wrap; gap:9px}
+  .choice{font-size:13px; font-weight:700; color:var(--ink); background:var(--card2); border:1px solid var(--line2); border-radius:999px; padding:8px 15px}
+  .choice.pick{background:var(--rose-soft); color:var(--rose); border-color:var(--rose)}
+
+  .guard h3{font-size:16px; margin:0 0 16px; font-weight:800; color:var(--ink); display:flex; align-items:center; gap:9px}
+  .guard ul{list-style:none; margin:0; padding:0; display:grid; gap:13px}
+  .guard li{display:flex; gap:12px; font-size:13.5px; color:var(--ink-soft); align-items:flex-start}
+  .guard li .ic{flex:none; width:26px; height:26px; border-radius:9px; background:var(--rose-soft); color:var(--rose); display:grid; place-items:center; font-size:13px; font-weight:900; margin-top:1px}
+  .guard li b{color:var(--ink); font-weight:800}
+
+  .foot-note{margin-top:46px; font-size:12px; color:var(--ink-faint); text-align:center; letter-spacing:.03em; line-height:1.9}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none !important}}
+  @keyframes tw{0%,100%{opacity:.3; transform:scale(.8)}50%{opacity:1; transform:scale(1.15)}}
+  @keyframes floatup{0%,100%{transform:translateY(0); opacity:.85}50%{transform:translateY(-7px); opacity:1}}
+</style>
+
+<div class="page">
+<div class="wrap">
+
+  <!-- header -->
+  <div class="eyebrow">くらしリレイ ・ 娘さん（USJ・ハロウィン）バージョン</div>
+  <h1>できたよで、月を満たして<br><span class="g">ゾンビを集める</span></h1>
+  <div class="sub-h">よるの ハロウィン・ラリー ／ 体験設計</div>
+  <p class="lede">記録して<b>ゾンビを集め</b>、USJへ<b>行って達成チェック</b>、貯めたおこづかいで<b>ハロウィングッズを買う</b>。娘さんの毎日とUSJがつながる、紫ゴスロリ×ハロウィンの夜。責める仕組みは入れません。</p>
+
+  <div class="rib">
+    <span class="ln"></span>
+    <svg width="30" height="18" viewBox="0 0 40 24" aria-hidden="true"><path d="M20 12 6 4Q2 3 3 8L4 16Q3 21 8 20Z" fill="var(--rose)"/><path d="M20 12 34 4Q38 3 37 8L36 16Q37 21 32 20Z" fill="var(--rose)"/><circle cx="20" cy="12" r="4" fill="var(--violet)"/></svg>
+    <span class="ln r"></span>
+  </div>
+
+  <div class="pills">
+    <div class="pill"><span class="e e-fun">🧟</span><div><b>集める</b><span>満月ゲージ・ゾンビ図鑑</span></div></div>
+    <div class="pill"><span class="e e-push">🎢</span><div><b>行く</b><span>USJライドの達成チェック</span></div></div>
+    <div class="pill"><span class="e e-soft">🎃</span><div><b>買う</b><span>おこづかいでハロウィングッズ</span></div></div>
+  </div>
+
+  <!-- ============ STORYBOARD : daily loop ============ -->
+  <div class="band"><p class="k">まいにちの きろくループ</p><h2>ひらく → おす → 月が満ちる → ゾンビ登場</h2></div>
+
+  <div class="board">
+
+    <!-- Scene 1 -->
+    <div class="scene">
+      <div class="step"><i>1</i>夜、しずくちゃんが お出迎え</div>
+      <div class="phone"><div class="screen">
+        <div class="greet">
+          <svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><path d="M22 8s-9 10-9 16a9 9 0 0 0 18 0c0-6-9-16-9-16z" fill="var(--violet)"/><path d="M12 16s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11z" fill="var(--rose)"/><circle cx="19" cy="20" r="2.1" fill="#fff" opacity=".85"/></svg>
+          <div class="hi">おかえり、あきちゃん<small>今夜も 月が育つよ</small></div>
+          <span class="chip">🦇 よる</span>
+        </div>
+        <div class="hero">
+          <svg width="104" height="118" viewBox="0 0 130 150" aria-hidden="true">
+            <circle cx="65" cy="82" r="58" fill="var(--moon-lit)" opacity=".14"/>
+            <circle cx="65" cy="82" r="50" fill="var(--moon-dark)"/>
+            <g transform="rotate(35 65 82)"><path d="M65,32 A50,50 0 0 1 65,132 A29.4,50 0 0 0 65,32 Z" fill="var(--moon-lit)"/></g>
+            <circle cx="65" cy="82" r="50" fill="none" stroke="var(--line2)" stroke-width="2.5"/>
+          </svg>
+          <div class="info">
+            <div class="lab">つぎのゾンビまで</div>
+            <div class="big">あと7<small>個</small></div>
+            <div class="cnt">🌒 三日月 3 / 10個</div>
+            <div class="tease">🦇 満ちるほど ゾンビに近づく！</div>
+          </div>
+        </div>
+        <div class="sec">
+          <svg width="18" height="12" viewBox="0 0 40 24" aria-hidden="true"><path d="M20 12 6 4Q2 3 3 8L4 16Q3 21 8 20Z" fill="var(--rose)"/><path d="M20 12 34 4Q38 3 37 8L36 16Q37 21 32 20Z" fill="var(--rose)"/><circle cx="20" cy="12" r="3.6" fill="var(--violet)"/></svg>
+          <span class="t">今日の くらしのおしごと</span><span class="rule"></span>
+        </div>
+        <div class="task done"><span class="tl tl-lav">👚</span><span class="nm">自分で着替えた</span><span class="ck">✓</span></div>
+        <div class="task done"><span class="tl tl-peri">🎒</span><span class="nm">カバンを棚に置いた</span><span class="ck">✓</span></div>
+        <div class="task"><span class="tl tl-mint">🥛</span><span class="nm">夕ごはんの食器を運んだ</span><span class="ck"></span></div>
+        <div class="chal"><span class="tl">🕯️</span><div><b>今夜の ちょっとチャレンジ</b><span>明日の支度をする</span></div><span class="st">できたら ✨</span></div>
+        <div><span class="streak">🎀 3日 続いてるよ</span></div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">集める</span>
+        <h3>「満ちる月」で、あと少しが見える</h3>
+        <p>進捗の主役は<b>満月ゲージ</b>。<b>斜め下の三日月から始まり、本物の月みたいにだんだん満ちて</b>、満月（10個）で<b>ゾンビが1体あらわれる</b>。夜・月・ゾンビは、娘さんの紫ゴスロリの世界にそのまま馴染みます。漢字は大人と同じ、言い回しは小学生向けに。</p>
+      </div>
+    </div>
+
+    <!-- Scene 2 -->
+    <div class="scene">
+      <div class="step"><i>2</i>できた！を おす（月が満ちる）</div>
+      <div class="phone"><div class="screen">
+        <div class="reward">
+          <span class="bub">🥛 食器を運べたね！</span>
+          <div class="moonwrap">
+            <span class="plus">+1</span>
+            <span class="sp" style="top:8px;left:12px">🦇</span>
+            <span class="sp" style="top:44px;right:10px;animation-delay:.6s">✨</span>
+            <span class="sp" style="bottom:20px;left:16px;animation-delay:1s">⭐</span>
+            <svg width="150" height="150" viewBox="0 0 130 150" aria-hidden="true">
+              <circle cx="65" cy="78" r="60" fill="var(--moon-lit)" opacity=".16"/>
+              <circle cx="65" cy="78" r="52" fill="var(--moon-dark)"/>
+              <g transform="rotate(35 65 78)"><path d="M65,26 A52,52 0 0 1 65,130 A30.6,52 0 0 1 65,26 Z" fill="var(--moon-lit)"/></g>
+              <circle cx="65" cy="78" r="52" fill="none" stroke="var(--line2)" stroke-width="2.5"/>
+            </svg>
+          </div>
+          <div class="big">できたね！</div>
+          <div class="sub">くらしのおしごと</div>
+          <div class="mini">7<small> / 10個 ・ あと3個</small></div>
+        </div>
+        <div class="undo"><span class="tl">↩️</span><span>まちがえたら、ワンタップで取り消せる</span></div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">集める</span>
+        <h3>押した瞬間に、月がキラッ</h3>
+        <p>押すと<b>月がひとつ明るくなって「+1」がふわっと</b>、コウモリがはばたく。大きな音は鳴らさず軽い演出だけ。<b>まちがえてもワンタップで取り消せる</b>ので、こわくない。</p>
+      </div>
+    </div>
+
+    <!-- Scene 3 -->
+    <div class="scene">
+      <div class="step"><i>3</i>満月で ゾンビ登場（10個）</div>
+      <div class="phone"><div class="screen">
+        <div class="gacha">
+          <span class="cf cf1">🦇</span><span class="cf cf2">✨</span><span class="cf cf3">⭐</span><span class="cf cf4">🦇</span>
+          <div class="ttl">くらしのおしごと <span class="n">10個</span>！満月だ！</div>
+          <div class="medal"><span class="ring"></span><span class="disc">🤡</span></div>
+          <div class="name">サーカスのピエロ 登場！</div>
+          <span class="coin">🪙 100円 たまったよ</span>
+          <p class="carry">つぎの満月まで <b>あと7個</b>（3個は 繰り越し）</p>
+        </div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">集める</span>
+        <h3>“どのゾンビが出るかな”</h3>
+        <p>満月になると<b>ゾンビが1体あらわれて図鑑に</b>。出てくる子はちょっとサプライズ（ときどきレア）。超えたぶんは<b>次の満月に繰り越し</b>（要件8）。100円ぶんのおこづかいも同時にゲット。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ COLLECT : zombie zukan ============ -->
+  <div class="band"><p class="k">🧟 あつめる</p><h2>ゾンビ図鑑（USJ → 世界のお化け）</h2></div>
+
+  <div class="two" style="align-items:start">
+    <div class="scene" style="align-items:center">
+      <div class="phone" style="max-width:340px"><div class="screen">
+        <div class="scr-top">
+          <svg width="18" height="18" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="var(--rose)"/><path d="M15 8a5 5 0 0 1 5 5 4 4 0 0 1-5 4 4 4 0 0 1-5-4 5 5 0 0 1 5-5z" fill="var(--violet)"/></svg>
+          <span class="tt">ゾンビ図鑑</span>
+          <span class="chip">2025年 USJ</span>
+        </div>
+        <div class="leg">🌙 満月のたび1体。USJの7エリアのゾンビたち</div>
+        <div class="zgrid">
+          <div class="zcell"><div class="med got">🤡</div><span class="cap">サーカスの<br>ピエロ</span></div>
+          <div class="zcell"><div class="med got">🪓</div><span class="cap">処刑人</span></div>
+          <div class="zcell"><div class="med got">⛓️</div><span class="cap">囚人</span></div>
+          <div class="zcell"><div class="med got">🧟</div><span class="cap">実験体</span></div>
+          <div class="zcell"><div class="med got">🎎</div><span class="cap">日本人形</span></div>
+          <div class="zcell"><div class="med rare">🧛<span class="tagr">レア</span></div><span class="cap">吸血鬼</span></div>
+          <div class="zcell"><div class="med got">👹</div><span class="cap">悪魔・部族</span></div>
+          <div class="zcell"><div class="med add">📷</div><span class="cap">写真を<br>登録</span></div>
+        </div>
+        <div class="zfoot"><span>集めたゾンビ <b>7体</b></span><span>USJ図鑑 7 / 7エリア</span></div>
+        <div class="lock"><span class="ic">🏮</span><div><b>世界のお化け・妖怪ずかん（もうすぐ）</b><span>キョンシー🇨🇳・河童・天狗・ろくろ首🇯🇵…</span></div></div>
+      </div></div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:16px">
+      <div class="note" style="max-width:none">
+        <span class="tag fun">まず網羅</span>
+        <h3>USJ 2025の7エリアのゾンビを収録</h3>
+        <p>サイコ・サーカス（ピエロ）／処刑ゾンビ／チェーンソー囚人／実験体／人形（日本人形・バレリーナ）／吸血鬼・ゴシック／部族・悪魔。娘さんの言う<b>処刑人ゾンビ・サーカスゾンビ</b>もここに。※固有名や姿は使わず、種類だけを図鑑化。</p>
+      </div>
+      <div class="note" style="max-width:none">
+        <span class="tag push">自分で登録</span>
+        <h3>会ったゾンビを、自分の写真で追加📷</h3>
+        <p>USJで撮った写真を<b>自分でゾンビ図鑑に登録</b>できる。今年出てきた新しいゾンビも、後からどんどん追加OK。「会えた！」の記録が自分だけの図鑑になる。</p>
+      </div>
+      <div class="note" style="max-width:none">
+        <span class="tag push">次の拡張</span>
+        <h3>そのあと「世界のお化け・妖怪」へ</h3>
+        <p>ゾンビの次は<b>世界のお化け／妖怪</b>に発展。中国のキョンシー、日本の河童・天狗・ろくろ首・雪女など。集めながら世界の言い伝えを少し知れる図鑑に育てられます。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GO : USJ ride check ============ -->
+  <div class="band"><p class="k">🎢 いく</p><h2>USJ ハロウィン 達成チェック</h2></div>
+
+  <div class="two" style="align-items:start">
+    <div class="scene" style="align-items:center">
+      <div class="phone" style="max-width:340px"><div class="screen">
+        <div class="scr-top">
+          <svg width="18" height="18" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="var(--violet)"/><path d="M9 15l4 4 8-8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="tt">行った？チェック</span>
+          <span class="chip">2025</span>
+        </div>
+        <div class="rprog"><span class="n">8<small> / 11</small></span><span class="rr">🎃 制覇！<br>全部で 限定ゾンビ</span></div>
+        <div class="rlist">
+          <div class="ritem done"><span class="rc">✓</span><div class="rtext"><div class="rn">ホラー・ナイト・アカデミー ～絶叫の15年～</div><div class="rs">🎭 グラマシーパーク</div></div></div>
+          <div class="ritem done"><span class="rc">✓</span><div class="rtext"><div class="rn">ファクトリー・オブ・フィアー ～ゾンビ・ツアー～</div><div class="rs">👣 ステージ 22</div></div></div>
+          <div class="ritem done"><span class="rc">✓</span><div class="rtext"><div class="rn">18番地の魔女 ～感情と戯れる魔女の館～</div><div class="rs">🚪 ステージ 18</div></div></div>
+          <div class="ritem"><span class="rc"></span><div class="rtext"><div class="rn">バイオハザード レクイエム ザ・ダイブ</div><div class="rs">🧪 ステージ 18</div></div></div>
+          <div class="ritem done"><span class="rc">✓</span><div class="rtext"><div class="rn">チェンソーマン・ザ・カオス 4-D</div><div class="rs">🎬 シネマ 4-D シアター</div></div></div>
+          <div class="ritem done"><span class="rc">✓</span><div class="rtext"><div class="rn">貞子の呪い ～ダーク・ホラー・ライド～</div><div class="rs">🎢 スペース・ファンタジー</div></div></div>
+          <div class="ritem done"><span class="rc">✓</span><div class="rtext"><div class="rn">King Gnu「SO BAD」×ハリウッド・ドリーム</div><div class="rs">🎢 ハリウッド・ドリーム</div></div></div>
+          <div class="ritem"><span class="rc"></span><div class="rtext"><div class="rn">チェンソーマン×ハリドリ ～IRIS OUT～</div><div class="rs">🎢 バックドロップ</div></div></div>
+          <div class="ritem done"><span class="rc">✓</span><div class="rtext"><div class="rn">Ado「唱」×ハリウッド・ドリーム</div><div class="rs">🎢 バックドロップ</div></div></div>
+          <div class="ritem"><span class="rc"></span><div class="rtext"><div class="rn">三代目 J SOUL BROTHERS「Rat-tat-tat」</div><div class="rs">🎢 バックドロップ</div></div></div>
+          <div class="ritem done"><span class="rc">✓</span><div class="rtext"><div class="rn">更衣室</div><div class="rs">🚪 ステージ 18</div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:16px">
+      <div class="note" style="max-width:none">
+        <span class="tag push">行く</span>
+        <h3>今年のライド・ショーを、行ったらチェック</h3>
+        <p>いただいた2025年の11本をそのままリストに。乗った・見たらタップでチェック。<b>年パスで週1</b>行く娘さんの「今年どこまで行けた？」が一目でわかる。名前は毎年入れ替えられます。</p>
+      </div>
+      <div class="note" style="max-width:none">
+        <span class="tag fun">ごほうび</span>
+        <h3>全部そろえたら「限定ゾンビ」ゲット</h3>
+        <p>コンプリートで<b>その年だけの限定ゾンビ</b>が図鑑に。行くのが楽しみになり、ゾンビ集めともつながる。もちろん行けなくても減点なし、印がつくだけ。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BUY : okozukai goods ============ -->
+  <div class="band"><p class="k">🎃 かう</p><h2>貯めたおこづかいで、ハロウィングッズ</h2></div>
+
+  <div class="two" style="align-items:start">
+    <div class="scene" style="align-items:center">
+      <div class="phone" style="max-width:340px"><div class="screen">
+        <div class="goal">
+          <div class="top">
+            <svg width="18" height="18" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="var(--pump)"/><path d="M15 9v12M11 12h8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
+            おこづかい ちょきん
+          </div>
+          <div class="gitem">
+            <span class="ph">🧷</span>
+            <div style="flex:1">
+              <div class="nm">ハミクマ 缶バッジ</div>
+              <div class="pr">目標 ¥1,000（全10種）</div>
+            </div>
+          </div>
+          <div class="bar"><i style="width:40%"></i></div>
+          <div class="now">いま <b>¥400</b> ／ ¥1,000 ・ あと <b>6個</b> できたら 買える！</div>
+          <div class="pick">🎯 目標を えらぶ</div>
+          <div class="opts">
+            <div class="opt sel"><span class="ic">🧷</span>缶バッジ<small>¥1,000</small></div>
+            <div class="opt"><span class="ic">👜</span>ポーチ<small>¥2,600</small></div>
+            <div class="opt"><span class="ic">🔑</span>キーチェーン<small>¥3,100</small></div>
+            <div class="opt"><span class="ic">🧸</span>ぬいぐるみ<small>¥6,000</small></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:16px">
+      <div class="note" style="max-width:none">
+        <span class="tag real">本物のごほうび</span>
+        <h3>画面の中の達成が、本物の買い物に</h3>
+        <p>くらしのおしごと10個＝100円ぶん（要件2・17）。貯めると<b>USJで買いたいハミクマグッズ</b>に手が届く。缶バッジ¥1,000／ポーチ¥2,600／キーチェーン¥3,100／ぬいぐるみ¥6,000など。年パスで週1行く娘さんの、いちばんのやる気に。</p>
+      </div>
+      <div class="note" style="max-width:none">
+        <span class="tag push">自分で決める</span>
+        <h3>目標グッズを自分で選ぶ</h3>
+        <p>「何のために貯めるか」を<b>娘さん自身が選べる</b>。缶バッジですぐ届く日も、ぬいぐるみをコツコツ狙う日もOK。ゴールが自分ごとになるほど、ちょっと頑張れる。</p>
+      </div>
+      <div class="note" style="max-width:none">
+        <span class="tag real">価格について</span>
+        <h3>価格は2025年参考＋今年ぶんを上乗せ</h3>
+        <p>金額は<b>2025年ハミクマグッズの価格に＋300円ほど（今年の値上がり見込み）</b>で表示。実際の発表価格が出たら差し替えられます。缶バッジ700→¥1,000、ぬいぐるみ5,700→¥6,000 など。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ evening + guardrails ============ -->
+  <div class="band"><p class="k">夜は やさしく ふりかえる</p><h2>できたことを、ひとつだけ喜ぶ</h2></div>
+
+  <div class="two">
+    <div class="wide reflect">
+      <span class="chip">🌙 夕食のあと</span>
+      <p class="q">
+        <svg width="19" height="19" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="var(--rose)"/><path d="M15 8a5 5 0 0 1 5 5 4 4 0 0 1-5 4 4 4 0 0 1-5-4 5 5 0 0 1 5-5z" fill="var(--violet)"/></svg>
+        今日 自分でできて うれしかったの、どれ？
+      </p>
+      <ul class="dl">
+        <li><span class="c">✓</span> 自分で着替えた</li>
+        <li><span class="c">✓</span> 水筒を流しに出した</li>
+        <li><span class="c">✓</span> カバンを棚に置いた</li>
+        <li><span class="c">✓</span> 食器を運んだ</li>
+        <li><span class="c">✓</span> 今日のことをママに伝えた</li>
+      </ul>
+      <div class="choices">
+        <span class="choice pick">👚 着替え</span><span class="choice">🧴 水筒</span><span class="choice">🎒 カバン</span><span class="choice">🥛 食器</span><span class="choice">💬 お話</span>
+      </div>
+    </div>
+
+    <div class="wide guard">
+      <h3>🌙 「せめない」やくそく（設計ルール）</h3>
+      <ul>
+        <li><span class="ic">✓</span><span><b>赤やバツを出さない。</b>できてない項目は静かな紫グレーで「まだできるよ」。できなかったリストは作りません（要件18）。</span></li>
+        <li><span class="ic">✓</span><span><b>声かけでも同じ1回。</b>「言われてできた」を低く評価しない。報酬額も変えません（要件10・17）。</span></li>
+        <li><span class="ic">✓</span><span><b>連続は“おまけ”。</b>「3日続いたね🎀」は祝うが、途切れても叱らずそっと戻すだけ。ごほうびの条件にはしません。</span></li>
+        <li><span class="ic">✓</span><span><b>質問は1つだけ。</b>反省は必ずは聞かない。うれしかったことを1つ選ぶだけ（要件12）。</span></li>
+        <li><span class="ic">✓</span><span><b>毎日リセットしない。</b>1日でできなくても消えず、日をまたいで積み上がります（要件8）。</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ gentle push ============ -->
+  <div class="band"><p class="k">ちょっと頑張れる、の しかけ</p><h2>プレッシャーにしない“背伸び”を3つだけ</h2></div>
+  <div class="two" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+    <div class="note" style="max-width:none">
+      <span class="tag push">あと◯個</span><h3>満月が近いと、ワクワク</h3>
+      <p>「<b>あと4個</b>」と満月ゲージを常に表示。残り1〜2個で少しだけ盛り上げ（「あと1個で満月！」）。近づくほど押したくなる、正の力だけ。</p>
+    </div>
+    <div class="note" style="max-width:none">
+      <span class="tag push">1日1チャレンジ</span><h3>今夜の ちょっとチャレンジ</h3>
+      <p>追加候補（要件14）から<b>1日1つだけ</b>おすすめ。歯みがき・明日の支度等。任意で「できたらすごい」枠。毎日ちがう項目が出て、少しずつ範囲が広がる。</p>
+    </div>
+    <div class="note" style="max-width:none">
+      <span class="tag push">やわらか連続</span><h3>続くと、うれしい</h3>
+      <p>連続日数をリボン🎀で軽く可視化。<b>途切れてもペナルティなし</b>。続けたい子には励みに、気にしない子には無害。にがて項目もときどき優しく後押し。</p>
+    </div>
+  </div>
+
+  <p class="foot-note">くらしリレイ ／ 娘バージョン：紫ゴスロリ×USJハロウィン（満月→ゾンビ→USJ達成→おこづかいでグッズ）・漢字は大人と同じ／表現は小学生向け・ライト/ダーク対応<br>ゾンビ・グッズ・ライド情報は2025年の公開情報を参考（USJ365ほか）。固有キャラの姿・ロゴは使わず種類/名称のみ。お菓子版はママ用家事記録ツールとして別途保存。</p>
+
+</div>
+</div>
