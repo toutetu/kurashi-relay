@@ -93,6 +93,20 @@
 - 既存画面とAPIの正常状態: ✅ 確認済み(レスポンス保存済み)
 - サービス名・ビルド設定・Laravel Cloud構成: ✅ 実値で記録済み(上表)
 
+## 5. Phase 1-2 実施記録(2026-07-17 追記)
+
+- **Laravel Cloud API(現行)**: `https://kurashi-relay-production-olnfy0.laravel.cloud`
+  (アプリ名 kurashi-relay-api / 環境 production / **Asia Pacific (Singapore)** / Flex 512MiB)
+- **DB**: Laravel Serverless Postgres **17.10** / Dev構成(¼vCPU・300秒休止・バックアップなし) /
+  クラスタ名 `kurashi_relay_api` / Singapore / production環境へAttach済み
+- リージョンが東京でない理由: Serverless Postgresの作成画面に東京が無かったため(DR-006参照)。
+  東京で作った初代アプリと誤作成のMySQLクラスタは削除済み
+- 環境変数(カスタム): APP_NAME/APP_LOCALE/APP_FALLBACK_LOCALE/APP_FAKER_LOCALE/
+  CACHE_STORE=file/QUEUE_CONNECTION=sync/CORS_ALLOWED_ORIGINS=RenderフロントURL(+自動生成APP_KEY)
+- 確認済み: /api/health 200・/api/dashboard 200・404はJSON・CORSプリフライト204(allow-origin=Renderフロント)・
+  `php artisan db:show`でpgsql疎通
+- デプロイはmainへのpushで自動実行され、マイグレーションも自動で走る(migrationsテーブル生成を確認)
+
 ### 残る軽微な未確認(移行をブロックしない)
 
 - 母・娘の実端末のlocalStorage(コード上はUI設定2キーのみで記録データなし)
