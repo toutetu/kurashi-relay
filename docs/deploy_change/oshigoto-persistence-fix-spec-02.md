@@ -41,7 +41,7 @@
 - POST時に `task_definitions.point_value` の現在値を保存。
 - `RewardCalculator` の母ポイント集計を「有効レコードの `granted_point_value` 合計」へ変更(definitionsへのJOIN廃止)。将来単価を変えても過去実績が変わらない。
 
-## 6. 【重大2】あいことば(家族共有トークン)によるAPI保護 ※この節はユーザー承認済みの場合のみ実装
+## 6. 【重大2】あいことば(家族共有トークン)によるAPI保護 ※【2026-07-17 ユーザー判断により今回は見送り。実装しない】
 
 - 環境変数 `FAMILY_TOKEN`(未設定時は保護無効=ローカル開発の利便のため)。`config/kurashi.php` へ `family_token` として追加。
 - ミドルウェア `EnsureFamilyToken` を作成し、**更新系ルート(POST/DELETE)と取得系の全おしごとAPI**(/api/tasks, /api/task-records, /api/rewards/*)に適用。`/api/health` と `/api/dashboard` は対象外(既存挙動維持)。
