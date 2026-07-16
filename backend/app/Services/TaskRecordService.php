@@ -7,6 +7,7 @@ use App\Models\FamilyMember;
 use App\Models\RewardCollection;
 use App\Models\TaskDefinition;
 use App\Models\TaskRecord;
+use App\Models\TaskRecordOperation;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
@@ -35,22 +36,28 @@ final class TaskRecordService
         return DB::transaction(function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $source): array {
             FamilyMember::query()->whereKey($member->id)->lockForUpdate()->first();
 
-            $existingByKey = TaskRecord::query()
-                ->with(['familyMember', 'taskDefinition', 'rewardCollection'])
+            $existingOperation = TaskRecordOperation::query()
+                ->with([
+                    'taskRecord.familyMember',
+                    'taskRecord.taskDefinition',
+                    'taskRecord.rewardCollection',
+                ])
                 ->where('idempotency_key', $idempotencyKey)
                 ->first();
 
-            if ($existingByKey !== null) {
-                if (! $this->matchesPayload($existingByKey, $member, $taskDefinition, $recordDate)) {
+            if ($existingOperation !== null) {
+                if (! $this->operationMatchesPayload($existingOperation, $member, $taskDefinition, $recordDate)) {
                     throw new IdempotencyConflictException('Idempotency key conflict.');
                 }
 
+                $record = $existingOperation->taskRecord;
+
                 return $this->buildStoreResult(
-                    $existingByKey,
+                    $record,
                     $recordDate,
                     true,
                     200,
-                    $existingByKey->rewardCollection,
+                    $record->rewardCollection,
                 );
             }
 
@@ -63,19 +70,50 @@ final class TaskRecordService
                 ->first();
 
             if ($existingActive !== null) {
+                try {
+                    $this->registerOperation(
+                        $idempotencyKey,
+                        $member,
+                        $taskDefinition,
+                        $recordDate,
+                        $existingActive,
+                    );
+                } catch (QueryException $exception) {
+                    return $this->recoverFromInsertConflict(
+                        $exception,
+                        $member,
+                        $taskDefinition,
+                        $recordDate,
+                        $idempotencyKey,
+                    );
+                }
+
                 return $this->buildStoreResult($existingActive, $recordDate, true, 200);
             }
 
             try {
                 $record = DB::transaction(
-                    fn (): TaskRecord => TaskRecord::query()->create([
-                        'family_member_id' => $member->id,
-                        'task_definition_id' => $taskDefinition->id,
-                        'record_date' => $recordDate,
-                        'completed_at' => now('UTC'),
-                        'source' => $source,
-                        'idempotency_key' => $idempotencyKey,
-                    ]),
+                    function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $source): TaskRecord {
+                        $record = TaskRecord::query()->create([
+                            'family_member_id' => $member->id,
+                            'task_definition_id' => $taskDefinition->id,
+                            'record_date' => $recordDate,
+                            'completed_at' => now('UTC'),
+                            'source' => $source,
+                            'idempotency_key' => $idempotencyKey,
+                            'granted_point_value' => $taskDefinition->point_value,
+                        ]);
+
+                        TaskRecordOperation::query()->create([
+                            'idempotency_key' => $idempotencyKey,
+                            'family_member_id' => $member->id,
+                            'task_definition_id' => $taskDefinition->id,
+                            'record_date' => $recordDate,
+                            'task_record_id' => $record->id,
+                        ]);
+
+                        return $record;
+                    },
                     1,
                 );
             } catch (QueryException $exception) {
@@ -160,6 +198,36 @@ final class TaskRecordService
             && $record->record_date->toDateString() === $recordDate;
     }
 
+    private function operationMatchesPayload(
+        TaskRecordOperation $operation,
+        FamilyMember $member,
+        TaskDefinition $taskDefinition,
+        string $recordDate,
+    ): bool {
+        return $operation->family_member_id === $member->id
+            && $operation->task_definition_id === $taskDefinition->id
+            && $operation->record_date->toDateString() === $recordDate;
+    }
+
+    private function registerOperation(
+        string $idempotencyKey,
+        FamilyMember $member,
+        TaskDefinition $taskDefinition,
+        string $recordDate,
+        TaskRecord $record,
+    ): void {
+        DB::transaction(
+            fn (): TaskRecordOperation => TaskRecordOperation::query()->create([
+                'idempotency_key' => $idempotencyKey,
+                'family_member_id' => $member->id,
+                'task_definition_id' => $taskDefinition->id,
+                'record_date' => $recordDate,
+                'task_record_id' => $record->id,
+            ]),
+            1,
+        );
+    }
+
     /**
      * The nested transaction around INSERT is a database savepoint. PostgreSQL
      * aborts only that savepoint on a unique violation, so these lookups can
@@ -180,38 +248,104 @@ final class TaskRecordService
         string $recordDate,
         string $idempotencyKey,
     ): array {
-        $existingByKey = TaskRecord::query()
+        if (! $this->isUniqueViolation($exception)) {
+            throw $exception;
+        }
+
+        $existingOperation = TaskRecordOperation::query()
+            ->with([
+                'taskRecord.familyMember',
+                'taskRecord.taskDefinition',
+                'taskRecord.rewardCollection',
+            ])
+            ->where('idempotency_key', $idempotencyKey)
+            ->first();
+
+        if ($existingOperation !== null) {
+            if (! $this->operationMatchesPayload($existingOperation, $member, $taskDefinition, $recordDate)) {
+                throw new IdempotencyConflictException('Idempotency key conflict.');
+            }
+
+            $record = $existingOperation->taskRecord;
+
+            return $this->buildStoreResult(
+                $record,
+                $recordDate,
+                true,
+                200,
+                $record->rewardCollection,
+            );
+        }
+
+        $winner = TaskRecord::query()
             ->with(['familyMember', 'taskDefinition', 'rewardCollection'])
             ->where('idempotency_key', $idempotencyKey)
             ->first();
 
-        if ($existingByKey !== null) {
-            if (! $this->matchesPayload($existingByKey, $member, $taskDefinition, $recordDate)) {
-                throw new IdempotencyConflictException('Idempotency key conflict.');
-            }
-
-            return $this->buildStoreResult(
-                $existingByKey,
-                $recordDate,
-                true,
-                200,
-                $existingByKey->rewardCollection,
-            );
+        if ($winner !== null && ! $this->matchesPayload($winner, $member, $taskDefinition, $recordDate)) {
+            throw new IdempotencyConflictException('Idempotency key conflict.');
         }
 
-        $existingActive = TaskRecord::query()
-            ->with(['familyMember', 'taskDefinition'])
+        $winner ??= TaskRecord::query()
+            ->with(['familyMember', 'taskDefinition', 'rewardCollection'])
             ->where('family_member_id', $member->id)
             ->where('task_definition_id', $taskDefinition->id)
             ->whereDate('record_date', $recordDate)
             ->whereNull('cancelled_at')
             ->first();
 
-        if ($existingActive !== null) {
-            return $this->buildStoreResult($existingActive, $recordDate, true, 200);
+        if ($winner === null) {
+            throw $exception;
         }
 
-        throw $exception;
+        try {
+            $this->registerOperation(
+                $idempotencyKey,
+                $member,
+                $taskDefinition,
+                $recordDate,
+                $winner,
+            );
+        } catch (QueryException $operationException) {
+            if (! $this->isUniqueViolation($operationException)) {
+                throw $operationException;
+            }
+
+            $operation = TaskRecordOperation::query()
+                ->with([
+                    'taskRecord.familyMember',
+                    'taskRecord.taskDefinition',
+                    'taskRecord.rewardCollection',
+                ])
+                ->where('idempotency_key', $idempotencyKey)
+                ->first();
+
+            if ($operation === null) {
+                throw $operationException;
+            }
+
+            if (! $this->operationMatchesPayload($operation, $member, $taskDefinition, $recordDate)) {
+                throw new IdempotencyConflictException('Idempotency key conflict.');
+            }
+
+            $winner = $operation->taskRecord;
+        }
+
+        return $this->buildStoreResult(
+            $winner,
+            $recordDate,
+            true,
+            200,
+            $winner->rewardCollection,
+        );
+    }
+
+    private function isUniqueViolation(QueryException $exception): bool
+    {
+        $sqlState = (string) ($exception->errorInfo[0] ?? $exception->getCode());
+
+        return $sqlState === '23505'
+            || str_contains($exception->getMessage(), 'UNIQUE constraint failed');
     }
 
     /**

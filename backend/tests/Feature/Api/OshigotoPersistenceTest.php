@@ -5,7 +5,9 @@ namespace Tests\Feature\Api;
 use App\Models\FamilyMember;
 use App\Models\RewardAdjustment;
 use App\Models\RewardCollection;
+use App\Models\TaskDefinition;
 use App\Models\TaskRecord;
+use App\Models\TaskRecordOperation;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -138,6 +140,46 @@ class OshigotoPersistenceTest extends TestCase
         $this->assertSame(1, TaskRecord::query()->count());
     }
 
+    public function test_accepted_duplicate_key_replay_does_not_restore_cancelled_record(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
+
+        $first = $this->postJson('/api/task-records', [
+            'member' => 'child',
+            'task' => 'shokki',
+            'date' => '2026-07-16',
+            'idempotency_key' => 'accepted-key-a',
+        ])->assertCreated();
+
+        $recordId = $first->json('data.record.id');
+        $duplicatePayload = [
+            'member' => 'child',
+            'task' => 'shokki',
+            'date' => '2026-07-16',
+            'idempotency_key' => 'accepted-key-b',
+        ];
+
+        $this->postJson('/api/task-records', $duplicatePayload)
+            ->assertOk()
+            ->assertJsonPath('meta.deduplicated', true)
+            ->assertJsonPath('data.record.id', $recordId);
+
+        $this->assertSame(2, TaskRecordOperation::query()->count());
+
+        $this->deleteJson("/api/task-records/{$recordId}")->assertOk();
+
+        $this->postJson('/api/task-records', $duplicatePayload)
+            ->assertOk()
+            ->assertJsonPath('meta.deduplicated', true)
+            ->assertJsonPath('data.record.id', $recordId)
+            ->assertJsonPath('data.record.cancelled_at', fn (?string $value): bool => $value !== null)
+            ->assertJsonPath('data.summary.lifetime_count', 0);
+
+        $this->assertSame(1, TaskRecord::query()->count());
+        $this->assertSame(2, TaskRecordOperation::query()->count());
+        $this->assertSame(0, TaskRecord::query()->whereNull('cancelled_at')->count());
+    }
+
     public function test_idempotency_key_payload_mismatch_returns_conflict(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
@@ -210,6 +252,34 @@ class OshigotoPersistenceTest extends TestCase
         $this->deleteJson("/api/task-records/{$recordId}")
             ->assertOk()
             ->assertJsonPath('data.summary.points', 0);
+    }
+
+    public function test_mother_points_use_the_value_granted_when_recorded(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
+
+        $this->postJson('/api/task-records', [
+            'member' => 'mother',
+            'task' => 'shokki',
+            'date' => '2026-07-16',
+            'idempotency_key' => 'point-snapshot-key',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.summary.points', 10);
+
+        TaskDefinition::query()
+            ->where('owner_role', 'mother')
+            ->where('slug', 'shokki')
+            ->update(['point_value' => 99]);
+
+        $this->getJson('/api/rewards/summary?member=mother&date=2026-07-16')
+            ->assertOk()
+            ->assertJsonPath('data.points', 10);
+
+        $this->assertDatabaseHas('task_records', [
+            'idempotency_key' => 'point-snapshot-key',
+            'granted_point_value' => 10,
+        ]);
     }
 
     public function test_cancelled_record_can_be_recreated_on_same_day(): void
@@ -329,6 +399,17 @@ class OshigotoPersistenceTest extends TestCase
 
         $this->assertStringContainsString('"errors":{}', $notFound->getContent());
 
+        $nonNumeric = $this->deleteJson('/api/task-records/not-a-number');
+
+        $nonNumeric
+            ->assertNotFound()
+            ->assertExactJson([
+                'status' => 'error',
+                'message' => 'エンドポイントが見つかりません。',
+                'errors' => [],
+            ]);
+        $this->assertStringContainsString('"errors":{}', $nonNumeric->getContent());
+
         $this->getJson('/api/not-found')
             ->assertNotFound()
             ->assertJsonPath('status', 'error')
@@ -388,15 +469,23 @@ class OshigotoPersistenceTest extends TestCase
         $migrationFiles = glob(database_path('migrations/*.php'));
 
         $this->assertIsArray($migrationFiles);
-        $this->assertCount(5, $migrationFiles);
+        $this->assertCount(7, $migrationFiles);
 
         foreach ($migrationFiles as $migrationFile) {
             $contents = file_get_contents($migrationFile);
 
             $this->assertIsString($contents);
-            $this->assertStringContainsString('$table->timestampsTz();', $contents);
-            $this->assertStringNotContainsString('$table->timestamps();', $contents);
+
+            if (str_contains($contents, 'Schema::create')) {
+                $this->assertStringContainsString('$table->timestampsTz();', $contents);
+                $this->assertStringNotContainsString('$table->timestamps();', $contents);
+            }
         }
+    }
+
+    public function test_pgsql_connection_timezone_is_fixed_to_utc(): void
+    {
+        $this->assertSame('UTC', config('database.connections.pgsql.timezone'));
     }
 
     public function test_rewards_endpoints_return_summary_and_collections(): void

@@ -12,6 +12,6 @@ Route::get('/dashboard', DashboardController::class);
 
 Route::get('/tasks', [TaskController::class, 'index']);
 Route::post('/task-records', [TaskRecordController::class, 'store']);
-Route::delete('/task-records/{id}', [TaskRecordController::class, 'destroy']);
+Route::delete('/task-records/{id}', [TaskRecordController::class, 'destroy'])->whereNumber('id');
 Route::get('/rewards/summary', [RewardController::class, 'summary']);
 Route::get('/rewards/collections', [RewardController::class, 'collections']);

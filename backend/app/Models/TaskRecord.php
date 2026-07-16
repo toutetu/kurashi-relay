@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class TaskRecord extends Model
@@ -19,6 +20,7 @@ class TaskRecord extends Model
         'cancelled_at',
         'source',
         'idempotency_key',
+        'granted_point_value',
     ];
 
     /**
@@ -30,6 +32,7 @@ class TaskRecord extends Model
             'record_date' => 'date',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'granted_point_value' => 'integer',
         ];
     }
 
@@ -46,6 +49,11 @@ class TaskRecord extends Model
     public function rewardCollection(): HasOne
     {
         return $this->hasOne(RewardCollection::class);
+    }
+
+    public function operations(): HasMany
+    {
+        return $this->hasMany(TaskRecordOperation::class);
     }
 
     public function isActive(): bool

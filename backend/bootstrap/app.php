@@ -58,7 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 404 => 'エンドポイントが見つかりません。',
                 405 => '許可されていないメソッドです。',
                 default => $status >= 500
-                    ? 'データの取得中に問題が発生しました。'
+                    ? '処理中に問題が発生しました。'
                     : 'リクエストを処理できませんでした。',
             };
 
@@ -69,11 +69,8 @@ return Application::configure(basePath: dirname(__DIR__))
             $payload = [
                 'status' => 'error',
                 'message' => $message,
+                'errors' => (object) [],
             ];
-
-            if ($status === 404) {
-                $payload['errors'] = (object) [];
-            }
 
             return response()->json($payload, $status, $headers);
         });

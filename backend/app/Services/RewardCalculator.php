@@ -45,10 +45,9 @@ final class RewardCalculator
         } else {
             $pointAdjustment = $this->adjustmentSum($member, 'point');
             $recordPoints = (int) TaskRecord::query()
-                ->where('task_records.family_member_id', $member->id)
-                ->whereNull('task_records.cancelled_at')
-                ->join('task_definitions', 'task_definitions.id', '=', 'task_records.task_definition_id')
-                ->sum('task_definitions.point_value');
+                ->where('family_member_id', $member->id)
+                ->whereNull('cancelled_at')
+                ->sum('granted_point_value');
 
             $summary['coins'] = null;
             $summary['points'] = $recordPoints + $pointAdjustment;
