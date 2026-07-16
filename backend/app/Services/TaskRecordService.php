@@ -57,7 +57,7 @@ final class TaskRecordService
                     $recordDate,
                     true,
                     200,
-                    $record->rewardCollection,
+                    $this->revealedRewardForKey($record, $idempotencyKey),
                 );
             }
 
@@ -273,7 +273,7 @@ final class TaskRecordService
                 $recordDate,
                 true,
                 200,
-                $record->rewardCollection,
+                $this->revealedRewardForKey($record, $idempotencyKey),
             );
         }
 
@@ -336,7 +336,7 @@ final class TaskRecordService
             $recordDate,
             true,
             200,
-            $winner->rewardCollection,
+            $this->revealedRewardForKey($winner, $idempotencyKey),
         );
     }
 
@@ -371,6 +371,17 @@ final class TaskRecordService
             'deduplicated' => $deduplicated,
             'status_code' => $statusCode,
         ];
+    }
+
+    private function revealedRewardForKey(
+        TaskRecord $record,
+        string $idempotencyKey,
+    ): ?RewardCollection {
+        if ($record->idempotency_key !== $idempotencyKey) {
+            return null;
+        }
+
+        return $record->rewardCollection;
     }
 
     private function maybeGrantReward(

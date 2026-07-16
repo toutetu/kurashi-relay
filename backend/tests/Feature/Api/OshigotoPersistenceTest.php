@@ -10,6 +10,7 @@ use App\Models\TaskRecord;
 use App\Models\TaskRecordOperation;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class OshigotoPersistenceTest extends TestCase
@@ -111,6 +112,46 @@ class OshigotoPersistenceTest extends TestCase
             ->assertJsonPath('meta.deduplicated', true)
             ->assertJsonPath('data.revealed_reward.item_slug', $reward['item_slug'])
             ->assertJsonPath('data.revealed_reward.milestone_number', $reward['milestone_number']);
+    }
+
+    public function test_duplicate_key_replay_does_not_reveal_canonical_record_reward(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
+
+        $this->createNineChildRecords();
+
+        $creationPayload = [
+            'member' => 'child',
+            'task' => 'kigae',
+            'date' => '2026-07-15',
+            'idempotency_key' => 'milestone-creation-key',
+        ];
+        $duplicatePayload = [
+            ...$creationPayload,
+            'idempotency_key' => 'milestone-duplicate-key',
+        ];
+
+        $created = $this->postJson('/api/task-records', $creationPayload)->assertCreated();
+        $reward = $created->json('data.revealed_reward');
+
+        $this->assertNotNull($reward);
+
+        $this->postJson('/api/task-records', $duplicatePayload)
+            ->assertOk()
+            ->assertJsonPath('meta.deduplicated', true)
+            ->assertJsonMissingPath('data.revealed_reward');
+
+        $this->postJson('/api/task-records', $duplicatePayload)
+            ->assertOk()
+            ->assertJsonPath('meta.deduplicated', true)
+            ->assertJsonMissingPath('data.revealed_reward');
+
+        $this->postJson('/api/task-records', $creationPayload)
+            ->assertOk()
+            ->assertJsonPath('data.revealed_reward.item_slug', $reward['item_slug']);
+
+        $this->assertSame(10, TaskRecord::query()->count());
+        $this->assertSame(11, TaskRecordOperation::query()->count());
     }
 
     public function test_duplicate_member_task_date_with_different_key_is_deduplicated(): void
@@ -280,6 +321,45 @@ class OshigotoPersistenceTest extends TestCase
             'idempotency_key' => 'point-snapshot-key',
             'granted_point_value' => 10,
         ]);
+    }
+
+    public function test_granted_point_value_migration_backfills_existing_records(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
+
+        $migration = require database_path(
+            'migrations/2026_07_17_000002_add_granted_point_value_to_task_records_table.php'
+        );
+        $migration->down();
+
+        $mother = FamilyMember::query()->where('role', 'mother')->firstOrFail();
+        $task = TaskDefinition::query()
+            ->where('owner_role', 'mother')
+            ->where('slug', 'shokki')
+            ->firstOrFail();
+        $task->update(['point_value' => 37]);
+
+        $recordId = DB::table('task_records')->insertGetId([
+            'family_member_id' => $mother->id,
+            'task_definition_id' => $task->id,
+            'record_date' => '2026-07-16',
+            'completed_at' => now('UTC'),
+            'cancelled_at' => null,
+            'source' => 'web',
+            'idempotency_key' => 'pre-point-snapshot-record',
+            'created_at' => now('UTC'),
+            'updated_at' => now('UTC'),
+        ]);
+
+        $migration->up();
+
+        $this->assertSame(
+            37,
+            (int) DB::table('task_records')->where('id', $recordId)->value('granted_point_value')
+        );
+        $this->getJson('/api/rewards/summary?member=mother&date=2026-07-16')
+            ->assertOk()
+            ->assertJsonPath('data.points', 37);
     }
 
     public function test_cancelled_record_can_be_recreated_on_same_day(): void
