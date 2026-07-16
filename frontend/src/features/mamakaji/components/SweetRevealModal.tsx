@@ -19,7 +19,7 @@ export function SweetRevealModal({
   points,
   onClose,
 }: SweetRevealModalProps) {
-  const ticketRemaining = remainingKajiForTicket(points + POINT_PER_STAMP);
+  const ticketRemaining = remainingKajiForTicket(points);
 
   return (
     <div

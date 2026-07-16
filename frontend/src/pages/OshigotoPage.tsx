@@ -7,15 +7,13 @@ import { ProgressHero } from "../features/oshigoto/components/ProgressHero";
 import { TaskRow } from "../features/oshigoto/components/TaskRow";
 import { ZombieRevealModal } from "../features/oshigoto/components/ZombieRevealModal";
 import {
-  countCompletedTasks,
-  INITIAL_JAR,
   INITIAL_TASKS,
-  pickRandomZombie,
-  STAMP_SIZE,
   STREAK_DAYS,
+  ZOMBIES,
   type Task,
   type Zombie,
 } from "../features/oshigoto/data";
+import { useOshigotoTasks } from "../features/oshigoto/queries/useOshigotoTasks";
 import "../features/oshigoto/oshigoto.css";
 
 function ShizukuIcon() {
@@ -63,48 +61,54 @@ function RibbonIcon() {
 }
 
 export function OshigotoPage() {
-  const [tasks, setTasks] = useState<Task[]>(() =>
-    INITIAL_TASKS.map((task) => ({ ...task })),
-  );
-  const [count, setCount] = useState(
-    () => INITIAL_JAR + countCompletedTasks(INITIAL_TASKS),
-  );
-  const [revealed, setRevealed] = useState<Zombie | null>(null);
+  const {
+    data,
+    error,
+    isError,
+    isPending,
+    refetch,
+    toggleTask,
+    revealedReward,
+    closeReveal,
+    gaugeCount: count,
+    syncText,
+    saveError,
+  } = useOshigotoTasks();
   const [cheer, setCheer] = useState<{ taskId: string } | null>(null);
   const [collectedZombies, setCollectedZombies] = useState<Zombie[]>([]);
   const [plusOneTaskId, setPlusOneTaskId] = useState<string | null>(null);
   const [dropTick, setDropTick] = useState(0);
   const plusOneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countRef = useRef(0);
+
+  const tasks: Task[] = (data?.tasks ?? []).map((apiTask, index) => {
+    const visual = INITIAL_TASKS.find((task) => task.id === apiTask.slug);
+    return {
+      id: apiTask.slug,
+      emoji: visual?.emoji ?? "✨",
+      label: apiTask.title,
+      praise: visual?.praise ?? `${apiTask.title}、できたね！`,
+      done: apiTask.done,
+      tone: visual?.tone ?? (index % 2 === 0 ? "lav" : "peri"),
+    };
+  });
+
+  const revealed =
+    revealedReward === null
+      ? null
+      : (ZOMBIES.find(
+          (zombie) => zombie.id === revealedReward.item_slug,
+        ) ?? {
+          id: revealedReward.item_slug,
+          emoji: "🎁",
+          name: "ひみつのごほうび",
+        });
 
   const handleToggleTask = (id: string) => {
-    const task = tasks.find((item) => item.id === id);
+    const task = data?.tasks.find((item) => item.slug === id);
     if (!task) return;
 
     const nextDone = !task.done;
-
-    setTasks((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, done: nextDone } : item,
-      ),
-    );
-
-    setCount((current) => {
-      const nextCount = nextDone ? current + 1 : Math.max(0, current - 1);
-      countRef.current = nextCount;
-      if (nextDone && nextCount >= STAMP_SIZE) {
-        if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-        revealTimerRef.current = setTimeout(() => {
-          revealTimerRef.current = null;
-          if (countRef.current >= STAMP_SIZE) {
-            setCheer(null);
-            setRevealed(pickRandomZombie());
-          }
-        }, 800);
-      }
-      return nextCount;
-    });
+    toggleTask(id);
 
     if (nextDone) {
       setCheer({ taskId: id });
@@ -124,19 +128,17 @@ export function OshigotoPage() {
     if (!revealed) return;
 
     setCollectedZombies((prev) => [...prev, revealed]);
-    setCount((current) => Math.max(0, current - STAMP_SIZE));
-    setRevealed(null);
+    setCheer(null);
+    closeReveal();
   };
 
   useEffect(() => {
     return () => {
       if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
-      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     };
   }, []);
 
-  const carryover =
-    revealed !== null ? Math.max(0, count - STAMP_SIZE) : 0;
+  const carryover = revealed !== null ? (data?.summary.gauge_count ?? 0) : 0;
 
   return (
     <>
@@ -156,6 +158,24 @@ export function OshigotoPage() {
           </span>
         </header>
 
+        {syncText && (
+          <p
+            className="-mt-2 mb-2 text-right text-[11px] text-[var(--osh-ink-faint)]"
+            role="status"
+            aria-live="polite"
+          >
+            {syncText}
+          </p>
+        )}
+        {saveError && (
+          <p
+            className="-mt-2 mb-2 text-right text-[11px] text-[var(--osh-ink-soft)]"
+            role="alert"
+          >
+            {saveError}
+          </p>
+        )}
+
         <OshigotoTabs />
 
         <ProgressHero count={count} />
@@ -172,6 +192,27 @@ export function OshigotoPage() {
         </div>
 
         <div className="mt-2.5 overflow-hidden rounded-2xl border border-[var(--osh-line)] bg-[var(--osh-card)] shadow-[var(--osh-shadow-sm)]">
+          {isPending && (
+            <p className="px-3 py-5 text-center text-xs text-[var(--osh-ink-soft)]">
+              今日のおしごとを読み込んでいます…
+            </p>
+          )}
+          {isError && !data && (
+            <div className="px-3 py-5 text-center" role="alert">
+              <p className="text-xs text-[var(--osh-ink-soft)]">
+                {error instanceof Error
+                  ? error.message
+                  : "おしごとを読み込めませんでした。"}
+              </p>
+              <button
+                type="button"
+                className="mt-2 min-h-11 px-3 text-xs font-bold text-[var(--osh-violet-deep)] underline"
+                onClick={() => void refetch()}
+              >
+                もう一度試す
+              </button>
+            </div>
+          )}
           {tasks.map((task) => (
             <TaskRow
               key={task.id}
@@ -197,7 +238,7 @@ export function OshigotoPage() {
         )}
     </OshigotoPageShell>
 
-      {cheer && (() => {
+      {cheer && !revealed && (() => {
         const cheerTask = tasks.find((item) => item.id === cheer.taskId);
         if (!cheerTask) return null;
         return (

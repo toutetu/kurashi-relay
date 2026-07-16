@@ -9,15 +9,13 @@ import { PointsChip } from "../features/mamakaji/components/PointsChip";
 import { SweetRevealModal } from "../features/mamakaji/components/SweetRevealModal";
 import { useMamaKaji } from "../features/mamakaji/context/MamaKajiContext";
 import {
-  countCompletedKaji,
-  INITIAL_JAR,
   INITIAL_KAJI,
-  pickRandomSweet,
-  STAMP_SIZE,
   STREAK_DAYS,
+  SWEETS,
   type KajiTask,
   type Sweet,
 } from "../features/mamakaji/data";
+import { useMamaKajiTasks } from "../features/mamakaji/queries/useMamaKajiTasks";
 import "../features/mamakaji/mamakaji.css";
 
 function ShizukuIcon() {
@@ -65,49 +63,63 @@ function RibbonIcon() {
 }
 
 export function MamaKajiPage() {
-  const { collectSweet, points } = useMamaKaji();
-  const [tasks, setTasks] = useState<KajiTask[]>(() =>
-    INITIAL_KAJI.map((task) => ({ ...task })),
-  );
-  const [count, setCount] = useState(
-    () => INITIAL_JAR + countCompletedKaji(INITIAL_KAJI),
-  );
-  const [revealed, setRevealed] = useState<Sweet | null>(null);
+  const { points } = useMamaKaji();
+  const {
+    data,
+    error,
+    isError,
+    isPending,
+    refetch,
+    toggleTask,
+    revealedReward,
+    closeReveal,
+    gaugeCount: count,
+    syncText,
+    saveError,
+  } = useMamaKajiTasks();
   const [cheer, setCheer] = useState<{ taskId: string } | null>(null);
   const [plusOneTaskId, setPlusOneTaskId] = useState<string | null>(null);
   const [dropTick, setDropTick] = useState(0);
   const plusOneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countRef = useRef(0);
+
+  const tasks: KajiTask[] = (data?.tasks ?? []).map((apiTask, index) => {
+    const visual = INITIAL_KAJI.find((task) => task.id === apiTask.slug);
+    const fallbackTones: KajiTask["tone"][] = [
+      "rasp",
+      "sage",
+      "plum",
+      "cara",
+    ];
+    return {
+      id: apiTask.slug,
+      emoji: visual?.emoji ?? "✨",
+      label: apiTask.title,
+      praise: visual?.praise ?? `${apiTask.title}、おつかれさま！`,
+      done: apiTask.done,
+      tone: visual?.tone ?? fallbackTones[index % fallbackTones.length]!,
+    };
+  });
+
+  const revealed: Sweet | null =
+    revealedReward === null
+      ? null
+      : (SWEETS.find((sweet) => sweet.id === revealedReward.item_slug) ?? {
+          id: revealedReward.item_slug,
+          emoji: "🎁",
+          name: "ひみつのおやつ",
+          country: "どこかの国",
+          flag: "🌍",
+          recipe: ["箱を開ける", "香りを楽しむ", "一緒に味わう"],
+          mapNote: "世界のどこかから届いたおやつ。",
+          culture: "詳しいお話は、これからのお楽しみ。",
+        });
 
   const handleToggleTask = (id: string) => {
-    const task = tasks.find((item) => item.id === id);
+    const task = data?.tasks.find((item) => item.slug === id);
     if (!task) return;
 
     const nextDone = !task.done;
-
-    setTasks((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, done: nextDone } : item,
-      ),
-    );
-
-    setCount((current) => {
-      const nextCount = nextDone ? current + 1 : Math.max(0, current - 1);
-      countRef.current = nextCount;
-      if (nextDone && nextCount >= STAMP_SIZE) {
-        // キャンディが着地するのを見せてから、おやつ登場
-        if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-        revealTimerRef.current = setTimeout(() => {
-          revealTimerRef.current = null;
-          if (countRef.current >= STAMP_SIZE) {
-            setCheer(null);
-            setRevealed(pickRandomSweet());
-          }
-        }, 800);
-      }
-      return nextCount;
-    });
+    toggleTask(id);
 
     if (nextDone) {
       setCheer({ taskId: id });
@@ -126,19 +138,17 @@ export function MamaKajiPage() {
   const handleCloseReveal = () => {
     if (!revealed) return;
 
-    collectSweet(revealed);
-    setCount((current) => Math.max(0, current - STAMP_SIZE));
-    setRevealed(null);
+    setCheer(null);
+    closeReveal();
   };
 
   useEffect(() => {
     return () => {
       if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
-      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     };
   }, []);
 
-  const carryover = revealed !== null ? Math.max(0, count - STAMP_SIZE) : 0;
+  const carryover = revealed !== null ? (data?.summary.gauge_count ?? 0) : 0;
 
   return (
     <>
@@ -158,6 +168,24 @@ export function MamaKajiPage() {
           </span>
         </header>
 
+        {syncText && (
+          <p
+            className="-mt-2 mb-2 text-right text-[11px] text-[var(--mkj-ink-faint)]"
+            role="status"
+            aria-live="polite"
+          >
+            {syncText}
+          </p>
+        )}
+        {saveError && (
+          <p
+            className="-mt-2 mb-2 text-right text-[11px] text-[var(--mkj-ink-soft)]"
+            role="alert"
+          >
+            {saveError}
+          </p>
+        )}
+
         <MamaKajiTabs />
 
         <KajiProgressHero count={count} />
@@ -176,6 +204,27 @@ export function MamaKajiPage() {
         </div>
 
         <div className="mt-2.5 overflow-hidden rounded-2xl border border-[var(--mkj-line)] bg-[var(--mkj-card)] shadow-[var(--mkj-shadow-sm)]">
+          {isPending && (
+            <p className="px-3 py-5 text-center text-xs text-[var(--mkj-ink-soft)]">
+              今日の家事を読み込んでいます…
+            </p>
+          )}
+          {isError && !data && (
+            <div className="px-3 py-5 text-center" role="alert">
+              <p className="text-xs text-[var(--mkj-ink-soft)]">
+                {error instanceof Error
+                  ? error.message
+                  : "今日の家事を読み込めませんでした。"}
+              </p>
+              <button
+                type="button"
+                className="mt-2 min-h-11 px-3 text-xs font-bold text-[var(--mkj-rasp-deep)] underline"
+                onClick={() => void refetch()}
+              >
+                もう一度試す
+              </button>
+            </div>
+          )}
           {tasks.map((task) => (
             <KajiTaskRow
               key={task.id}
@@ -195,7 +244,7 @@ export function MamaKajiPage() {
         </p>
       </MamaKajiPageShell>
 
-      {cheer && (() => {
+      {cheer && !revealed && (() => {
         const cheerTask = tasks.find((item) => item.id === cheer.taskId);
         if (!cheerTask) return null;
         return (
