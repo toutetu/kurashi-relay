@@ -64,7 +64,7 @@ function GoodsGoalSection() {
   const canAfford = remaining <= 0;
 
   return (
-    <section className="mt-8">
+    <section className="mb-8">
       <div className="mb-3 flex items-center gap-2">
         <SavingsHeaderIcon />
         <h2 className="text-sm font-extrabold text-[var(--osh-ink)]">
@@ -187,6 +187,8 @@ export function OshigotoUsjPage() {
     <OshigotoPageShell>
       <OshigotoTabs />
 
+      <GoodsGoalSection />
+
       <header className="mb-3.5 flex items-center gap-2">
         <CheckHeaderIcon />
         <h1 className="text-[15px] font-extrabold text-[var(--osh-ink)]">
@@ -217,8 +219,6 @@ export function OshigotoUsjPage() {
           <RideRow key={ride.id} ride={ride} onToggle={handleToggleRide} />
         ))}
       </div>
-
-      <GoodsGoalSection />
 
       {revealed && (
         <ZombieRevealModal
