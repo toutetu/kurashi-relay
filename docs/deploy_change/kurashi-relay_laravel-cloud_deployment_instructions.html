@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>くらしリレー Laravel Cloud移行・データ永続化 指示書</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f7fb;
+  --paper: #ffffff;
+  --text: #24262f;
+  --muted: #666a78;
+  --accent: #6f4cc3;
+  --border: #dedfea;
+  --code: #f0eef8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Yu Gothic UI",
+               "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  line-height: 1.75;
+}
+main {
+  max-width: 980px;
+  margin: 32px auto;
+  padding: 48px 56px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 12px 34px rgba(37, 32, 66, .08);
+}
+h1, h2, h3, h4 {
+  line-height: 1.35;
+  color: #2f2350;
+}
+h1 {
+  font-size: 2rem;
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: .55rem;
+}
+h2 {
+  margin-top: 2.4rem;
+  font-size: 1.55rem;
+  border-left: 6px solid var(--accent);
+  padding-left: .75rem;
+}
+h3 { margin-top: 1.8rem; }
+p { margin: .75rem 0; }
+ul, ol { padding-left: 1.7rem; }
+li { margin: .25rem 0; }
+code {
+  background: var(--code);
+  padding: .12rem .35rem;
+  border-radius: 5px;
+  font-family: Consolas, "SFMono-Regular", monospace;
+}
+pre {
+  overflow-x: auto;
+  background: #211b30;
+  color: #f5f2ff;
+  padding: 1rem 1.1rem;
+  border-radius: 10px;
+}
+pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+strong { color: #3c276b; }
+@media (max-width: 720px) {
+  main {
+    margin: 0;
+    padding: 24px 20px;
+    border: 0;
+    border-radius: 0;
+  }
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.3rem; }
+}
+@media print {
+  body { background: #fff; }
+  main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>くらしリレー</h1>
+<h1>Laravel Cloud移行・データ永続化 指示書</h1>
+<p>作成日: 2026-07-16  </p>
+<p>対象リポジトリ: <code>toutetu/kurashi-relay</code>  </p>
+<p>対象ブランチ: <code>main</code>  </p>
+<p>構成: <code>frontend/</code> = React + TypeScript + Vite、<code>backend/</code> = Laravel 12 REST API</p>
+<hr>
+<h2>1. この指示書の目的</h2>
+<p>現在Renderで公開している「くらしリレー」について、次の構成へ安全に移行する。</p>
+<ul>
+<li>ReactフロントエンドはRender Static Siteに残す</li>
+<li>Laravel APIはLaravel Cloudへ移す</li>
+<li>データベースはLaravel CloudのServerless Postgresを使用する</li>
+<li>Laravel Cloudのリージョンは東京を第一候補とする</li>
+<li>現在のRender APIは、移行確認が終わるまで削除しない</li>
+<li>将来的なAWS移行は別フェーズとし、今回の実装範囲に混ぜない</li>
+</ul>
+<p>明日から実利用するため、機能拡張よりも次を優先する。</p>
+<ol>
+<li>現在動いている画面を壊さない</li>
+<li>初回アクセス時の長い待ち時間を改善する</li>
+<li>記録が画面更新で消えないようにする</li>
+<li>問題発生時に旧Render APIへ戻せるようにする</li>
+<li>実際のURL・設定値を確認せず推測しない</li>
+</ol>
+<hr>
+<h2>2. 確定したデプロイ方針</h2>
+<h3>本番構成</h3>
+<pre><code class="language-text">
+利用者のスマートフォン／PC
+
+        │
+
+        ▼
+
+Render Static Site
+
+React + TypeScript + Vite
+
+        │ HTTPS
+
+        ▼
+
+Laravel Cloud
+
+Laravel 12 REST API
+
+東京リージョン
+
+        │
+
+        ▼
+
+Laravel Serverless Postgres
+
+Laravel APIと同一リージョン
+
+</code></pre>
+<h3>採用理由</h3>
+<ul>
+<li>Laravel Cloudはすでに契約・カード登録済みである</li>
+<li>月額課金を既存のLaravel Cloud利用分とまとめて確認できる</li>
+<li>Laravelに最適化された運用画面を使える</li>
+<li>東京リージョンを利用できる</li>
+<li>ReactをRenderに残すことで、今回の変更範囲をAPIとDBに限定できる</li>
+<li>フロントとバックエンドを同時に全面移行するより、障害時の切り分けが容易である</li>
+</ul>
+<hr>
+<h2>3. 現在の重要な状態</h2>
+<h3>3.1 リポジトリ構成</h3>
+<pre><code class="language-text">
+kurashi-relay/
+
+├─ backend/      Laravel 12 REST API
+
+├─ frontend/     React + TypeScript + Vite
+
+├─ docs/
+
+└─ scripts/
+
+</code></pre>
+<p>Laravel Cloudでは、モノレポ内のアプリルートとして<code>backend/</code>を指定する。</p>
+<h3>3.2 現在のAPI</h3>
+<p>現時点で確認できている主なAPIは次のとおり。</p>
+<pre><code class="language-text">
+GET /api/health
+
+GET /api/dashboard
+
+</code></pre>
+<h3>3.3 現在のデータ保存</h3>
+<p>現在の「くらしのおしごと」「ママの家事手帖」等の一部状態は、Reactコンポーネント内の<code>useState</code>で保持されている。</p>
+<p>そのため、現状では次の問題がある。</p>
+<ul>
+<li>ページ更新で状態が初期化される可能性がある</li>
+<li>別端末・別ブラウザでは状態を共有できない</li>
+<li>Laravel CloudへAPIを移すだけでは記録保存は実現しない</li>
+<li>Postgresを作るだけでも、保存APIがなければデータは入らない</li>
+</ul>
+<p><strong>デプロイ先移行とデータ永続化は別作業として扱い、段階的に実装すること。</strong></p>
+<hr>
+<h2>4. 今回の実装範囲</h2>
+<h3>必須</h3>
+<ul>
+<li>Laravel APIをLaravel Cloudへデプロイ</li>
+<li>Laravel Serverless Postgresを作成し、API環境へ接続</li>
+<li>Laravel Cloud用の本番環境変数を設定</li>
+<li>RenderフロントからLaravel Cloud APIへ接続</li>
+<li>CORS設定を本番フロントURLに対応</li>
+<li>APIヘルスチェック</li>
+<li>基本的なデータ保存用マイグレーション</li>
+<li>記録保存API</li>
+<li>Reactから記録保存APIを呼び出す</li>
+<li>通信失敗時に入力を失わない暫定ローカル保存</li>
+<li>移行前後のスモークテスト</li>
+<li>ロールバック手順の確認</li>
+<li>設計判断を<code>docs/design-decisions.md</code>へ記録</li>
+</ul>
+<h3>今回は行わない</h3>
+<ul>
+<li>ReactのLaravel Cloud移行</li>
+<li>ReactのAWS移行</li>
+<li>Laravel APIのAWS移行</li>
+<li>ProjnextのRender移行</li>
+<li>本格的な複数ユーザー認証</li>
+<li>Google OAuth</li>
+<li>Google Calendar連携</li>
+<li>キュー、Redis、メール通知</li>
+<li>PDF出力</li>
+<li>大規模なUI変更</li>
+<li>既存デザインの再設計</li>
+</ul>
+<hr>
+<h2>5. 実装の基本原則</h2>
+<ol>
+<li><strong>既存画面を壊さない</strong></li>
+<li><strong>破壊的マイグレーションを行わない</strong></li>
+<li><strong>本番データを消す処理を自動実行しない</strong></li>
+<li><strong>秘密情報をGitへコミットしない</strong></li>
+<li><strong>実URL、Laravel Cloud環境名、Renderサービス名を推測しない</strong></li>
+<li><strong>旧Render APIをすぐ削除しない</strong></li>
+<li><strong>切り替え前にLaravel Cloud API単体で動作確認する</strong></li>
+<li><strong>フロント切り替えは環境変数だけで戻せる構成にする</strong></li>
+<li><strong>入力直後は画面へ反映し、通信失敗時も記録を失わせない</strong></li>
+<li><strong>既存の「せめない設計」と世界観を変更しない</strong></li>
+<li><strong>機能追加より、保存・復元・切り戻しを優先する</strong></li>
+<li><strong>未確認事項は推測せず、作業ログへ「要確認」と明記する</strong></li>
+</ol>
+<hr>
+<h2>6. AIごとの役割分担</h2>
+<h3>6.1 Fable</h3>
+<h4>主担当</h4>
+<ul>
+<li>全体進行管理</li>
+<li>本指示書と既存設計資料の整合確認</li>
+<li>Laravel Cloud移行の手順整理</li>
+<li>実際の管理画面を見ながら設定値を確認</li>
+<li>Cursorへ渡す実装指示の具体化</li>
+<li>Codexへ渡すレビュー対象の整理</li>
+<li>変更差分のレビュー</li>
+<li>実機確認</li>
+<li>ロールバック判断</li>
+<li><code>docs/design-decisions.md</code>への設計判断記録</li>
+<li>完了時の引継ぎと日報整理</li>
+</ul>
+<h4>原則</h4>
+<ul>
+<li>大規模な実装は直接行わずCursorへ委譲する</li>
+<li>難しい設計判断・データ整合性・セキュリティレビューはCodexへ依頼する</li>
+<li>実URLや環境設定値を確認せず補完しない</li>
+<li>変更前後の状態を記録する</li>
+<li>実装完了、デプロイ完了などの区切りで進捗をまとめる</li>
+</ul>
+<h3>6.2 Cursor</h3>
+<h4>主担当</h4>
+<ul>
+<li>Laravelバックエンド実装</li>
+<li>Postgres向けマイグレーション</li>
+<li>Eloquentモデル</li>
+<li>Controller、Service、Request、Resource</li>
+<li>保存・取得API</li>
+<li>APIテスト</li>
+<li>React側のAPIクライアント修正</li>
+<li><code>localStorage</code>による暫定保存</li>
+<li>再送・同期処理の最小実装</li>
+<li>Render用環境変数参照の確認</li>
+<li>Laravel Cloudで実行可能なビルド設定の確認</li>
+<li>既存テスト、Lint、型チェック、ビルドの実行</li>
+</ul>
+<h4>実装時の注意</h4>
+<ul>
+<li>最初に<code>AGENTS.md</code>を読む</li>
+<li>既存コードと既存設計を確認してから変更する</li>
+<li>大規模なリファクタリングを同時に行わない</li>
+<li>既存UI・CSS・演出を変更しない</li>
+<li>API URLをソースコードへ直書きしない</li>
+<li>本番URLをコミットしない</li>
+<li><code>.env</code>をコミットしない</li>
+<li>migration内で既存テーブルをdropしない</li>
+<li>保存失敗時にユーザー操作を失わせない</li>
+<li>楽観的更新を行う場合は失敗時の状態を明示する</li>
+<li>最後に変更ファイル、テスト結果、未完了事項を報告する</li>
+</ul>
+<h3>6.3 Codex</h3>
+<h4>主担当</h4>
+<ul>
+<li>Laravel Cloud移行設計のレビュー</li>
+<li>DBスキーマレビュー</li>
+<li>API契約レビュー</li>
+<li>データ整合性レビュー</li>
+<li>同期・重複登録・再送設計レビュー</li>
+<li>CORS・認証前提・秘密情報管理のレビュー</li>
+<li>Laravel Cloudのデプロイ設定レビュー</li>
+<li>マイグレーションの安全性レビュー</li>
+<li>Cursor実装差分のコードレビュー</li>
+<li>テスト不足・障害時挙動の指摘</li>
+<li>AWS移行を見据えた過度なベンダーロックインの有無の確認</li>
+</ul>
+<h4>Codexへ特に確認させる項目</h4>
+<ul>
+<li>同じ操作を再送した際に二重加算されないか</li>
+<li>完了取消でポイントやスタンプが不整合にならないか</li>
+<li>子どもの操作と母の確認操作を将来区別できるか</li>
+<li>日付境界を日本時間で正しく扱えるか</li>
+<li>API失敗後の再送で二重登録されないか</li>
+<li>PostgreSQLで問題なく動作する型になっているか</li>
+<li>本番マイグレーションを再実行しても安全か</li>
+<li>Laravel CloudのScale to Zero復帰後にエラーにならないか</li>
+<li>CORS許可範囲が広すぎないか</li>
+<li><code>APP_DEBUG=false</code>になっているか</li>
+</ul>
+<hr>
+<h2>7. 推奨する作業フェーズ</h2>
+<h3>Phase 0: 現状確認と退避</h3>
+<h4>作業</h4>
+<ul>
+<li>現在のRenderフロントURLを確認</li>
+<li>現在のRender API URLを確認</li>
+<li>Renderのサービス名を確認</li>
+<li>Laravel Cloudの組織名を確認</li>
+<li>Projnextと同一組織か確認</li>
+<li>Laravel Cloudで利用可能な東京リージョンを確認</li>
+<li>現在の本番環境変数を一覧化</li>
+<li>現在の<code>main</code>最新コミットを確認</li>
+<li>ローカルで既存テストを実行</li>
+<li>現在の本番画面をスクリーンショット保存</li>
+<li>現在のAPIレスポンスを保存</li>
+<li>旧Render API URLをロールバック用に記録</li>
+</ul>
+<h4>完了条件</h4>
+<ul>
+<li>現在のURLとサービス名が推測ではなく実値で記録されている</li>
+<li>既存画面とAPIの正常状態が確認できている</li>
+<li>ロールバック先が明確である</li>
+</ul>
+<h3>Phase 1: Laravel CloudへAPIのみ先行デプロイ</h3>
+<h4>Laravel Cloud設定</h4>
+<ul>
+<li>リポジトリ: <code>toutetu/kurashi-relay</code></li>
+<li>ブランチ: <code>main</code></li>
+<li>Application Root: <code>backend</code></li>
+<li>リージョン: 東京</li>
+<li>Compute: 最小構成から開始</li>
+<li>Scale to Zero: 有効</li>
+<li>PHP: Laravel 12対応バージョン</li>
+<li><code>APP_ENV=production</code></li>
+<li><code>APP_DEBUG=false</code></li>
+</ul>
+<h4>環境変数</h4>
+<p>最低限、次を設定する。</p>
+<pre><code class="language-env">
+APP_NAME=&quot;くらしリレー API&quot;
+
+APP_ENV=production
+
+APP_DEBUG=false
+
+APP_URL=&lt;Laravel Cloudで発行された実URL&gt;
+
+APP_LOCALE=ja
+
+APP_FALLBACK_LOCALE=ja
+
+CORS_ALLOWED_ORIGINS=&lt;Renderフロントの実URL&gt;
+
+</code></pre>
+<p>DB関連はLaravel Cloudから注入される値を使用し、ソースコードへ記載しない。</p>
+<h4>動作確認</h4>
+<pre><code class="language-text">
+GET &lt;Laravel Cloud URL&gt;/api/health
+
+GET &lt;Laravel Cloud URL&gt;/api/dashboard
+
+</code></pre>
+<h4>完了条件</h4>
+<ul>
+<li>Laravel Cloud URLから200が返る</li>
+<li>エラーレスポンスがHTMLではなく適切なJSONで返る</li>
+<li>ログに致命的エラーがない</li>
+<li>まだRenderフロントの接続先は変更しない</li>
+</ul>
+<h3>Phase 2: Serverless Postgres作成・接続</h3>
+<h4>設定</h4>
+<ul>
+<li>Laravel APIと同じ東京リージョン</li>
+<li>最小のCompute設定から開始</li>
+<li>容量は初期最小構成</li>
+<li>利用がない場合の休止を有効化</li>
+<li>Laravel Cloudアプリ環境へAttach</li>
+</ul>
+<h4>確認</h4>
+<ul>
+<li><code>DB_CONNECTION=pgsql</code>として接続されること</li>
+<li>Laravelから疎通できること</li>
+<li><code>php artisan migrate:status</code>が実行できること</li>
+<li>文字コード、日本語、日時が正常に保存できること</li>
+<li>Laravel側のタイムゾーン方針を確認すること</li>
+</ul>
+<h4>日時方針</h4>
+<ul>
+<li>DB保存時刻は原則UTC</li>
+<li>画面上の日付判定と表示は<code>Asia/Tokyo</code></li>
+<li>「今日の記録」の日付境界は日本時間</li>
+<li>日付のみの値と日時の値を混同しない</li>
+</ul>
+<h3>Phase 3: 最小データモデル実装</h3>
+<p>最初から完全なユーザー管理を作らず、母・娘の固定利用を前提に最小構成で始める。ただし、将来の複数ユーザー対応を妨げない設計にする。</p>
+<h4>推奨テーブル</h4>
+<p>名称は既存設計と実装の整合を確認して最終決定する。</p>
+<h5><code>family_members</code></h5>
+<ul>
+<li><code>id</code></li>
+<li><code>name</code></li>
+<li><code>role</code>（例: <code>mother</code>, <code>child</code>）</li>
+<li>timestamps</li>
+</ul>
+<h5><code>task_definitions</code></h5>
+<ul>
+<li><code>id</code></li>
+<li><code>owner_role</code></li>
+<li><code>category</code></li>
+<li><code>title</code></li>
+<li><code>point_value</code></li>
+<li><code>is_active</code></li>
+<li><code>sort_order</code></li>
+<li>timestamps</li>
+</ul>
+<h5><code>task_records</code></h5>
+<ul>
+<li><code>id</code></li>
+<li><code>family_member_id</code></li>
+<li><code>task_definition_id</code></li>
+<li><code>record_date</code></li>
+<li><code>completed_at</code></li>
+<li><code>source</code></li>
+<li><code>idempotency_key</code></li>
+<li>timestamps</li>
+</ul>
+<h5><code>reward_balances</code>または導出可能な履歴テーブル</h5>
+<p>ポイント残高を直接更新するだけの設計にせず、可能なら履歴から再計算できる形を優先する。</p>
+<h5><code>reward_collections</code></h5>
+<ul>
+<li>獲得したゾンビ</li>
+<li>獲得したお菓子</li>
+<li>獲得日</li>
+<li>種別</li>
+<li>関連する達成記録</li>
+</ul>
+<h4>必須設計条件</h4>
+<ul>
+<li>同一タスク・同一日・同一メンバーの重複完了を防止</li>
+<li>API再送による二重加算を防止</li>
+<li>完了取消を履歴として扱える</li>
+<li>ポイント残高と実績の不整合を検知できる</li>
+<li>将来、母による確認済み状態を追加できる</li>
+<li>将来、入力者区分を追加できる</li>
+<li>将来、複数端末から使える</li>
+<li>個人情報を必要以上に保存しない</li>
+</ul>
+<h3>Phase 4: 保存・取得API実装</h3>
+<p>APIパスは既存契約との整合を確認して決める。例:</p>
+<pre><code class="language-text">
+GET    /api/tasks?date=YYYY-MM-DD&amp;member=child
+
+POST   /api/task-records
+
+DELETE /api/task-records/{id}
+
+GET    /api/rewards/summary?member=child
+
+GET    /api/rewards/collections?member=child
+
+</code></pre>
+<h4><code>POST /api/task-records</code>の要件</h4>
+<ul>
+<li>入力検証</li>
+<li>認識可能なタスクのみ登録</li>
+<li><code>idempotency_key</code>を受け取れる</li>
+<li>同一キーの再送は同じ結果を返す</li>
+<li>成功時に最新ポイントを返す</li>
+<li>DBトランザクションを使用</li>
+<li>二重加算を防ぐ</li>
+<li>エラー時に部分更新を残さない</li>
+</ul>
+<h4>削除・取消の要件</h4>
+<ul>
+<li>物理削除より取消履歴または論理取消を検討</li>
+<li>取消後のポイントを再計算</li>
+<li>10回達成報酬などの境界をまたぐ場合の挙動を定義</li>
+<li>一度獲得したコレクションを取消で消すかどうかは、仕様確認なしに決めない</li>
+</ul>
+<h3>Phase 5: Reactの永続化対応</h3>
+<h4>基本方針</h4>
+<ul>
+<li>初回表示時にAPIから当日の状態を取得</li>
+<li>操作時は画面へ即時反映</li>
+<li>同時にAPIへ保存</li>
+<li>API失敗時は<code>localStorage</code>へ未同期記録を保存</li>
+<li>次回起動または通信復旧時に再送</li>
+<li><code>idempotency_key</code>で二重登録を防止</li>
+<li>同期状態をユーザーに責める表現で表示しない</li>
+</ul>
+<h4>推奨表示</h4>
+<ul>
+<li>正常保存: 原則表示不要</li>
+<li>同期中: 小さく「保存中」</li>
+<li>オフライン／失敗: 「あとで保存します」</li>
+<li>復旧後: 「保存できました」</li>
+</ul>
+<p>「失敗しました」「入力が無効です」など、利用者を責める印象の強い表現は避ける。</p>
+<h4>暫定ローカル保存対象</h4>
+<ul>
+<li>タスク完了状態</li>
+<li>未同期操作</li>
+<li>現在画面に必要なポイント表示</li>
+<li>獲得演出済み状態</li>
+<li>APIの最終同期日時</li>
+</ul>
+<p><code>localStorage</code>は本番DBの代替ではなく、通信障害時の一時退避として扱う。</p>
+<h3>Phase 6: Laravel Cloud APIの本番試験</h3>
+<h4>APIテスト</h4>
+<ul>
+<li><code>/api/health</code></li>
+<li>当日タスク取得</li>
+<li>完了登録</li>
+<li>同一リクエスト再送</li>
+<li>完了取消</li>
+<li>ポイント更新</li>
+<li>10回達成境界</li>
+<li>日本時間の日付切り替え</li>
+<li>不正日付</li>
+<li>存在しないタスク</li>
+<li>DB休止後の初回アクセス</li>
+<li>Laravel Cloud再デプロイ後の保存データ維持</li>
+</ul>
+<h4>Reactテスト</h4>
+<ul>
+<li>初回読込</li>
+<li>タスク完了</li>
+<li>再読み込み後の復元</li>
+<li>ブラウザを閉じて再表示</li>
+<li>スマートフォンでの操作</li>
+<li>API停止時の操作</li>
+<li>API復旧後の同期</li>
+<li>同じ操作の連打</li>
+<li>戻る操作</li>
+<li>既存の応援オーバーレイ</li>
+<li>ゾンビ／お菓子獲得演出</li>
+</ul>
+<h4>完了条件</h4>
+<ul>
+<li>ページ更新後も記録が残る</li>
+<li>同じ操作を再送しても二重加算されない</li>
+<li>Laravel Cloudが休止から復帰しても操作できる</li>
+<li>既存UI・演出が壊れていない</li>
+<li>Renderフロント切り替え前にAPI単体試験が完了している</li>
+</ul>
+<h3>Phase 7: Renderフロントの接続先切り替え</h3>
+<p>Render Static Siteの環境変数を変更する。</p>
+<pre><code class="language-env">
+VITE_API_BASE_URL=&lt;Laravel Cloud APIの実URL&gt;
+
+</code></pre>
+<h4>手順</h4>
+<ol>
+<li>現在の<code>VITE_API_BASE_URL</code>を記録</li>
+<li>Laravel Cloud API URLへ変更</li>
+<li>Render Static Siteを再デプロイ</li>
+<li>デプロイログ確認</li>
+<li>PCで確認</li>
+<li>スマートフォンで確認</li>
+<li>CORS確認</li>
+<li>保存・再読込確認</li>
+<li>旧Render APIは残したままにする</li>
+</ol>
+<h4>完了条件</h4>
+<ul>
+<li>RenderフロントからLaravel Cloud APIを呼べる</li>
+<li>ブラウザコンソールにCORSエラーがない</li>
+<li>API URLが本番ビルドへ正しく反映されている</li>
+<li>記録がPostgresへ保存される</li>
+<li>再読込後に復元できる</li>
+</ul>
+<h3>Phase 8: 安定確認と旧Render API停止</h3>
+<h4>安定確認</h4>
+<ul>
+<li>朝・昼・夜の複数回利用</li>
+<li>スマートフォンからの利用</li>
+<li>Laravel Cloudの休止復帰</li>
+<li>翌日の日付切り替え</li>
+<li>複数タスクの連続操作</li>
+<li>ポイント境界</li>
+<li>未同期記録の再送</li>
+</ul>
+<h4>旧Render APIの扱い</h4>
+<ol>
+<li>まず稼働したまま残す</li>
+<li>問題がなければ停止</li>
+<li>停止後も一定期間設定を保存</li>
+<li>最終確認後に削除を検討</li>
+</ol>
+<p>ユーザーの明示的な確認なしに、旧Render APIを削除しない。</p>
+<hr>
+<h2>8. ロールバック手順</h2>
+<p>Laravel Cloud側で重大な問題が発生した場合は、次の順番で戻す。</p>
+<ol>
+<li>Render Static Siteの<code>VITE_API_BASE_URL</code>を旧Render API URLへ戻す</li>
+<li>Renderフロントを再デプロイ</li>
+<li>旧画面が表示できることを確認</li>
+<li>Laravel Cloud側のログとDB状態を確認</li>
+<li>DBデータを削除せず原因調査</li>
+<li>修正後、再度Laravel Cloud API単体試験からやり直す</li>
+</ol>
+<h3>注意</h3>
+<p>旧Render APIへ戻した場合、旧APIがDB保存未対応であれば、Laravel Cloud移行後に保存したデータは旧画面へ表示されない可能性がある。</p>
+<p>フロント切り替え前に次を確認する。</p>
+<ul>
+<li>Laravel Cloud DBのバックアップ方法</li>
+<li>データエクスポート方法</li>
+<li>切り戻し時の表示差異</li>
+<li><code>localStorage</code>未同期データの保持</li>
+</ul>
+<hr>
+<h2>9. Laravel Cloud側で確認する項目</h2>
+<ul>
+<li>Application Rootが<code>backend</code></li>
+<li>対象ブランチが<code>main</code></li>
+<li>PHPバージョン</li>
+<li>東京リージョン</li>
+<li><code>APP_ENV=production</code></li>
+<li><code>APP_DEBUG=false</code></li>
+<li><code>APP_URL</code></li>
+<li><code>CORS_ALLOWED_ORIGINS</code></li>
+<li>DBのAttach状態</li>
+<li>DBリージョン</li>
+<li>デプロイコマンド</li>
+<li>マイグレーション実行方法</li>
+<li>Scale to Zero設定</li>
+<li>利用上限・通知設定</li>
+<li>ログ閲覧方法</li>
+<li>バックアップ／復元方法</li>
+</ul>
+<hr>
+<h2>10. Render側で確認する項目</h2>
+<ul>
+<li>Static Siteの実URL</li>
+<li>対象ブランチ</li>
+<li>Build Command</li>
+<li>Publish Directory</li>
+<li><code>VITE_API_BASE_URL</code></li>
+<li>再デプロイ結果</li>
+<li>旧Render APIの実URL</li>
+<li>旧Render APIのサービス名</li>
+<li>旧APIを停止・再開する方法</li>
+</ul>
+<hr>
+<h2>11. テスト・品質確認コマンド</h2>
+<h3>Laravel</h3>
+<pre><code class="language-bash">
+cd backend
+
+composer install
+
+php artisan test
+
+php artisan migrate:fresh --env=testing
+
+php vendor/bin/pint --test
+
+</code></pre>
+<p>本番環境では<code>migrate:fresh</code>を絶対に実行しない。</p>
+<p>本番は次のみ。</p>
+<pre><code class="language-bash">
+php artisan migrate --force
+
+</code></pre>
+<h3>React</h3>
+<pre><code class="language-bash">
+cd frontend
+
+npm install
+
+npm run lint
+
+npm run typecheck
+
+npm run test
+
+npm run build
+
+</code></pre>
+<h3>必須確認</h3>
+<ul>
+<li>テストが失敗したままデプロイしない</li>
+<li>既存テストを削除して通さない</li>
+<li>エラーを握りつぶさない</li>
+<li>本番API URLをテストへ直書きしない</li>
+</ul>
+<hr>
+<h2>12. 設計判断として記録する内容</h2>
+<p><code>docs/design-decisions.md</code>へ、少なくとも次を追記する。</p>
+<h3>Laravel Cloudを採用した判断</h3>
+<ul>
+<li>課題感: Render無料APIのコールドスタートで、実利用時の待ち時間が長い</li>
+<li>選択肢: Render有料化、Laravel Cloud、AWS</li>
+<li>決定: ReactはRenderに残し、Laravel APIとDBをLaravel Cloudへ移す</li>
+<li>理由: 既存契約を利用できる、カード再登録不要、費用確認が容易、Laravel運用に慣れている、東京リージョン、短期間で移行しやすい</li>
+</ul>
+<h3>ReactをRenderへ残す判断</h3>
+<ul>
+<li>課題感: API、DB、フロントを同時移行すると障害箇所が増える</li>
+<li>決定: 今回はフロントを移行しない</li>
+<li>理由: 変更範囲を限定し、環境変数だけで切り戻せるようにする</li>
+</ul>
+<h3>AWSを今回採用しない判断</h3>
+<ul>
+<li>課題感: AWSは学習したいが、明日から生活で使うアプリである</li>
+<li>決定: AWS移行は別フェーズ</li>
+<li>理由: IAM、ネットワーク、RDS、監視等の学習と本番移行を同時に行うリスクを避ける</li>
+</ul>
+<hr>
+<h2>13. 将来計画</h2>
+<h3>Projnext</h3>
+<p>将来的に、Laravel Cloud上のProjnextをRenderへ移す案を検討する。ただし、今回のくらしリレー移行と同時に行わない。</p>
+<p>検討時は次を比較する。</p>
+<ul>
+<li>Projnextの実利用頻度</li>
+<li>Laravel Cloudでのアプリ別使用量</li>
+<li>Render有料／無料構成</li>
+<li>コールドスタート許容度</li>
+<li>DB移行方法</li>
+<li>移行によるLaravel Cloud利用料金の削減額</li>
+</ul>
+<h3>AWS</h3>
+<p>AWSは次の移行・学習先候補とする。</p>
+<p>初回の学習対象は、生活で毎日使うくらしリレーより、影響の小さいProjnextまたは検証環境を優先する。</p>
+<p>候補構成:</p>
+<pre><code class="language-text">
+Render Static Site
+
+        │
+
+        ▼
+
+AWS App Runner
+
+Laravel API
+
+        │
+
+        ▼
+
+Amazon RDS PostgreSQL
+
+</code></pre>
+<p>AWS移行は別の指示書を作成し、費用上限・IAM・VPC・RDS・CloudWatch・バックアップ・ロールバックを設計してから開始する。</p>
+<hr>
+<h2>14. 完了報告フォーマット</h2>
+<p>各AIは作業完了時に次の形式で報告する。</p>
+<pre><code class="language-markdown">
+## 実施した作業
+
+
+
+- 
+
+- 
+
+
+
+## 変更したファイル
+
+
+
+- 
+
+- 
+
+
+
+## デプロイ先
+
+
+
+- Renderフロント:
+
+- Laravel Cloud API:
+
+- Database:
+
+- 対象ブランチ:
+
+- 対象コミット:
+
+
+
+## 確認結果
+
+
+
+- Laravelテスト:
+
+- Pint:
+
+- React lint:
+
+- React typecheck:
+
+- React test:
+
+- React build:
+
+- API health:
+
+- DB保存:
+
+- 再読み込み後の復元:
+
+- スマートフォン確認:
+
+- CORS:
+
+
+
+## 未完了
+
+
+
+- 
+
+- 
+
+
+
+## 要確認
+
+
+
+- 
+
+- 
+
+
+
+## ロールバック方法
+
+
+
+- 
+
+</code></pre>
+<hr>
+<h2>15. コミット・push・PR運用</h2>
+<ul>
+<li>作業は小さな単位でコミットする</li>
+<li>Conventional Commitsを使用する</li>
+<li>例:</li>
+</ul>
+<pre><code class="language-text">
+docs: add Laravel Cloud migration plan
+
+feat(api): persist task completion records
+
+feat(frontend): sync task records with API
+
+fix(api): prevent duplicate reward increments
+
+chore(deploy): configure Laravel Cloud production environment
+
+</code></pre>
+<ul>
+<li>コミットとpushは既存のプロジェクト運用ルールに従う</li>
+<li>PR作成はユーザー確認後に行う</li>
+<li>本番環境変数や秘密情報はコミットしない</li>
+<li>設計判断と実装を同じ巨大コミットへまとめない</li>
+</ul>
+<hr>
+<h2>16. 作業開始時に最初に確認すること</h2>
+<p>以下は推測せず、管理画面または既存設定から確認する。</p>
+<ul>
+<li>Renderフロントの正確なURL</li>
+<li>旧Render APIの正確なURL</li>
+<li>Renderのサービス名</li>
+<li>Laravel Cloudの組織名</li>
+<li>Laravel Cloud上の既存Projnextの構成</li>
+<li>Laravel Cloudで選択可能な東京リージョン</li>
+<li>Laravel Cloud APIの発行URL</li>
+<li>現在の本番環境変数</li>
+<li>現在のRenderビルド設定</li>
+<li>本番データがすでに存在するか</li>
+<li><code>localStorage</code>に実利用データが存在するか</li>
+<li>既存のAPI契約書と最新実装との差異</li>
+</ul>
+<p>確認できない項目は、勝手に補完せず「要確認」として報告する。</p>
+<hr>
+<h2>17. 最終受け入れ条件</h2>
+<p>以下をすべて満たした時点で、Laravel Cloud移行完了とする。</p>
+<ul>
+<li>ReactはRenderで正常表示される</li>
+<li>Laravel APIはLaravel Cloud東京リージョンで稼働する</li>
+<li>Serverless Postgresが接続されている</li>
+<li>フロントからLaravel Cloud APIを呼び出せる</li>
+<li>CORSエラーがない</li>
+<li>タスク完了がDBへ保存される</li>
+<li>ページ更新後も完了状態が復元される</li>
+<li>同じ操作の再送で二重加算されない</li>
+<li>API一時停止時にも入力が失われない</li>
+<li>API復旧後に未同期データを保存できる</li>
+<li>日本時間の日付境界が正しい</li>
+<li>既存の画面、応援演出、ポイント表示が壊れていない</li>
+<li>Laravel・Reactのテストとビルドが通っている</li>
+<li>ロールバック先が残っている</li>
+<li><code>docs/design-decisions.md</code>が更新されている</li>
+<li>実URL、コミット、確認結果、未完了事項が報告されている</li>
+</ul>
+</main>
+</body>
+</html>
