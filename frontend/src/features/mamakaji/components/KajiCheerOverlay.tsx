@@ -21,20 +21,27 @@ export function KajiCheerOverlay({
   onClose,
 }: KajiCheerOverlayProps) {
   const [closing, setClosing] = useState(false);
+  const closingRef = useRef(false);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 親の onClose はインライン関数で参照が変わるため ref 経由で最新を呼ぶ
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const remaining = Math.max(0, STAMP_SIZE - count);
 
   const handleClose = useCallback(() => {
-    if (closing) return;
+    if (closingRef.current) return;
+    closingRef.current = true;
     setClosing(true);
     if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
     fadeTimerRef.current = setTimeout(() => {
       fadeTimerRef.current = null;
-      onClose();
+      onCloseRef.current();
     }, FADE_OUT_MS);
-  }, [closing, onClose]);
+  }, []);
 
   const handleUndo = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -125,7 +132,7 @@ export function KajiCheerOverlay({
 
         <button
           type="button"
-          className="mt-4 inline-flex min-h-11 items-center justify-center border-0 bg-transparent px-3 text-[12px] text-[var(--mkj-ink-faint)] transition-colors hover:text-[var(--mkj-ink-soft)] hover:underline focus-visible:text-[var(--mkj-ink-soft)] focus-visible:underline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+          className="mt-4 inline-flex min-h-[44px] items-center justify-center border-0 bg-transparent px-3 text-[12px] text-[var(--mkj-ink-faint)] transition-colors hover:text-[var(--mkj-ink-soft)] hover:underline focus-visible:text-[var(--mkj-ink-soft)] focus-visible:underline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
           onClick={handleUndo}
         >
           ↩ とりけす
