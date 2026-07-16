@@ -1,0 +1,509 @@
+<title>ママの家事手帖 体験設計 — ごほうびは、世界のおやつ</title>
+<style>
+  :root{
+    --page1:#F6EEE4; --page2:#FFFBF6;
+    --ink:#4A3E36; --ink-soft:#8E7E72; --ink-faint:#BBAA9C;
+    --card:#FFFFFF; --card2:#FBF4EC;
+    --line:#EFE4D6; --line2:#E5D4C1;
+    --rasp:#C15A72; --rasp-deep:#963F55; --rasp-soft:#F8E4E9;
+    --caramel:#C0873C; --caramel-soft:#F5E7CF; --caramel-ink:#8A5E22;
+    --sage:#88A87C; --sage-soft:#E8EFE1; --plum:#9C6B8E;
+    --shadow:0 16px 40px rgba(120,80,70,.14);
+    --shadow-sm:0 6px 18px rgba(120,80,70,.09);
+    --font:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","M PLUS Rounded 1c","Yu Gothic","YuGothic","Meiryo",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --page1:#211A17; --page2:#2A211C;
+      --ink:#F3EAE1; --ink-soft:#C4B4A6; --ink-faint:#8B796C;
+      --card:#2E2420; --card2:#372A24;
+      --line:#43342C; --line2:#55423A;
+      --rasp:#DE8397; --rasp-deep:#F1BEC9; --rasp-soft:#3E2831;
+      --caramel:#D9A45E; --caramel-soft:#3A2C1A; --caramel-ink:#D9A45E;
+      --sage:#A7C49B; --sage-soft:#26331F; --plum:#C295B4;
+      --shadow:0 18px 44px rgba(0,0,0,.5); --shadow-sm:0 6px 20px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --page1:#211A17; --page2:#2A211C;
+    --ink:#F3EAE1; --ink-soft:#C4B4A6; --ink-faint:#8B796C;
+    --card:#2E2420; --card2:#372A24;
+    --line:#43342C; --line2:#55423A;
+    --rasp:#DE8397; --rasp-deep:#F1BEC9; --rasp-soft:#3E2831;
+    --caramel:#D9A45E; --caramel-soft:#3A2C1A; --caramel-ink:#D9A45E;
+    --sage:#A7C49B; --sage-soft:#26331F; --plum:#C295B4;
+    --shadow:0 18px 44px rgba(0,0,0,.5); --shadow-sm:0 6px 20px rgba(0,0,0,.4);
+  }
+  :root[data-theme="light"]{
+    --page1:#F6EEE4; --page2:#FFFBF6;
+    --ink:#4A3E36; --ink-soft:#8E7E72; --ink-faint:#BBAA9C;
+    --card:#FFFFFF; --card2:#FBF4EC;
+    --line:#EFE4D6; --line2:#E5D4C1;
+    --rasp:#C15A72; --rasp-deep:#963F55; --rasp-soft:#F8E4E9;
+    --caramel:#C0873C; --caramel-soft:#F5E7CF; --caramel-ink:#8A5E22;
+    --sage:#88A87C; --sage-soft:#E8EFE1; --plum:#9C6B8E;
+    --shadow:0 16px 40px rgba(120,80,70,.14); --shadow-sm:0 6px 18px rgba(120,80,70,.09);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0}
+  .page{
+    font-family:var(--font); color:var(--ink); line-height:1.7;
+    background:
+      radial-gradient(760px 360px at 82% -4%, var(--rasp-soft), transparent 62%),
+      radial-gradient(680px 340px at 12% 4%, #fff5, transparent 60%),
+      linear-gradient(180deg, var(--page1), var(--page2) 42%);
+    padding:52px 20px 76px;
+  }
+  .wrap{max-width:1120px; margin:0 auto}
+
+  .eyebrow{display:flex; align-items:center; gap:10px; justify-content:center; font-size:12.5px; letter-spacing:.16em; color:var(--rasp); font-weight:800; margin:0 0 16px; text-align:center}
+  .eyebrow::before,.eyebrow::after{content:""; width:30px; height:1px; background:var(--line2)}
+  h1{font-size:clamp(28px,5vw,50px); margin:0 auto 4px; max-width:18ch; text-align:center; font-weight:800; letter-spacing:.02em; color:var(--ink); text-wrap:balance; line-height:1.28}
+  h1 .g{color:var(--rasp)}
+  .sub-h{text-align:center; font-size:13px; color:var(--ink-soft); letter-spacing:.2em; margin:2px 0 20px}
+  .lede{max-width:62ch; margin:0 auto; text-align:center; font-size:clamp(15px,2vw,18px); color:var(--ink-soft)}
+  .lede b{color:var(--rasp-deep); font-weight:800}
+
+  .rib{display:flex; align-items:center; justify-content:center; gap:12px; margin:30px auto}
+  .rib .ln{height:1px; width:min(120px,22vw); background:linear-gradient(90deg,transparent,var(--line2))}
+  .rib .ln.r{background:linear-gradient(90deg,var(--line2),transparent)}
+
+  .pills{display:flex; flex-wrap:wrap; gap:14px; margin:8px 0 0; justify-content:center}
+  .pill{display:flex; align-items:center; gap:13px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 18px; box-shadow:var(--shadow-sm); flex:1 1 240px; min-width:220px; max-width:340px}
+  .pill .e{width:42px; height:42px; border-radius:13px; display:grid; place-items:center; font-size:22px; flex:none}
+  .pill b{display:block; font-size:15px; font-weight:800; color:var(--ink)}
+  .pill span{display:block; font-size:12.5px; color:var(--ink-soft)}
+  .e-fun{background:var(--rasp-soft)} .e-push{background:var(--caramel-soft)} .e-soft{background:var(--sage-soft)}
+
+  .band{margin:64px 0 24px; text-align:center}
+  .band .k{font-size:12.5px; letter-spacing:.16em; color:var(--rasp); font-weight:800; margin:0 0 7px}
+  .band h2{font-size:clamp(22px,3.2vw,30px); margin:0; font-weight:800; color:var(--ink); letter-spacing:.02em}
+
+  .board{display:grid; gap:30px; grid-template-columns:repeat(auto-fit,minmax(322px,1fr)); align-items:start}
+  .scene{display:flex; flex-direction:column; align-items:center; gap:18px}
+  .step{align-self:flex-start; display:inline-flex; align-items:center; gap:11px; font-size:14px; color:var(--ink-soft); font-weight:800}
+  .step i{width:27px; height:27px; border-radius:50%; background:var(--rasp); color:#fff; display:grid; place-items:center; font-size:13px; font-style:normal}
+
+  .phone{width:100%; max-width:336px; background:var(--card); border:1px solid var(--line2); border-radius:40px; padding:10px; box-shadow:var(--shadow)}
+  .screen{background:linear-gradient(180deg,var(--page1),var(--card) 28%); border-radius:31px; padding:16px 16px 20px; overflow:hidden; position:relative}
+
+  .greet{display:flex; align-items:center; gap:10px; margin:6px 0 16px}
+  .greet .hi{font-size:16px; font-weight:800; color:var(--ink)}
+  .greet .hi small{display:block; font-size:12px; font-weight:500; color:var(--ink-soft)}
+  .chip{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:800; color:var(--rasp-deep); background:var(--rasp-soft); border:1px solid var(--line2); padding:5px 11px; border-radius:999px}
+  .greet .chip{margin-left:auto}
+  .scr-top{display:flex; align-items:center; gap:8px; margin-bottom:14px}
+  .scr-top .tt{font-size:15px; font-weight:800; color:var(--ink)}
+  .scr-top .chip{margin-left:auto}
+
+  .hero{display:flex; align-items:center; gap:10px; background:var(--card2); border:1px solid var(--line); border-radius:22px; padding:14px 16px; margin-bottom:18px}
+  .hero .info{flex:1}
+  .hero .info .lab{font-size:12px; color:var(--ink-soft)}
+  .hero .info .big{font-size:33px; font-weight:800; color:var(--rasp); line-height:1.05}
+  .hero .info .big small{font-size:14px; color:var(--ink-faint); font-weight:700; margin-left:2px}
+  .hero .info .cnt{font-size:12px; color:var(--ink-faint); font-weight:700}
+  .hero .info .tease{margin-top:7px; font-size:11.5px; color:var(--rasp); font-weight:800}
+
+  .sec{display:flex; align-items:center; gap:9px; margin:0 2px 11px}
+  .sec .t{font-size:13px; font-weight:800; color:var(--ink); white-space:nowrap; letter-spacing:.02em}
+  .sec .rule{flex:1; height:1px; background:var(--line2)}
+
+  .task{display:flex; align-items:center; gap:12px; padding:10px 6px; border-bottom:1px solid var(--line)}
+  .task:last-of-type{border-bottom:0}
+  .task .tl{width:38px; height:38px; border-radius:12px; display:grid; place-items:center; font-size:19px; flex:none}
+  .task .nm{font-size:13.5px; color:var(--ink); font-weight:700; line-height:1.3}
+  .task .ck{margin-left:auto; width:27px; height:27px; border-radius:50%; flex:none; border:2px solid var(--line2); display:grid; place-items:center; color:transparent; font-size:13px; font-weight:900; background:var(--card)}
+  .task.done .nm{color:var(--rasp-deep)}
+  .task.done .ck{background:var(--rasp); border-color:var(--rasp); color:#fff}
+  .task.done .tl{outline:2px solid var(--rasp-soft)}
+  .tl-rasp{background:var(--rasp-soft)} .tl-cara{background:var(--caramel-soft)} .tl-sage{background:var(--sage-soft)} .tl-plum{background:#F0E4EE}
+  :root[data-theme="dark"] .tl-plum{background:#3A2E37}
+
+  .chal{display:flex; align-items:center; gap:11px; border:1.5px dashed var(--line2); border-radius:16px; padding:11px 13px; margin-top:14px}
+  .chal .tl{width:36px; height:36px; border-radius:11px; display:grid; place-items:center; font-size:17px; background:var(--caramel-soft); flex:none}
+  .chal b{font-size:11px; color:var(--caramel-ink); font-weight:800; display:block; letter-spacing:.03em}
+  .chal span{font-size:13px; color:var(--ink); font-weight:700}
+  .chal .st{margin-left:auto; font-size:12px; color:var(--caramel-ink); font-weight:800; white-space:nowrap}
+  .streak{display:inline-flex; align-items:center; gap:6px; margin-top:13px; font-size:12px; font-weight:800; color:var(--rasp-deep); background:var(--rasp-soft); border:1px solid var(--line2); padding:6px 12px; border-radius:999px}
+
+  .reward{text-align:center; padding:6px 0}
+  .reward .bub{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:var(--rasp-deep); background:var(--rasp-soft); border:1px solid var(--line2); padding:6px 14px; border-radius:999px; margin-bottom:6px}
+  .jarwrap{position:relative; width:150px; margin:0 auto}
+  .drop{position:absolute; top:-2px; left:50%; margin-left:-8px; font-size:17px; animation:drop 2.4s ease-in infinite}
+  .plus{position:absolute; top:6px; right:14px; font-size:19px; font-weight:900; color:var(--rasp); animation:floatup 2.4s ease-in-out infinite}
+  .sp{position:absolute; animation:tw 2s ease-in-out infinite}
+  .reward .big{font-size:21px; font-weight:800; color:var(--ink); margin:6px 0 1px}
+  .reward .sub{font-size:12.5px; color:var(--ink-soft)}
+  .reward .mini{font-size:24px; font-weight:800; color:var(--rasp); margin-top:8px}
+  .reward .mini small{font-size:12px; color:var(--ink-faint); font-weight:700}
+  .undo{display:flex; align-items:center; gap:10px; margin-top:16px; padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:var(--card2)}
+  .undo .tl{width:32px; height:32px; border-radius:10px; background:var(--sage-soft); display:grid; place-items:center; font-size:16px; flex:none}
+  .undo span{font-size:13px; color:var(--ink-soft); font-weight:700}
+
+  .gacha{text-align:center; padding:6px 0; position:relative}
+  .gacha .ttl{font-size:15px; font-weight:800; color:var(--ink)}
+  .gacha .ttl .n{color:var(--rasp)}
+  .medal{position:relative; width:140px; height:140px; margin:16px auto 12px}
+  .medal .disc{position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 50% 40%, var(--caramel-soft), var(--rasp-soft)); border:2px solid var(--line2); display:grid; place-items:center; font-size:60px}
+  .medal .ring{position:absolute; inset:-7px; border-radius:50%; border:2px dashed var(--caramel); opacity:.5}
+  .gacha .name{font-size:18px; font-weight:800; color:var(--rasp-deep)}
+  .gacha .coin{display:inline-flex; align-items:center; gap:6px; margin-top:9px; font-size:12.5px; font-weight:800; color:var(--caramel-ink); background:var(--caramel-soft); border:1px solid var(--line2); padding:5px 14px; border-radius:999px}
+  .gacha .carry{font-size:12.5px; color:var(--ink-soft); margin-top:13px}
+  .gacha .carry b{color:var(--rasp); font-weight:800}
+  .cf{position:absolute; animation:tw 2.2s ease-in-out infinite}
+  .cf1{top:2px;left:22px}.cf2{top:20px;right:24px;animation-delay:.5s}.cf3{bottom:64px;left:14px;animation-delay:.9s}.cf4{bottom:52px;right:18px;animation-delay:.3s}
+
+  /* collection */
+  .cab .top{display:flex; align-items:center; gap:8px; font-size:14px; font-weight:800; color:var(--ink); margin-bottom:4px}
+  .cab .leg{font-size:11px; color:var(--ink-soft); margin-bottom:14px}
+  .shelf{padding:12px 8px 8px; border-bottom:3px solid var(--line2); border-radius:0 0 4px 4px; margin-bottom:12px; display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+  .med{position:relative; aspect-ratio:1; border-radius:16px; display:grid; place-items:center; font-size:25px; border:2px solid var(--line)}
+  .med.got{background:var(--caramel-soft); border-color:var(--caramel-soft)}
+  .med.rare{background:var(--rasp-soft); border-color:var(--rasp)}
+  .med.empty{background:transparent; border-style:dashed; color:var(--ink-faint); font-size:18px}
+  .med .flag{position:absolute; bottom:-5px; right:-5px; font-size:13px; background:var(--card); border-radius:999px; padding:1px 3px; line-height:1; border:1px solid var(--line)}
+  .cab .foot{display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:12px; color:var(--ink-soft)}
+  .cab .foot b{font-size:16px; color:var(--rasp); font-weight:800}
+
+  /* sweet detail */
+  .det{padding:2px 0}
+  .det .back{font-size:11.5px; color:var(--ink-soft); font-weight:800; margin-bottom:12px; display:inline-flex; gap:5px; align-items:center}
+  .det .hd{display:flex; align-items:center; gap:13px; margin-bottom:14px}
+  .det .hd .disc{width:66px; height:66px; border-radius:50%; background:var(--caramel-soft); border:2px solid var(--line2); display:grid; place-items:center; flex:none}
+  .det .hd .nm{font-size:19px; font-weight:800; color:var(--ink)}
+  .det .hd .co{font-size:12.5px; color:var(--ink-soft); font-weight:700; display:flex; align-items:center; gap:5px}
+  .irow{display:flex; gap:11px; align-items:flex-start; padding:11px 12px; background:var(--card2); border:1px solid var(--line); border-radius:14px; margin-bottom:9px}
+  .irow .ic{width:34px; height:34px; border-radius:10px; display:grid; place-items:center; font-size:16px; flex:none}
+  .ic-map{background:var(--sage-soft)} .ic-rec{background:var(--caramel-soft)} .ic-cul{background:var(--rasp-soft)}
+  .irow .h{font-size:12px; font-weight:800; color:var(--rasp-deep); margin-bottom:2px}
+  .irow .b{font-size:12.5px; color:var(--ink); line-height:1.55}
+  .cta{margin-top:12px; display:flex; align-items:center; gap:9px; justify-content:center; background:var(--rasp); color:#fff; border-radius:14px; padding:12px; font-size:13.5px; font-weight:800; text-align:center}
+  .cta small{display:block; font-weight:500; font-size:10.5px; opacity:.9; margin-top:2px}
+
+  /* make ticket */
+  .goal .top{display:flex; align-items:center; gap:8px; font-size:14px; font-weight:800; color:var(--ink); margin-bottom:12px}
+  .gitem{display:flex; align-items:center; gap:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; padding:13px; margin-bottom:12px}
+  .gitem .ph{width:52px; height:52px; border-radius:13px; background:var(--rasp-soft); display:grid; place-items:center; font-size:26px; flex:none}
+  .gitem .nm{font-size:14px; font-weight:800; color:var(--ink)}
+  .gitem .pr{font-size:12px; color:var(--ink-soft); font-weight:700}
+  .bar{height:13px; background:var(--rasp-soft); border-radius:99px; overflow:hidden; margin:8px 0 6px}
+  .bar > i{display:block; height:100%; background:var(--caramel); border-radius:99px}
+  .goal .now{font-size:12px; color:var(--ink-soft); font-weight:700}
+  .goal .now b{color:var(--caramel-ink); font-weight:800}
+  .goal .pick{font-size:11.5px; color:var(--ink-soft); font-weight:800; margin:14px 0 8px}
+  .opts{display:flex; gap:8px; flex-wrap:wrap}
+  .opt{flex:1 1 90px; min-width:90px; text-align:center; background:var(--card); border:1px solid var(--line2); border-radius:13px; padding:9px 6px; font-size:11px; font-weight:700; color:var(--ink)}
+  .opt .ic{font-size:20px; display:block; margin-bottom:2px}
+  .opt.sel{border-color:var(--rasp); background:var(--rasp-soft)}
+  .opt small{display:block; color:var(--ink-soft); font-weight:700}
+
+  .note{width:100%; max-width:362px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px 18px; box-shadow:var(--shadow-sm)}
+  .note .tag{display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em; padding:3px 12px; border-radius:999px; margin-bottom:10px}
+  .tag.fun{color:var(--rasp); background:var(--rasp-soft)}
+  .tag.push{color:var(--caramel-ink); background:var(--caramel-soft)}
+  .tag.soft{color:var(--sage); background:var(--sage-soft)}
+  :root[data-theme="dark"] .tag.soft{color:var(--sage)}
+  .note h3{font-size:15px; margin:0 0 6px; font-weight:800; color:var(--ink)}
+  .note p{font-size:13.5px; color:var(--ink-soft); margin:0}
+  .note p + p{margin-top:8px}
+  .note b{color:var(--ink); font-weight:800}
+
+  .two{display:grid; gap:22px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .wide{background:var(--card); border:1px solid var(--line); border-radius:22px; padding:26px; box-shadow:var(--shadow-sm)}
+  .reflect .q{font-size:17px; font-weight:800; color:var(--ink); margin:16px 0 14px; display:flex; align-items:center; gap:9px}
+  .dl{list-style:none; padding:0; margin:0 0 16px}
+  .dl li{display:flex; align-items:center; gap:11px; font-size:14px; color:var(--ink); padding:9px 0; border-bottom:1px solid var(--line)}
+  .dl li .c{color:var(--rasp); font-weight:900}
+  .choices{display:flex; flex-wrap:wrap; gap:9px}
+  .choice{font-size:13px; font-weight:700; color:var(--ink); background:var(--card2); border:1px solid var(--line2); border-radius:999px; padding:8px 15px}
+  .choice.pick{background:var(--rasp-soft); color:var(--rasp-deep); border-color:var(--rasp)}
+
+  .guard h3{font-size:16px; margin:0 0 16px; font-weight:800; color:var(--ink); display:flex; align-items:center; gap:9px}
+  .guard ul{list-style:none; margin:0; padding:0; display:grid; gap:13px}
+  .guard li{display:flex; gap:12px; font-size:13.5px; color:var(--ink-soft); align-items:flex-start}
+  .guard li .ic{flex:none; width:26px; height:26px; border-radius:9px; background:var(--sage-soft); color:var(--sage); display:grid; place-items:center; font-size:13px; font-weight:900; margin-top:1px}
+  .guard li b{color:var(--ink); font-weight:800}
+
+  /* pairing */
+  .pair{display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .pcard{display:block; text-decoration:none; background:var(--card); border:1px solid var(--line2); border-radius:20px; padding:20px; box-shadow:var(--shadow-sm)}
+  .pcard .ph{font-size:30px; margin-bottom:8px}
+  .pcard .who{font-size:12px; font-weight:800; letter-spacing:.08em; color:var(--rasp); margin-bottom:2px}
+  .pcard h3{font-size:17px; margin:0 0 6px; font-weight:800; color:var(--ink)}
+  .pcard p{font-size:13px; color:var(--ink-soft); margin:0 0 10px}
+  .pcard .go{font-size:12.5px; font-weight:800; color:var(--rasp-deep)}
+  .pcard.musume .who{color:var(--plum)} .pcard.musume .go{color:var(--plum)}
+  .bridge{margin-top:18px; text-align:center; font-size:14px; color:var(--ink-soft)}
+  .bridge b{color:var(--rasp-deep); font-weight:800}
+
+  .foot-note{margin-top:46px; font-size:12px; color:var(--ink-faint); text-align:center; letter-spacing:.03em; line-height:1.9}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none !important}}
+  @keyframes tw{0%,100%{opacity:.3; transform:scale(.8)}50%{opacity:1; transform:scale(1.15)}}
+  @keyframes floatup{0%,100%{transform:translateY(0); opacity:.85}50%{transform:translateY(-7px); opacity:1}}
+  @keyframes drop{0%{transform:translateY(0); opacity:0}20%{opacity:1}70%{transform:translateY(66px); opacity:1}80%,100%{transform:translateY(66px); opacity:0}}
+</style>
+
+<div class="page">
+<div class="wrap">
+
+  <!-- header -->
+  <div class="eyebrow">くらしリレイ ・ ママ（家事記録）バージョン</div>
+  <h1>家事を貯めて、<span class="g">世界のおやつ</span>を集める</h1>
+  <div class="sub-h">ママの家事手帖 ／ 体験設計</div>
+  <p class="lede">名もなき家事もぜんぶ「できた」に。10個で世界のお菓子スタンプ、集めると<b>レシピ・地図・その国の文化</b>が開き、ポイントで<b>「おやつを作る券」</b>に。娘さんのゾンビ集めと<b>対になる、大人のごほうび</b>。自分を責める仕組みは入れません。</p>
+
+  <div class="rib">
+    <span class="ln"></span>
+    <svg width="30" height="18" viewBox="0 0 40 24" aria-hidden="true"><path d="M20 12 6 4Q2 3 3 8L4 16Q3 21 8 20Z" fill="var(--rasp)"/><path d="M20 12 34 4Q38 3 37 8L36 16Q37 21 32 20Z" fill="var(--rasp)"/><circle cx="20" cy="12" r="4" fill="var(--caramel)"/></svg>
+    <span class="ln r"></span>
+  </div>
+
+  <div class="pills">
+    <div class="pill"><span class="e e-fun">🍰</span><div><b>楽しく</b><span>おかしびん・世界のおやつ図鑑</span></div></div>
+    <div class="pill"><span class="e e-push">🎫</span><div><b>ごほうび</b><span>ポイントで「作る券」</span></div></div>
+    <div class="pill"><span class="e e-soft">🌿</span><div><b>ねぎらう</b><span>名もなき家事もカウント・減点なし</span></div></div>
+  </div>
+
+  <!-- ============ STORYBOARD : daily loop ============ -->
+  <div class="band"><p class="k">まいにちの きろくループ</p><h2>ひらく → おす → あとすこし → おやつ</h2></div>
+
+  <div class="board">
+
+    <!-- Scene 1 -->
+    <div class="scene">
+      <div class="step"><i>1</i>ひと息ついて、今日の家事を</div>
+      <div class="phone"><div class="screen">
+        <div class="greet">
+          <svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><path d="M22 8s-9 10-9 16a9 9 0 0 0 18 0c0-6-9-16-9-16z" fill="var(--rasp)"/><path d="M12 16s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11z" fill="var(--caramel)"/><circle cx="19" cy="20" r="2.1" fill="#fff" opacity=".85"/></svg>
+          <div class="hi">おつかれさま、ともこさん<small>今日も よくやってる</small></div>
+          <span class="chip">🍵 ひと息</span>
+        </div>
+        <div class="hero">
+          <svg width="106" height="122" viewBox="0 0 130 150" aria-hidden="true">
+            <defs><clipPath id="j1"><path d="M28 42h74a6 6 0 0 1 6 6v80a14 14 0 0 1-14 14H36a14 14 0 0 1-14-14V48a6 6 0 0 1 6-6z"/></clipPath></defs>
+            <g clip-path="url(#j1)">
+              <rect x="16" y="86" width="98" height="70" fill="var(--caramel-soft)"/>
+              <circle cx="45" cy="102" r="9" fill="var(--rasp)"/><circle cx="70" cy="110" r="8" fill="var(--caramel)"/>
+              <circle cx="92" cy="101" r="9" fill="var(--sage)"/><circle cx="54" cy="124" r="8" fill="var(--plum)"/>
+              <circle cx="82" cy="126" r="9" fill="var(--rasp)"/><circle cx="36" cy="124" r="7" fill="var(--caramel)"/>
+            </g>
+            <path d="M28 42h74a6 6 0 0 1 6 6v80a14 14 0 0 1-14 14H36a14 14 0 0 1-14-14V48a6 6 0 0 1 6-6z" fill="none" stroke="var(--line2)" stroke-width="2.5"/>
+            <path d="M34 50v78" stroke="#fff" stroke-width="3" opacity=".5" stroke-linecap="round"/>
+            <rect x="24" y="24" width="82" height="16" rx="8" fill="var(--rasp)"/>
+            <rect x="55" y="14" width="20" height="12" rx="6" fill="var(--rasp)"/>
+            <g transform="translate(65,44)"><path d="M0 0-15-6Q-20-7-19-2L-18 5Q-19 10-13 9Z" fill="var(--caramel)"/><path d="M0 0 15-6Q20-7 19-2L18 5Q19 10 13 9Z" fill="var(--caramel)"/><circle r="4.2" fill="var(--caramel-soft)"/></g>
+          </svg>
+          <div class="info">
+            <div class="lab">世界のおやつまで</div>
+            <div class="big">あと3<small>個</small></div>
+            <div class="cnt">びんの中身 7 / 10個</div>
+            <div class="tease">🍰 あと3個で おやつスタンプ！</div>
+          </div>
+        </div>
+        <div class="sec">
+          <svg width="18" height="12" viewBox="0 0 40 24" aria-hidden="true"><path d="M20 12 6 4Q2 3 3 8L4 16Q3 21 8 20Z" fill="var(--rasp)"/><path d="M20 12 34 4Q38 3 37 8L36 16Q37 21 32 20Z" fill="var(--rasp)"/><circle cx="20" cy="12" r="3.6" fill="var(--caramel)"/></svg>
+          <span class="t">今日の 家事</span><span class="rule"></span>
+        </div>
+        <div class="task done"><span class="tl tl-rasp">🍽️</span><span class="nm">食器を洗った</span><span class="ck">✓</span></div>
+        <div class="task done"><span class="tl tl-sage">🧺</span><span class="nm">洗濯を回して干した</span><span class="ck">✓</span></div>
+        <div class="task done"><span class="tl tl-plum">✨</span><span class="nm">名もなき家事をやった</span><span class="ck">✓</span></div>
+        <div class="task"><span class="tl tl-cara">🧹</span><span class="nm">床に掃除機をかけた</span><span class="ck"></span></div>
+        <div class="chal"><span class="tl">🫧</span><div><b>今日の +1チャレンジ</b><span>換気扇をさっと拭く</span></div><span class="st">できたら ✨</span></div>
+        <div><span class="streak">🎫 4日 続いてる</span></div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">記録</span>
+        <h3>「名もなき家事」もちゃんと1件</h3>
+        <p>献立を考えた、麦茶を作った、ゴミ袋を替えた——数えられない家事も<b>「名もなき家事」で1タップ</b>。進捗は<b>おかしびんが溜まる</b>のを主役に。押しやすい行全体ボタン。</p>
+      </div>
+    </div>
+
+    <!-- Scene 2 -->
+    <div class="scene">
+      <div class="step"><i>2</i>できた！を おす</div>
+      <div class="phone"><div class="screen">
+        <div class="reward">
+          <span class="bub">🧹 床、きれいになった！</span>
+          <div class="jarwrap">
+            <span class="drop">🍬</span>
+            <span class="plus">+1</span>
+            <span class="sp" style="top:30px;left:16px">✨</span>
+            <span class="sp" style="top:50px;right:18px;animation-delay:.6s">⭐</span>
+            <span class="sp" style="bottom:24px;left:22px;animation-delay:1s">✨</span>
+            <svg width="150" height="150" viewBox="0 0 130 150" aria-hidden="true">
+              <defs><clipPath id="j2"><path d="M28 42h74a6 6 0 0 1 6 6v80a14 14 0 0 1-14 14H36a14 14 0 0 1-14-14V48a6 6 0 0 1 6-6z"/></clipPath></defs>
+              <g clip-path="url(#j2)">
+                <rect x="16" y="78" width="98" height="78" fill="var(--caramel-soft)"/>
+                <circle cx="45" cy="94" r="9" fill="var(--rasp)"/><circle cx="70" cy="102" r="8" fill="var(--caramel)"/>
+                <circle cx="92" cy="93" r="9" fill="var(--sage)"/><circle cx="54" cy="116" r="8" fill="var(--plum)"/>
+                <circle cx="82" cy="118" r="9" fill="var(--rasp)"/><circle cx="36" cy="116" r="7" fill="var(--caramel)"/>
+                <circle cx="66" cy="132" r="8" fill="var(--sage)"/>
+              </g>
+              <path d="M28 42h74a6 6 0 0 1 6 6v80a14 14 0 0 1-14 14H36a14 14 0 0 1-14-14V48a6 6 0 0 1 6-6z" fill="none" stroke="var(--line2)" stroke-width="2.5"/>
+              <path d="M34 50v78" stroke="#fff" stroke-width="3" opacity=".5" stroke-linecap="round"/>
+              <rect x="24" y="24" width="82" height="16" rx="8" fill="var(--rasp)"/><rect x="55" y="14" width="20" height="12" rx="6" fill="var(--rasp)"/>
+              <g transform="translate(65,44)"><path d="M0 0-15-6Q-20-7-19-2L-18 5Q-19 10-13 9Z" fill="var(--caramel)"/><path d="M0 0 15-6Q20-7 19-2L18 5Q19 10 13 9Z" fill="var(--caramel)"/><circle r="4.2" fill="var(--caramel-soft)"/></g>
+            </svg>
+          </div>
+          <div class="big">おつかれさま！</div>
+          <div class="sub">今日の家事</div>
+          <div class="mini">8<small> / 10個 ・ あと2個</small></div>
+        </div>
+        <div class="undo"><span class="tl">↩️</span><span>まちがえたら、ワンタップで取り消せる</span></div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">記録</span>
+        <h3>押した瞬間に、小さなごほうび</h3>
+        <p>押すと<b>キャンディがびんにころん</b>と落ちて「+1」。数字が1増えるのが、地味だけど効く。<b>取り消しもワンタップ</b>。がんばりを、その場でちょっと労う。</p>
+      </div>
+    </div>
+
+    <!-- Scene 3 -->
+    <div class="scene">
+      <div class="step"><i>3</i>10個で 世界のおやつ</div>
+      <div class="phone"><div class="screen">
+        <div class="gacha">
+          <span class="cf cf1">🎀</span><span class="cf cf2">✨</span><span class="cf cf3">⭐</span><span class="cf cf4">🎀</span>
+          <div class="ttl">家事 <span class="n">10個</span>、おつかれさま！</div>
+          <div class="medal"><span class="ring"></span><span class="disc">🍮</span></div>
+          <div class="name">パンナコッタ ゲット！🇮🇹</div>
+          <span class="coin">🎫 100ポイント たまった</span>
+          <p class="carry">「作る券」まで <b>あと6個</b>（3個は 繰り越し）</p>
+        </div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">集める</span>
+        <h3>ごほうびは“次に食べてみたい”世界のおやつ</h3>
+        <p>10個で世界のお菓子スタンプ。ラミントン・マカロン・カヌレ…と<b>国旗つきで図鑑に</b>。100ポイントも同時に貯まる。超えたぶんは<b>次に繰り越し</b>（要件8）。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ COLLECT : world sweets zukan + detail ============ -->
+  <div class="band"><p class="k">🍰 あつめる</p><h2>世界のおやつ図鑑（レシピ・地図・文化）</h2></div>
+
+  <div class="two" style="align-items:start">
+    <div class="scene" style="align-items:center">
+      <div class="phone" style="max-width:340px"><div class="screen">
+        <div class="cab">
+          <div class="top">
+            <svg width="16" height="16" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="var(--rasp)"/><path d="M15 8a5 5 0 0 1 5 5 4 4 0 0 1-5 4 4 4 0 0 1-5-4 5 5 0 0 1 5-5z" fill="var(--caramel)"/></svg>
+            わたしの 世界のおやつ図鑑
+          </div>
+          <div class="leg">🌍 集めるほど、行ってみたい国・作ってみたいおやつが増える</div>
+          <div class="shelf">
+            <div class="med got">🟫<span class="flag">🇦🇺</span></div>
+            <div class="med rare">🌈<span class="flag">🇫🇷</span></div>
+            <div class="med got">🍮<span class="flag">🇮🇹</span></div>
+            <div class="med got">🥮<span class="flag">🇨🇳</span></div>
+          </div>
+          <div class="shelf" style="border-bottom:0">
+            <div class="med empty">?</div><div class="med empty">?</div><div class="med empty">?</div><div class="med empty">?</div>
+          </div>
+          <div class="foot"><span>集めたおやつ <b>4個</b></span><span>🎫 作る券まで あと<b>6個</b></span></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:16px">
+      <div class="scene" style="align-items:center">
+        <div class="phone" style="max-width:340px"><div class="screen">
+          <div class="det">
+            <span class="back">← 図鑑にもどる</span>
+            <div class="hd">
+              <span class="disc">
+                <svg width="42" height="42" viewBox="0 0 60 60" aria-hidden="true">
+                  <rect x="10" y="14" width="40" height="34" rx="8" fill="#7A5238"/>
+                  <rect x="10" y="28" width="40" height="6" fill="#F2E4D2"/>
+                  <g fill="#fff"><circle cx="18" cy="20" r="2"/><circle cx="30" cy="18" r="2"/><circle cx="42" cy="21" r="2"/><circle cx="16" cy="41" r="2"/><circle cx="29" cy="43" r="2"/><circle cx="44" cy="40" r="2"/><circle cx="36" cy="24" r="1.6"/><circle cx="23" cy="38" r="1.6"/></g>
+                </svg>
+              </span>
+              <div><div class="nm">ラミントン</div><div class="co">🇦🇺 オーストラリア</div></div>
+            </div>
+            <div class="irow"><span class="ic ic-map">📍</span><div><div class="h">どこの国？</div><div class="b">地図で場所が光る。南半球の広い国、オーストラリア。</div></div>
+              <svg width="52" height="52" viewBox="0 0 80 80" aria-hidden="true" style="flex:none"><circle cx="40" cy="40" r="30" fill="var(--sage-soft)" stroke="var(--line2)" stroke-width="2"/><ellipse cx="40" cy="40" rx="30" ry="12" fill="none" stroke="var(--sage)" opacity=".5"/><path d="M40 10v60M13 30q27 9 54 0M13 50q27-9 54 0" stroke="var(--sage)" opacity=".4" fill="none"/><g transform="translate(52,48)"><path d="M0 0c-4 0-7 3-7 7 0 5 7 12 7 12s7-7 7-12c0-4-3-7-7-7z" fill="var(--rasp)"/><circle cy="7" r="2.6" fill="#fff"/></g></svg>
+            </div>
+            <div class="irow"><span class="ic ic-rec">📖</span><div><div class="h">つくりかた</div><div class="b">①スポンジを四角に切る ②チョコにくぐらせる ③ココナッツをまぶす</div></div></div>
+            <div class="irow"><span class="ic ic-cul">🌏</span><div><div class="h">豆知識</div><div class="b">オーストラリアの定番おやつ。記念日にもよく食べる、一口サイズの人気者。</div></div></div>
+            <div class="cta"><span>🎫 250ポイントで「おやつを作る券」と交換<small>週末、娘と一緒に作る／自分へのごほうびに</small></span></div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two" style="margin-top:8px">
+    <div class="note" style="max-width:none">
+      <span class="tag fun">学べる</span>
+      <h3>おやつをタップ → レシピ・地図・文化</h3>
+      <p>集めたお菓子を押すと<b>作り方・どこの国か（地図）・その国の文化</b>が開く。家事のごほうびが、そのまま<b>週末の“作ってみよう”</b>の入り口に。娘さんの学びにもつながる。</p>
+    </div>
+    <div class="note" style="max-width:none">
+      <span class="tag push">ごほうびの最上位</span>
+      <h3>ポイントで「おやつを作る券」🎫</h3>
+      <p>貯めたポイントで<b>そのお菓子を実際に作る券</b>と交換。娘と一緒でも、自分へのごほうびでも。家事の記録が、<b>台所で過ごす楽しい時間</b>に着地する。（「私が作りたいだけ」も大歓迎）</p>
+    </div>
+  </div>
+
+  <!-- ============ pairing with daughter ============ -->
+  <div class="band"><p class="k">👩‍👧 家族でつかう</p><h2>娘バージョンと、対になっている</h2></div>
+
+  <div class="pair">
+    <a class="pcard musume" href="https://claude.ai/code/artifact/d5f3c392-b369-4974-bac4-c6c732575a2d">
+      <div class="ph">🧟</div>
+      <div class="who">娘バージョン</div>
+      <h3>よるのハロウィン・ラリー</h3>
+      <p>紫ゴスロリ×USJ。満月ゲージ→ゾンビ図鑑、USJライド達成チェック、おこづかいでハロウィングッズ。</p>
+      <div class="go">ひらく →</div>
+    </a>
+    <div class="pcard">
+      <div class="ph">🍰</div>
+      <div class="who">ママバージョン（このページ）</div>
+      <h3>ママの家事手帖</h3>
+      <p>パティスリー風。おかしびん→世界のおやつ図鑑（レシピ・地図・文化）、ポイントで「おやつを作る券」。</p>
+      <div class="go">いま見ているページ</div>
+    </div>
+  </div>
+  <p class="bridge">中身の仕組みは<b>まったく同じ</b>（記録 → 10個で1スタンプ → 図鑑が増える → 券）。<b>スキンだけ親子で違う</b>。そして「作る券」で<b>週末いっしょにおやつを作れば、2つのアプリが台所で出会う</b>。</p>
+
+  <!-- ============ neriga + guardrails ============ -->
+  <div class="band"><p class="k">1日の おわりに</p><h2>できたことを、ひとつ ねぎらう</h2></div>
+
+  <div class="two">
+    <div class="wide reflect">
+      <span class="chip">🍵 夜のひと息</span>
+      <p class="q">
+        <svg width="19" height="19" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="var(--rasp)"/><path d="M15 8a5 5 0 0 1 5 5 4 4 0 0 1-5 4 4 4 0 0 1-5-4 5 5 0 0 1 5-5z" fill="var(--caramel)"/></svg>
+        今日 自分で「よくやった」と思えたの、どれ？
+      </p>
+      <ul class="dl">
+        <li><span class="c">✓</span> 食器を洗った</li>
+        <li><span class="c">✓</span> 洗濯を回して干した</li>
+        <li><span class="c">✓</span> 名もなき家事をやった</li>
+        <li><span class="c">✓</span> 床に掃除機をかけた</li>
+        <li><span class="c">✓</span> 夕飯を作った</li>
+      </ul>
+      <div class="choices">
+        <span class="choice pick">🍽️ 食器</span><span class="choice">🧺 洗濯</span><span class="choice">✨ 名もなき家事</span><span class="choice">🧹 掃除</span><span class="choice">🍳 夕飯</span>
+      </div>
+    </div>
+
+    <div class="wide guard">
+      <h3>🌿 「自分を責めない」やくそく</h3>
+      <ul>
+        <li><span class="ic">✓</span><span><b>できなかった日を責めない。</b>未完了は静かなグレーで「また今度」。できなかったリストは作りません。</span></li>
+        <li><span class="ic">✓</span><span><b>名もなき家事もカウント。</b>数えられない小さな家事こそ、ちゃんと1件として労う。</span></li>
+        <li><span class="ic">✓</span><span><b>完璧じゃなくていい。</b>10個そろわない日も記録は消えず、日をまたいで積み上がる（要件8）。</span></li>
+        <li><span class="ic">✓</span><span><b>比べない・減点しない。</b>誰かと競う仕組みや、未達成の減点はなし（要件17）。</span></li>
+        <li><span class="ic">✓</span><span><b>質問は1つだけ。</b>反省ではなく「よくやった」を1つ選ぶ。自分をねぎらう時間に。</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="foot-note">くらしリレイ ／ ママ（家事記録）バージョン：世界のおやつ図鑑＝旧「くらしのおしごと／お菓子版」を大人向けに発展・娘バージョン🧟と対<br>パティスリー配色（ラズベリー＋キャラメル＋セージ）・ライト/ダーク対応。お菓子・国・レシピは今後 実データに差し替え可。</p>
+
+</div>
+</div>

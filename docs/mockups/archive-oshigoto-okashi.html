@@ -1,0 +1,483 @@
+<title>くらしのおしごと 体験設計 — つきよの おかしびん</title>
+<style>
+  :root{
+    --page1:#E9E4F5; --page2:#F7F5FC;
+    --ink:#443A63; --ink-soft:#867AA6; --ink-faint:#B3A8CC;
+    --card:#FFFFFF; --card2:#F5F2FC;
+    --line:#E6DFF4; --line2:#D6CCEC;
+    --violet:#7C66C0; --violet-deep:#54408E; --violet-soft:#ECE6FA;
+    --rose:#C77FBE; --rose-soft:#F4E6F3;
+    --peri:#DEE4F7; --mint:#DEEDE9; --lav:#E9E2F6; --moon:#CBB9F0;
+    --shadow:0 16px 40px rgba(84,64,142,.15);
+    --shadow-sm:0 6px 18px rgba(84,64,142,.10);
+    --font:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","M PLUS Rounded 1c","Yu Gothic","YuGothic","Meiryo",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --page1:#191327; --page2:#231B36;
+      --ink:#EEE8FA; --ink-soft:#B3A6D4; --ink-faint:#7C6F98;
+      --card:#291F3F; --card2:#31264A;
+      --line:#3C3157; --line2:#4F4372;
+      --violet:#B7A2EE; --violet-deep:#D6C9FB; --violet-soft:#33284D;
+      --rose:#DA98CE; --rose-soft:#3A2942;
+      --peri:#28324E; --mint:#26382F; --lav:#332948; --moon:#C6B6EE;
+      --shadow:0 18px 44px rgba(0,0,0,.46); --shadow-sm:0 6px 20px rgba(0,0,0,.36);
+    }
+  }
+  :root[data-theme="dark"]{
+    --page1:#191327; --page2:#231B36;
+    --ink:#EEE8FA; --ink-soft:#B3A6D4; --ink-faint:#7C6F98;
+    --card:#291F3F; --card2:#31264A;
+    --line:#3C3157; --line2:#4F4372;
+    --violet:#B7A2EE; --violet-deep:#D6C9FB; --violet-soft:#33284D;
+    --rose:#DA98CE; --rose-soft:#3A2942;
+    --peri:#28324E; --mint:#26382F; --lav:#332948; --moon:#C6B6EE;
+    --shadow:0 18px 44px rgba(0,0,0,.46); --shadow-sm:0 6px 20px rgba(0,0,0,.36);
+  }
+  :root[data-theme="light"]{
+    --page1:#E9E4F5; --page2:#F7F5FC;
+    --ink:#443A63; --ink-soft:#867AA6; --ink-faint:#B3A8CC;
+    --card:#FFFFFF; --card2:#F5F2FC;
+    --line:#E6DFF4; --line2:#D6CCEC;
+    --violet:#7C66C0; --violet-deep:#54408E; --violet-soft:#ECE6FA;
+    --rose:#C77FBE; --rose-soft:#F4E6F3;
+    --peri:#DEE4F7; --mint:#DEEDE9; --lav:#E9E2F6; --moon:#CBB9F0;
+    --shadow:0 16px 40px rgba(84,64,142,.15); --shadow-sm:0 6px 18px rgba(84,64,142,.10);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0}
+  .page{
+    font-family:var(--font); color:var(--ink); line-height:1.7;
+    background:
+      radial-gradient(760px 360px at 82% -4%, var(--violet-soft), transparent 62%),
+      radial-gradient(680px 340px at 12% 4%, #fff5, transparent 60%),
+      linear-gradient(180deg, var(--page1), var(--page2) 42%);
+    padding:52px 20px 76px;
+  }
+  .wrap{max-width:1120px; margin:0 auto}
+
+  .eyebrow{display:flex; align-items:center; gap:10px; justify-content:center; font-size:12.5px; letter-spacing:.22em; color:var(--violet); font-weight:800; margin:0 0 16px}
+  .eyebrow::before,.eyebrow::after{content:""; width:34px; height:1px; background:var(--line2)}
+  h1{font-size:clamp(30px,5.4vw,52px); margin:0 auto 4px; max-width:16ch; text-align:center; font-weight:800; letter-spacing:.02em; color:var(--ink); text-wrap:balance; line-height:1.28}
+  h1 .g{color:var(--violet)}
+  .sub-h{text-align:center; font-size:13px; color:var(--ink-soft); letter-spacing:.2em; margin:2px 0 20px}
+  .lede{max-width:60ch; margin:0 auto; text-align:center; font-size:clamp(15px,2vw,18px); color:var(--ink-soft)}
+  .lede b{color:var(--violet-deep); font-weight:800}
+
+  .rib{display:flex; align-items:center; justify-content:center; gap:12px; margin:30px auto}
+  .rib .ln{height:1px; width:min(120px,22vw); background:linear-gradient(90deg,transparent,var(--line2))}
+  .rib .ln.r{background:linear-gradient(90deg,var(--line2),transparent)}
+
+  .pills{display:flex; flex-wrap:wrap; gap:14px; margin:8px 0 0; justify-content:center}
+  .pill{display:flex; align-items:center; gap:13px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 18px; box-shadow:var(--shadow-sm); flex:1 1 250px; min-width:230px; max-width:340px}
+  .pill .e{width:42px; height:42px; border-radius:13px; display:grid; place-items:center; font-size:22px; flex:none}
+  .pill b{display:block; font-size:15px; font-weight:800; color:var(--ink)}
+  .pill span{display:block; font-size:12.5px; color:var(--ink-soft)}
+  .e-fun{background:var(--rose-soft)} .e-push{background:var(--violet-soft)} .e-soft{background:var(--peri)}
+
+  .band{margin:64px 0 24px; text-align:center}
+  .band .k{font-size:12.5px; letter-spacing:.2em; color:var(--rose); font-weight:800; margin:0 0 7px}
+  .band h2{font-size:clamp(22px,3.2vw,30px); margin:0; font-weight:800; color:var(--ink); letter-spacing:.02em}
+
+  .board{display:grid; gap:30px; grid-template-columns:repeat(auto-fit,minmax(322px,1fr)); align-items:start}
+  .scene{display:flex; flex-direction:column; align-items:center; gap:18px}
+  .step{align-self:flex-start; display:inline-flex; align-items:center; gap:11px; font-size:14px; color:var(--ink-soft); font-weight:800}
+  .step i{width:27px; height:27px; border-radius:50%; background:var(--violet); color:#fff; display:grid; place-items:center; font-size:13px; font-style:normal}
+
+  .phone{width:100%; max-width:336px; background:var(--card); border:1px solid var(--line2); border-radius:40px; padding:10px; box-shadow:var(--shadow)}
+  .screen{background:linear-gradient(180deg,var(--page1),var(--card) 30%); border-radius:31px; padding:16px 16px 20px; overflow:hidden; position:relative}
+
+  .greet{display:flex; align-items:center; gap:10px; margin:6px 0 16px}
+  .greet .hi{font-size:16px; font-weight:800; color:var(--ink)}
+  .greet .hi small{display:block; font-size:12px; font-weight:500; color:var(--ink-soft)}
+  .chip{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:800; color:var(--violet-deep); background:var(--violet-soft); border:1px solid var(--line2); padding:5px 11px; border-radius:999px}
+  .greet .chip{margin-left:auto}
+
+  .hero{display:flex; align-items:center; gap:8px; background:var(--card2); border:1px solid var(--line); border-radius:22px; padding:14px 16px; margin-bottom:18px}
+  .hero .info{flex:1}
+  .hero .info .lab{font-size:12px; color:var(--ink-soft)}
+  .hero .info .big{font-size:34px; font-weight:800; color:var(--violet); line-height:1.05; letter-spacing:.01em}
+  .hero .info .big small{font-size:14px; color:var(--ink-faint); font-weight:700; margin-left:2px}
+  .hero .info .cnt{font-size:12px; color:var(--ink-faint); font-weight:700}
+  .hero .info .tease{margin-top:7px; font-size:11.5px; color:var(--rose); font-weight:800}
+
+  .sec{display:flex; align-items:center; gap:9px; margin:0 2px 11px}
+  .sec .t{font-size:13px; font-weight:800; color:var(--ink); white-space:nowrap; letter-spacing:.02em}
+  .sec .rule{flex:1; height:1px; background:var(--line2)}
+
+  .task{display:flex; align-items:center; gap:12px; padding:10px 6px; border-bottom:1px solid var(--line)}
+  .task:last-of-type{border-bottom:0}
+  .task .tl{width:38px; height:38px; border-radius:12px; display:grid; place-items:center; font-size:19px; flex:none}
+  .task .nm{font-size:13.5px; color:var(--ink); font-weight:700; line-height:1.3}
+  .task .ck{margin-left:auto; width:27px; height:27px; border-radius:50%; flex:none; border:2px solid var(--line2); display:grid; place-items:center; color:transparent; font-size:13px; font-weight:900; background:var(--card)}
+  .task.done .nm{color:var(--violet-deep)}
+  .task.done .ck{background:var(--rose); border-color:var(--rose); color:#fff}
+  .task.done .tl{outline:2px solid var(--rose-soft)}
+  .tl-lav{background:var(--lav)} .tl-peri{background:var(--peri)} .tl-mint{background:var(--mint)} .tl-rose{background:var(--rose-soft)}
+
+  .chal{display:flex; align-items:center; gap:11px; border:1.5px dashed var(--line2); border-radius:16px; padding:11px 13px; margin-top:14px}
+  .chal .tl{width:36px; height:36px; border-radius:11px; display:grid; place-items:center; font-size:17px; background:var(--rose-soft); flex:none}
+  .chal b{font-size:11px; color:var(--rose); font-weight:800; display:block; letter-spacing:.03em}
+  .chal span{font-size:13px; color:var(--ink); font-weight:700}
+  .chal .st{margin-left:auto; font-size:12px; color:var(--rose); font-weight:800; white-space:nowrap}
+  .streak{display:inline-flex; align-items:center; gap:6px; margin-top:13px; font-size:12px; font-weight:800; color:var(--violet-deep); background:var(--violet-soft); border:1px solid var(--line2); padding:6px 12px; border-radius:999px}
+
+  .reward{text-align:center; padding:6px 0}
+  .reward .bub{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:var(--violet-deep); background:var(--violet-soft); border:1px solid var(--line2); padding:6px 14px; border-radius:999px; margin-bottom:6px}
+  .jarwrap{position:relative; width:150px; margin:0 auto}
+  .drop{position:absolute; top:-2px; left:50%; margin-left:-8px; font-size:17px; animation:drop 2.4s ease-in infinite}
+  .plus{position:absolute; top:6px; right:14px; font-size:19px; font-weight:900; color:var(--rose); animation:floatup 2.4s ease-in-out infinite}
+  .sp{position:absolute; animation:tw 2s ease-in-out infinite}
+  .reward .big{font-size:21px; font-weight:800; color:var(--ink); margin:6px 0 1px}
+  .reward .sub{font-size:12.5px; color:var(--ink-soft)}
+  .reward .mini{font-size:24px; font-weight:800; color:var(--violet); margin-top:8px}
+  .reward .mini small{font-size:12px; color:var(--ink-faint); font-weight:700}
+  .undo{display:flex; align-items:center; gap:10px; margin-top:16px; padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:var(--card2)}
+  .undo .tl{width:32px; height:32px; border-radius:10px; background:var(--lav); display:grid; place-items:center; font-size:16px; flex:none}
+  .undo span{font-size:13px; color:var(--ink-soft); font-weight:700}
+
+  .gacha{text-align:center; padding:6px 0; position:relative}
+  .gacha .ttl{font-size:15px; font-weight:800; color:var(--ink)}
+  .gacha .ttl .n{color:var(--violet)}
+  .medal{position:relative; width:140px; height:140px; margin:16px auto 12px}
+  .medal .disc{position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 50% 42%, var(--rose-soft), var(--violet-soft)); border:2px solid var(--line2); display:grid; place-items:center; font-size:60px}
+  .medal .ring{position:absolute; inset:-7px; border-radius:50%; border:2px dashed var(--moon); opacity:.6}
+  .gacha .name{font-size:18px; font-weight:800; color:var(--rose)}
+  .gacha .yen{display:inline-flex; align-items:center; gap:6px; margin-top:9px; font-size:12.5px; font-weight:800; color:var(--violet-deep); background:var(--violet-soft); border:1px solid var(--line2); padding:5px 14px; border-radius:999px}
+  .gacha .carry{font-size:12.5px; color:var(--ink-soft); margin-top:13px}
+  .gacha .carry b{color:var(--violet); font-weight:800}
+  .cf{position:absolute; animation:tw 2.2s ease-in-out infinite}
+  .cf1{top:2px;left:22px}.cf2{top:20px;right:24px;animation-delay:.5s}.cf3{bottom:64px;left:14px;animation-delay:.9s}.cf4{bottom:52px;right:18px;animation-delay:.3s}
+
+  /* collection */
+  .cab .top{display:flex; align-items:center; gap:8px; font-size:14px; font-weight:800; color:var(--ink); margin-bottom:4px}
+  .cab .leg{font-size:11px; color:var(--ink-soft); margin-bottom:14px}
+  .shelf{padding:12px 8px 8px; border-bottom:3px solid var(--line2); border-radius:0 0 4px 4px; margin-bottom:12px; display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+  .med{position:relative; aspect-ratio:1; border-radius:50%; display:grid; place-items:center; font-size:24px; border:2px solid var(--line)}
+  .med.work{background:var(--rose-soft); border-color:var(--rose-soft)}
+  .med.study{background:var(--lav); border-color:var(--lav)}
+  .med.empty{background:transparent; border-style:dashed; color:var(--ink-faint); font-size:18px}
+  .med .flag{position:absolute; bottom:-4px; right:-4px; font-size:13px; background:var(--card); border-radius:999px; padding:1px 3px; line-height:1; border:1px solid var(--line)}
+  .cab .foot{display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:12px; color:var(--ink-soft)}
+  .cab .foot b{font-size:16px; color:var(--violet); font-weight:800}
+
+  /* sweet detail */
+  .det{padding:2px 0}
+  .det .back{font-size:11.5px; color:var(--ink-soft); font-weight:800; margin-bottom:12px; display:inline-flex; gap:5px; align-items:center}
+  .det .hd{display:flex; align-items:center; gap:13px; margin-bottom:14px}
+  .det .hd .disc{width:66px; height:66px; border-radius:50%; background:var(--rose-soft); border:2px solid var(--line2); display:grid; place-items:center; flex:none}
+  .det .hd .nm{font-size:19px; font-weight:800; color:var(--ink)}
+  .det .hd .co{font-size:12.5px; color:var(--ink-soft); font-weight:700; display:flex; align-items:center; gap:5px}
+  .irow{display:flex; gap:11px; align-items:flex-start; padding:11px 12px; background:var(--card2); border:1px solid var(--line); border-radius:14px; margin-bottom:9px}
+  .irow .ic{width:34px; height:34px; border-radius:10px; display:grid; place-items:center; font-size:16px; flex:none}
+  .ic-map{background:var(--peri)} .ic-rec{background:var(--mint)} .ic-cul{background:var(--lav)}
+  .irow .h{font-size:12px; font-weight:800; color:var(--violet-deep); margin-bottom:2px}
+  .irow .b{font-size:12.5px; color:var(--ink); line-height:1.55}
+  .cta{margin-top:12px; display:flex; align-items:center; gap:9px; justify-content:center; background:var(--violet); color:#fff; border-radius:14px; padding:12px; font-size:13.5px; font-weight:800}
+  .cta small{display:block; font-weight:500; font-size:10.5px; opacity:.85}
+
+  .note{width:100%; max-width:362px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px 18px; box-shadow:var(--shadow-sm)}
+  .note .tag{display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em; padding:3px 12px; border-radius:999px; margin-bottom:10px}
+  .tag.fun{color:var(--rose); background:var(--rose-soft)}
+  .tag.push{color:var(--violet-deep); background:var(--violet-soft)}
+  .tag.next{color:#fff; background:var(--violet)}
+  .note h3{font-size:15px; margin:0 0 6px; font-weight:800; color:var(--ink)}
+  .note p{font-size:13.5px; color:var(--ink-soft); margin:0}
+  .note p + p{margin-top:8px}
+  .note b{color:var(--ink); font-weight:800}
+
+  .two{display:grid; gap:22px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .wide{background:var(--card); border:1px solid var(--line); border-radius:22px; padding:26px; box-shadow:var(--shadow-sm)}
+  .reflect .q{font-size:17px; font-weight:800; color:var(--ink); margin:16px 0 14px; display:flex; align-items:center; gap:9px}
+  .dl{list-style:none; padding:0; margin:0 0 16px}
+  .dl li{display:flex; align-items:center; gap:11px; font-size:14px; color:var(--ink); padding:9px 0; border-bottom:1px solid var(--line)}
+  .dl li .c{color:var(--rose); font-weight:900}
+  .choices{display:flex; flex-wrap:wrap; gap:9px}
+  .choice{font-size:13px; font-weight:700; color:var(--ink); background:var(--card2); border:1px solid var(--line2); border-radius:999px; padding:8px 15px}
+  .choice.pick{background:var(--rose-soft); color:var(--rose); border-color:var(--rose)}
+
+  .guard h3{font-size:16px; margin:0 0 16px; font-weight:800; color:var(--ink); display:flex; align-items:center; gap:9px}
+  .guard ul{list-style:none; margin:0; padding:0; display:grid; gap:13px}
+  .guard li{display:flex; gap:12px; font-size:13.5px; color:var(--ink-soft); align-items:flex-start}
+  .guard li .ic{flex:none; width:26px; height:26px; border-radius:9px; background:var(--rose-soft); color:var(--rose); display:grid; place-items:center; font-size:13px; font-weight:900; margin-top:1px}
+  .guard li b{color:var(--ink); font-weight:800}
+
+  .foot-note{margin-top:46px; font-size:12.5px; color:var(--ink-faint); text-align:center; letter-spacing:.04em}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none !important}}
+  @keyframes tw{0%,100%{opacity:.3; transform:scale(.8)}50%{opacity:1; transform:scale(1.15)}}
+  @keyframes floatup{0%,100%{transform:translateY(0); opacity:.85}50%{transform:translateY(-7px); opacity:1}}
+  @keyframes drop{0%{transform:translateY(0); opacity:0}20%{opacity:1}70%{transform:translateY(66px); opacity:1}80%,100%{transform:translateY(66px); opacity:0}}
+</style>
+
+<div class="page">
+<div class="wrap">
+
+  <!-- header -->
+  <div class="eyebrow">くらしリレイ ・ 娘さんの できたよリスト</div>
+  <h1>できたよが、<span class="g">ひとつぶずつ</span><br>おかしびんに たまってく</h1>
+  <div class="sub-h">つきよの おかしびん ／ 体験設計</div>
+  <p class="lede">「やらせる」ではなく「自分でできた」を積み上げる。要件の思想はそのままに、<b>毎日のちいさな達成感</b>と<b>もう少しで届く手ざわり</b>を、娘さんの<b>紫ゴスロリ</b>の色で。責める仕組みは入れません。</p>
+
+  <div class="rib">
+    <span class="ln"></span>
+    <svg width="30" height="18" viewBox="0 0 40 24" aria-hidden="true"><path d="M20 12 6 4Q2 3 3 8L4 16Q3 21 8 20Z" fill="var(--rose)"/><path d="M20 12 34 4Q38 3 37 8L36 16Q37 21 32 20Z" fill="var(--rose)"/><circle cx="20" cy="12" r="4" fill="var(--violet)"/></svg>
+    <span class="ln r"></span>
+  </div>
+
+  <div class="pills">
+    <div class="pill"><span class="e e-fun">🍬</span><div><b>楽しく</b><span>おかしびん・ガチャ・世界のお菓子図鑑</span></div></div>
+    <div class="pill"><span class="e e-push">🎀</span><div><b>ちょっと頑張れる</b><span>あと◯個・1日1チャレンジ・やわらか連続</span></div></div>
+    <div class="pill"><span class="e e-soft">🌙</span><div><b>せめない</b><span>できてない＝静かな色・いつでも取消・減点なし</span></div></div>
+  </div>
+
+  <!-- ============ STORYBOARD ============ -->
+  <div class="band"><p class="k">まいにちの きろくループ</p><h2>ひらく → おす → あとすこし → スタンプ</h2></div>
+
+  <div class="board">
+
+    <!-- Scene 1 -->
+    <div class="scene">
+      <div class="step"><i>1</i>朝、しずくちゃんが お出迎え</div>
+      <div class="phone"><div class="screen">
+        <div class="greet">
+          <svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true"><path d="M22 8s-9 10-9 16a9 9 0 0 0 18 0c0-6-9-16-9-16z" fill="var(--violet)"/><path d="M12 16s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11z" fill="var(--rose)"/><circle cx="19" cy="20" r="2.1" fill="#fff" opacity=".85"/></svg>
+          <div class="hi">おはよう、あきちゃん<small>今日も いいこと あるよ</small></div>
+          <span class="chip">🌙 朝</span>
+        </div>
+
+        <div class="hero">
+          <svg width="106" height="122" viewBox="0 0 130 150" aria-hidden="true">
+            <defs><clipPath id="j1"><path d="M28 42h74a6 6 0 0 1 6 6v80a14 14 0 0 1-14 14H36a14 14 0 0 1-14-14V48a6 6 0 0 1 6-6z"/></clipPath></defs>
+            <g clip-path="url(#j1)">
+              <rect x="16" y="92" width="98" height="64" fill="var(--rose-soft)"/>
+              <circle cx="45" cy="108" r="9" fill="var(--rose)"/><circle cx="70" cy="116" r="8" fill="var(--violet)"/>
+              <circle cx="92" cy="107" r="9" fill="var(--moon)"/><circle cx="56" cy="130" r="8" fill="var(--violet)"/>
+              <circle cx="82" cy="132" r="9" fill="var(--rose)"/><circle cx="38" cy="130" r="7" fill="var(--moon)"/>
+            </g>
+            <path d="M28 42h74a6 6 0 0 1 6 6v80a14 14 0 0 1-14 14H36a14 14 0 0 1-14-14V48a6 6 0 0 1 6-6z" fill="none" stroke="var(--line2)" stroke-width="2.5"/>
+            <path d="M34 50v78" stroke="#fff" stroke-width="3" opacity=".5" stroke-linecap="round"/>
+            <rect x="24" y="24" width="82" height="16" rx="8" fill="var(--violet)"/>
+            <rect x="55" y="14" width="20" height="12" rx="6" fill="var(--violet)"/>
+            <g transform="translate(65,44)"><path d="M0 0-15-6Q-20-7-19-2L-18 5Q-19 10-13 9Z" fill="var(--rose)"/><path d="M0 0 15-6Q20-7 19-2L18 5Q19 10 13 9Z" fill="var(--rose)"/><circle r="4.2" fill="var(--rose-soft)"/></g>
+          </svg>
+          <div class="info">
+            <div class="lab">お菓子スタンプまで</div>
+            <div class="big">あと4<small>個</small></div>
+            <div class="cnt">びんの中身 6 / 10個</div>
+            <div class="tease">🎀 あと4個で お菓子ガチャ！</div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <svg width="18" height="12" viewBox="0 0 40 24" aria-hidden="true"><path d="M20 12 6 4Q2 3 3 8L4 16Q3 21 8 20Z" fill="var(--rose)"/><path d="M20 12 34 4Q38 3 37 8L36 16Q37 21 32 20Z" fill="var(--rose)"/><circle cx="20" cy="12" r="3.6" fill="var(--violet)"/></svg>
+          <span class="t">今日の くらしのおしごと</span><span class="rule"></span>
+        </div>
+        <div class="task done"><span class="tl tl-lav">👚</span><span class="nm">自分で着替えた</span><span class="ck">✓</span></div>
+        <div class="task done"><span class="tl tl-peri">👕</span><span class="nm">脱いだ服をかごに入れた</span><span class="ck">✓</span></div>
+        <div class="task"><span class="tl tl-mint">🥛</span><span class="nm">朝ごはんの食器を運んだ</span><span class="ck"></span></div>
+
+        <div class="chal"><span class="tl">👟</span><div><b>今日の ちょっとチャレンジ</b><span>靴をそろえる</span></div><span class="st">できたら ✨</span></div>
+        <div><span class="streak">🎀 3日 続いてるよ</span></div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">楽しく</span>
+        <h3>時間帯で出す・キャラがむかえる</h3>
+        <p>朝は<b>3〜5個だけ</b>表示。多すぎない＝押しやすい。おやこしずくの<b>しずくちゃん</b>が毎日ちがう一言でむかえて、ひらく理由をつくる。進捗は<b>おかしびんが溜まっていく</b>のを主役に。文字は小5に合わせて漢字混じり。</p>
+      </div>
+    </div>
+
+    <!-- Scene 2 -->
+    <div class="scene">
+      <div class="step"><i>2</i>できた！を おす</div>
+      <div class="phone"><div class="screen">
+        <div class="reward">
+          <span class="bub">🥛 食器を運べたね！</span>
+          <div class="jarwrap">
+            <span class="drop">🍬</span>
+            <span class="plus">+1</span>
+            <span class="sp" style="top:30px;left:16px">✨</span>
+            <span class="sp" style="top:50px;right:18px;animation-delay:.6s">⭐</span>
+            <span class="sp" style="bottom:24px;left:22px;animation-delay:1s">✨</span>
+            <svg width="150" height="150" viewBox="0 0 130 150" aria-hidden="true">
+              <defs><clipPath id="j2"><path d="M28 42h74a6 6 0 0 1 6 6v80a14 14 0 0 1-14 14H36a14 14 0 0 1-14-14V48a6 6 0 0 1 6-6z"/></clipPath></defs>
+              <g clip-path="url(#j2)">
+                <rect x="16" y="84" width="98" height="72" fill="var(--rose-soft)"/>
+                <circle cx="45" cy="100" r="9" fill="var(--rose)"/><circle cx="70" cy="108" r="8" fill="var(--violet)"/>
+                <circle cx="92" cy="99" r="9" fill="var(--moon)"/><circle cx="54" cy="122" r="8" fill="var(--violet)"/>
+                <circle cx="82" cy="124" r="9" fill="var(--rose)"/><circle cx="36" cy="122" r="7" fill="var(--moon)"/>
+                <circle cx="66" cy="136" r="8" fill="var(--moon)"/>
+              </g>
+              <path d="M28 42h74a6 6 0 0 1 6 6v80a14 14 0 0 1-14 14H36a14 14 0 0 1-14-14V48a6 6 0 0 1 6-6z" fill="none" stroke="var(--line2)" stroke-width="2.5"/>
+              <path d="M34 50v78" stroke="#fff" stroke-width="3" opacity=".5" stroke-linecap="round"/>
+              <rect x="24" y="24" width="82" height="16" rx="8" fill="var(--violet)"/><rect x="55" y="14" width="20" height="12" rx="6" fill="var(--violet)"/>
+              <g transform="translate(65,44)"><path d="M0 0-15-6Q-20-7-19-2L-18 5Q-19 10-13 9Z" fill="var(--rose)"/><path d="M0 0 15-6Q20-7 19-2L18 5Q19 10 13 9Z" fill="var(--rose)"/><circle r="4.2" fill="var(--rose-soft)"/></g>
+            </svg>
+          </div>
+          <div class="big">できたね！</div>
+          <div class="sub">くらしのおしごと</div>
+          <div class="mini">7<small> / 10個 ・ あと3個</small></div>
+        </div>
+        <div class="undo"><span class="tl">↩️</span><span>まちがえたら、ワンタップで取り消せる</span></div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">楽しく</span>
+        <h3>押した瞬間に、ごほうび</h3>
+        <p>押すと<b>キャンディがびんにころん</b>と落ちて「+1」がふわっと。大きな音は鳴らさず軽い演出だけ。数字が1増えるのが気持ちいい。<b>まちがえてもワンタップで取消</b>できるので、こわくない。</p>
+      </div>
+    </div>
+
+    <!-- Scene 3 -->
+    <div class="scene">
+      <div class="step"><i>3</i>10個で お菓子ガチャ</div>
+      <div class="phone"><div class="screen">
+        <div class="gacha">
+          <span class="cf cf1">🎀</span><span class="cf cf2">✨</span><span class="cf cf3">⭐</span><span class="cf cf4">🎀</span>
+          <div class="ttl">くらしのおしごと <span class="n">10個</span> できました！</div>
+          <div class="medal"><span class="ring"></span><span class="disc">🍬</span></div>
+          <div class="name">むらさきグミ ゲット！</div>
+          <span class="yen">🎀 100円分 たまったよ</span>
+          <p class="carry">次のスタンプまで <b>あと7個</b>（3個は 繰り越し）</p>
+        </div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">楽しく</span>
+        <h3>“なにが出るかな”の お菓子ガチャ</h3>
+        <p>10個貯まると、もらえるお菓子が<b>ちょっとサプライズ</b>。甘ロリらしくキャンディ・グミ・マカロンから登場。超えたぶんは<b>次に繰り越し</b>（要件8）なので、10個で途切れず気持ちが続く。</p>
+      </div>
+    </div>
+
+    <!-- Scene 4 : world sweets collection -->
+    <div class="scene">
+      <div class="step"><i>4</i>集めて、世界を知る</div>
+      <div class="phone"><div class="screen">
+        <div class="cab">
+          <div class="top">
+            <svg width="16" height="16" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="var(--rose)"/><path d="M15 8a5 5 0 0 1 5 5 4 4 0 0 1-5 4 4 4 0 0 1-5-4 5 5 0 0 1 5-5z" fill="var(--violet)"/></svg>
+            世界のお菓子図鑑
+          </div>
+          <div class="leg">🌍 集めるほど、行ってみたい国がふえる</div>
+          <div class="shelf">
+            <div class="med work">🟫<span class="flag">🇦🇺</span></div>
+            <div class="med study">🥐<span class="flag">🇫🇷</span></div>
+            <div class="med work">🥮<span class="flag">🇨🇳</span></div>
+            <div class="med study">🍩<span class="flag">🇺🇸</span></div>
+          </div>
+          <div class="shelf" style="border-bottom:0">
+            <div class="med empty">?</div><div class="med empty">?</div><div class="med empty">?</div><div class="med empty">?</div>
+          </div>
+          <div class="foot"><span>集めたお菓子 <b>4個</b></span><span>🎫 ママと作る券まで あと<b>6個</b></span></div>
+        </div>
+      </div></div>
+      <div class="note">
+        <span class="tag fun">楽しく</span>
+        <h3>ただ集めるだけじゃない図鑑に</h3>
+        <p>ガチャで当たったお菓子は<b>国旗つきで図鑑に</b>。娘さんが万博で喜んだ<b>ラミントン🇦🇺</b>も収集対象に。学習系（要件13）とおしごと系、どちらのスタンプも同じ図鑑を満たします。「行ってみたい」が次の記録の動機に。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ FUTURE : world sweets ============ -->
+  <div class="band"><p class="k">🌍 これから育てたい世界</p><h2>お菓子から、世界とレシピへ</h2></div>
+
+  <div class="two" style="align-items:start">
+    <div class="scene" style="align-items:center">
+      <div class="phone" style="max-width:340px"><div class="screen">
+        <div class="det">
+          <span class="back">← 図鑑にもどる</span>
+          <div class="hd">
+            <span class="disc">
+              <svg width="42" height="42" viewBox="0 0 60 60" aria-hidden="true">
+                <rect x="10" y="14" width="40" height="34" rx="8" fill="#7A5238"/>
+                <rect x="10" y="28" width="40" height="6" fill="#F2E4D2"/>
+                <g fill="#fff"><circle cx="18" cy="20" r="2"/><circle cx="30" cy="18" r="2"/><circle cx="42" cy="21" r="2"/><circle cx="16" cy="41" r="2"/><circle cx="29" cy="43" r="2"/><circle cx="44" cy="40" r="2"/><circle cx="36" cy="24" r="1.6"/><circle cx="23" cy="38" r="1.6"/></g>
+              </svg>
+            </span>
+            <div><div class="nm">ラミントン</div><div class="co">🇦🇺 オーストラリア</div></div>
+          </div>
+          <div class="irow"><span class="ic ic-map">📍</span><div><div class="h">どこの国？</div><div class="b">地図で場所が光る。南半球の広い国、オーストラリア。</div></div>
+            <svg width="52" height="52" viewBox="0 0 80 80" aria-hidden="true" style="flex:none"><circle cx="40" cy="40" r="30" fill="var(--peri)" stroke="var(--line2)" stroke-width="2"/><ellipse cx="40" cy="40" rx="30" ry="12" fill="none" stroke="var(--violet)" opacity=".35"/><path d="M40 10v60M13 30q27 9 54 0M13 50q27-9 54 0" stroke="var(--violet)" opacity=".3" fill="none"/><g transform="translate(52,48)"><path d="M0 0c-4 0-7 3-7 7 0 5 7 12 7 12s7-7 7-12c0-4-3-7-7-7z" fill="var(--rose)"/><circle cy="7" r="2.6" fill="#fff"/></g></svg>
+          </div>
+          <div class="irow"><span class="ic ic-rec">📖</span><div><div class="h">つくりかた</div><div class="b">①スポンジを四角に切る ②チョコにくぐらせる ③ココナッツをまぶす</div></div></div>
+          <div class="irow"><span class="ic ic-cul">🌏</span><div><div class="h">こんなお菓子</div><div class="b">オーストラリアの定番おやつ。国の記念日にもみんなで食べる、一口サイズの人気者。</div></div></div>
+          <div class="cta"><span>🎫 250ポイントで「ママと作る券」と交換<small>おうちで いっしょに ラミントンを作る</small></span></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:16px">
+      <div class="note" style="max-width:none">
+        <span class="tag next">将来の展開</span>
+        <h3>お菓子をタップ → レシピ・地図・文化</h3>
+        <p>集めたお菓子を押すと、<b>作り方・どこの国か（地図）・その国の文化</b>が出る。遊びながら地理と世界がすこしずつ増えていく、図鑑まるごと学びの入り口に。</p>
+      </div>
+      <div class="note" style="max-width:none">
+        <span class="tag next">ごほうびの最上位</span>
+        <h3>ポイントで「ママと作る券」🎫</h3>
+        <p>貯めたポイントで、<b>ママといっしょにそのお菓子を作る券</b>と交換。画面の中の達成が、<b>親子で過ごす本物の時間</b>につながる——記録のいちばん上のごほうび。（ママが作りたいだけ、も大歓迎）</p>
+      </div>
+      <div class="note" style="max-width:none">
+        <span class="tag push">段階</span>
+        <h3>まずは①〜④、世界図鑑は第2章</h3>
+        <p>最小実装は「ホーム・タップ演出・おかしびん・10個ガチャ」。<b>世界のお菓子図鑑／レシピ／地図／ママと作る券は第2章</b>として、お菓子データを国つきで持てる設計にしておけば自然に育てられます。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ evening + guardrails ============ -->
+  <div class="band"><p class="k">夜は やさしく ふりかえる</p><h2>できたことを、ひとつだけ喜ぶ</h2></div>
+
+  <div class="two">
+    <div class="wide reflect">
+      <span class="chip">🌙 夕食のあと</span>
+      <p class="q">
+        <svg width="19" height="19" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="var(--rose)"/><path d="M15 8a5 5 0 0 1 5 5 4 4 0 0 1-5 4 4 4 0 0 1-5-4 5 5 0 0 1 5-5z" fill="var(--violet)"/></svg>
+        今日 自分でできて うれしかったの、どれ？
+      </p>
+      <ul class="dl">
+        <li><span class="c">✓</span> 自分で着替えた</li>
+        <li><span class="c">✓</span> 水筒を流しに出した</li>
+        <li><span class="c">✓</span> カバンを棚に置いた</li>
+        <li><span class="c">✓</span> 食器を運んだ</li>
+        <li><span class="c">✓</span> 今日のことをママに伝えた</li>
+      </ul>
+      <div class="choices">
+        <span class="choice pick">👚 着替え</span><span class="choice">🧴 水筒</span><span class="choice">🎒 カバン</span><span class="choice">🥛 食器</span><span class="choice">💬 お話</span>
+      </div>
+    </div>
+
+    <div class="wide guard">
+      <h3>🌙 「せめない」やくそく（設計ルール）</h3>
+      <ul>
+        <li><span class="ic">✓</span><span><b>赤やバツを出さない。</b>できてない項目は静かな紫グレーで「まだできるよ」。できなかったリストは作りません（要件18）。</span></li>
+        <li><span class="ic">✓</span><span><b>声かけでも同じ1回。</b>「言われてできた」を低く評価しない。報酬額も変えません（要件10・17）。</span></li>
+        <li><span class="ic">✓</span><span><b>連続は“おまけ”。</b>「3日続いたね🎀」は祝うが、途切れても叱らずそっと戻すだけ。ごほうびの条件にはしません。</span></li>
+        <li><span class="ic">✓</span><span><b>質問は1つだけ。</b>反省は必ずは聞かない。うれしかったことを1つ選ぶだけ（要件12）。</span></li>
+        <li><span class="ic">✓</span><span><b>毎日リセットしない。</b>1日でできなくても消えず、日をまたいで積み上がります（要件8）。</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ gentle push ============ -->
+  <div class="band"><p class="k">ちょっと頑張れる、の しかけ</p><h2>プレッシャーにしない“背伸び”を3つだけ</h2></div>
+  <div class="two" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+    <div class="note" style="max-width:none">
+      <span class="tag push">あと◯個</span><h3>ゴールが見える引力</h3>
+      <p>「<b>あと4個</b>」を常に大きく表示し、びんも見える。残り1〜2個で少しだけワクワク増（「あと1個！しずくちゃんもドキドキ」）。近づくほど押したくなる、正の力だけ。</p>
+    </div>
+    <div class="note" style="max-width:none">
+      <span class="tag push">1日1チャレンジ</span><h3>今日の ちょっとチャレンジ</h3>
+      <p>追加候補（要件14）から<b>1日1つだけ</b>おすすめ。歯みがき・靴をそろえる等。任意で「できたらすごい」枠。毎日ちがう項目が出て、少しずつ範囲が広がる。</p>
+    </div>
+    <div class="note" style="max-width:none">
+      <span class="tag push">やわらか連続</span><h3>続くと、うれしい</h3>
+      <p>連続日数をリボン🎀で軽く可視化。<b>途切れてもペナルティなし</b>。続けたい子には励みに、気にしない子には無害。にがて項目もときどき優しく後押し。</p>
+    </div>
+  </div>
+
+  <p class="foot-note">くらしリレイ ／ 娘さんテーマ：紫ゴスロリ（色味）・小5向け漢字対応 ・ ライト/ダーク切替＝「よる🌙」表現に対応</p>
+
+</div>
+</div>
