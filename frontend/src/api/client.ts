@@ -75,3 +75,48 @@ export async function apiGet<T>(
 
   return payload as T;
 }
+
+export async function apiSend<T>(
+  path: string,
+  method: "POST" | "DELETE",
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: {
+        Accept: "application/json",
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") throw error;
+    throw new ApiError(
+      "APIに接続できませんでした。通信状態を確認してください。",
+      0,
+    );
+  }
+
+  const payload = await parseJson(response);
+  if (!response.ok) {
+    const errorPayload = isErrorPayload(payload) ? payload : null;
+    throw new ApiError(
+      errorPayload?.message ?? "データの保存中に問題が発生しました。",
+      response.status,
+      errorPayload?.errors,
+    );
+  }
+
+  if (payload === null) {
+    throw new ApiError(
+      "サーバーから正しいデータを受け取れませんでした。",
+      response.status,
+    );
+  }
+
+  return payload as T;
+}
