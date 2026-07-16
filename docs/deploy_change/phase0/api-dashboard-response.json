@@ -1,0 +1,364 @@
+﻿{
+    "data":  {
+                 "date":  "2026-07-12",
+                 "currentActivity":  {
+                                         "id":  "activity-001",
+                                         "title":  "ç»æ ¡æ¯æ´",
+                                         "category":  "school_support",
+                                         "startedAt":  "2026-07-12T08:12:00+09:00",
+                                         "status":  "running",
+                                         "relatedPlanTitle":  "å¨ã®ç»æ ¡æºå"
+                                     },
+                 "nextPlans":  [
+                                   {
+                                       "id":  "plan-001",
+                                       "startAt":  "2026-07-12T11:30:00+09:00",
+                                       "endAt":  "2026-07-12T12:30:00+09:00",
+                                       "title":  "å­¦æ ¡ã¸ã®éè¿ã»å¼ãæ¸¡ã",
+                                       "category":  "school_support",
+                                       "source":  "manual",
+                                       "status":  "planned"
+                                   },
+                                   {
+                                       "id":  "plan-002",
+                                       "startAt":  "2026-07-12T13:00:00+09:00",
+                                       "endAt":  "2026-07-12T15:00:00+09:00",
+                                       "title":  "å¨å®\u0085è¨ç·´",
+                                       "category":  "work_preparation",
+                                       "source":  "google",
+                                       "status":  "planned"
+                                   },
+                                   {
+                                       "id":  "plan-003",
+                                       "startAt":  "2026-07-12T17:30:00+09:00",
+                                       "endAt":  "2026-07-12T18:00:00+09:00",
+                                       "title":  "è²·ãç©",
+                                       "category":  "housework",
+                                       "source":  "manual",
+                                       "status":  "planned"
+                                   }
+                               ],
+                 "quickLogs":  [
+                                   {
+                                       "type":  "wake_prompt",
+                                       "label":  "èµ·åºã®å£°ãã",
+                                       "count":  3
+                                   },
+                                   {
+                                       "type":  "change_clothes_prompt",
+                                       "label":  "çæ¿ãã®å£°ãã",
+                                       "count":  2
+                                   },
+                                   {
+                                       "type":  "school_contact",
+                                       "label":  "å­¦æ ¡ã¸é£çµ¡",
+                                       "count":  1
+                                   },
+                                   {
+                                       "type":  "stomachache_support",
+                                       "label":  "è\u0085¹çå¯¾å¿",
+                                       "count":  1
+                                   },
+                                   {
+                                       "type":  "transport",
+                                       "label":  "èªè»¢è»ã§éè¿",
+                                       "count":  0
+                                   },
+                                   {
+                                       "type":  "school_handoff",
+                                       "label":  "å¼ãæ¸¡ãå®äº",
+                                       "count":  0
+                                   }
+                               ],
+                 "conditions":  {
+                                    "mother":  {
+                                                   "physical":  3,
+                                                   "mood":  2,
+                                                   "inputSource":  "self"
+                                               },
+                                    "daughter":  {
+                                                     "physical":  3,
+                                                     "mood":  3,
+                                                     "inputSource":  "guardian_observation"
+                                                 }
+                                },
+                 "childStrategy":  {
+                                       "desiredOutcome":  "ç­æéãªãå­¦æ ¡ã¸è¡ããã",
+                                       "firstStep":  "æé£ãé£ã¹ã",
+                                       "requestedSupports":  [
+                                                                 "11æ30åããã®ç»æ ¡ã«ãã¦ã»ãã",
+                                                                 "å¼·ãæ¥ãããªãã§ã»ãã"
+                                                             ],
+                                       "fallbackPlans":  [
+                                                             "30åå¾ã«ããä¸åº¦èãã",
+                                                             "é£ããå ´åã¯ä¼ã"
+                                                         ],
+                                       "confidence":  "slightly_anxious",
+                                       "note":  ""
+                                   },
+                 "timeBalance":  {
+                                     "sleepMinutes":  435,
+                                     "waitingMinutes":  130,
+                                     "activityMinutes":  225,
+                                     "recoveryMinutes":  80
+                                 },
+                 "scheduleImpactSummary":  {
+                                               "onScheduleCount":  1,
+                                               "delayedCount":  1,
+                                               "interruptedCount":  0,
+                                               "cancelledCount":  1,
+                                               "movedToNightCount":  0,
+                                               "lostMinutes":  130,
+                                               "mainCauses":  [
+                                                                  {
+                                                                      "label":  "ç»æ ¡æ¯æ´",
+                                                                      "minutes":  60
+                                                                  },
+                                                                  {
+                                                                      "label":  "å¾\u0085æ©ã»ææ",
+                                                                      "minutes":  50
+                                                                  },
+                                                                  {
+                                                                      "label":  "åå¾©ã»ä¼æ¯",
+                                                                      "minutes":  20
+                                                                  }
+                                                              ]
+                                           },
+                 "actionItems":  [
+                                     {
+                                         "id":  "action-001",
+                                         "title":  "å­¦æ ¡ã¨ã®é¢è«ã®æã¡ç©ãç¢ºèªãã",
+                                         "assignee":  "æ¯",
+                                         "dueAt":  "2026-07-12T09:30:00+09:00",
+                                         "status":  "not_started",
+                                         "priority":  "high"
+                                     },
+                                     {
+                                         "id":  "action-002",
+                                         "title":  "ç¥ç¶æ¯ã®æ¬¡åå®¿æ³æ¥ãç¸è«æ¯æ´ã¸ç¢ºèªãã",
+                                         "assignee":  "ç¸è«æ¯æ´",
+                                         "dueAt":  "2026-07-15T17:00:00+09:00",
+                                         "status":  "coordinating",
+                                         "priority":  "medium"
+                                     },
+                                     {
+                                         "id":  "action-003",
+                                         "title":  "å¤é£ã®æºå",
+                                         "assignee":  "æ¯",
+                                         "dueAt":  "2026-07-12T17:30:00+09:00",
+                                         "status":  "not_started",
+                                         "priority":  "medium"
+                                     }
+                                 ],
+                 "lastWar":  {
+                                 "gameName":  "ã©ã¹ãã¦ã©ã¼",
+                                 "plannedTasks":  [
+                                                      "ãã¤ãªã¼ããã·ã§ã³",
+                                                      "é£çã¿ã¹ã¯",
+                                                      "è³æºåå"
+                                                  ],
+                                 "completedCount":  2,
+                                 "totalCount":  3,
+                                 "playMinutes":  35,
+                                 "recoveryEffect":  4
+                             },
+                 "scheduleComparisons":  [
+                                             {
+                                                 "timeRange":  {
+                                                                   "start":  "2026-07-12T08:00:00+09:00",
+                                                                   "end":  "2026-07-12T09:00:00+09:00"
+                                                               },
+                                                 "plan":  {
+                                                              "id":  "plan-101",
+                                                              "title":  "ç»æ ¡æ¯æ´",
+                                                              "startAt":  "2026-07-12T08:00:00+09:00",
+                                                              "endAt":  "2026-07-12T09:00:00+09:00",
+                                                              "category":  "school_support",
+                                                              "details":  [
+                                                                              "èµ·åºã®å£°ãã",
+                                                                              "çæ¿ãã®å£°ãã",
+                                                                              "å­¦æ ¡ã¸ã®éè¿ã»å¼ãæ¸¡ã"
+                                                                          ]
+                                                          },
+                                                 "actuals":  [
+                                                                 {
+                                                                     "id":  "entry-101",
+                                                                     "title":  "ç»æ ¡æ¯æ´",
+                                                                     "kind":  "activity",
+                                                                     "category":  "school_support",
+                                                                     "startAt":  "2026-07-12T08:10:00+09:00",
+                                                                     "endAt":  "2026-07-12T09:00:00+09:00",
+                                                                     "details":  [
+                                                                                     "èµ·åºã®å£°ãã",
+                                                                                     "çæ¿ãã®å£°ãã",
+                                                                                     "å­¦æ ¡ã¸ã®éè¿ã»å¼ãæ¸¡ã"
+                                                                                 ]
+                                                                 }
+                                                             ],
+                                                 "difference":  {
+                                                                    "status":  "delayed",
+                                                                    "startDelayMinutes":  10,
+                                                                    "plannedMinutes":  60,
+                                                                    "actualMinutes":  50,
+                                                                    "interruptionCount":  0,
+                                                                    "lostMinutes":  10,
+                                                                    "causes":  [
+                                                                                   "èµ·åºã»æºåã«æé"
+                                                                               ]
+                                                                }
+                                             },
+                                             {
+                                                 "timeRange":  {
+                                                                   "start":  "2026-07-12T09:00:00+09:00",
+                                                                   "end":  "2026-07-12T10:00:00+09:00"
+                                                               },
+                                                 "plan":  null,
+                                                 "actuals":  [
+                                                                 {
+                                                                     "id":  "entry-102",
+                                                                     "title":  "å®¶äº",
+                                                                     "kind":  "activity",
+                                                                     "category":  "housework",
+                                                                     "startAt":  "2026-07-12T09:10:00+09:00",
+                                                                     "endAt":  "2026-07-12T09:50:00+09:00",
+                                                                     "details":  [
+                                                                                     "æ´æ¿¯",
+                                                                                     "æé¤æ©ãã",
+                                                                                     "çä»ã"
+                                                                                 ]
+                                                                 }
+                                                             ],
+                                                 "difference":  {
+                                                                    "status":  "unplanned_activity",
+                                                                    "startDelayMinutes":  0,
+                                                                    "plannedMinutes":  0,
+                                                                    "actualMinutes":  40,
+                                                                    "interruptionCount":  0,
+                                                                    "lostMinutes":  0,
+                                                                    "causes":  [
+                                                                                   "ééæéãæå¹æ´»ç¨"
+                                                                               ]
+                                                                }
+                                             },
+                                             {
+                                                 "timeRange":  {
+                                                                   "start":  "2026-07-12T10:00:00+09:00",
+                                                                   "end":  "2026-07-12T12:00:00+09:00"
+                                                               },
+                                                 "plan":  {
+                                                              "id":  "plan-102",
+                                                              "title":  "å¨å®\u0085è¨ç·´",
+                                                              "startAt":  "2026-07-12T10:00:00+09:00",
+                                                              "endAt":  "2026-07-12T12:00:00+09:00",
+                                                              "category":  "work_preparation",
+                                                              "details":  [
+                                                                              "ãã¼ããã©ãªãªå¶ä½"
+                                                                          ]
+                                                          },
+                                                 "actuals":  [
+                                                                 {
+                                                                     "id":  "entry-103",
+                                                                     "title":  "è\u0085¹çå¯¾å¿ã»å¾\u0085æ©",
+                                                                     "kind":  "waiting",
+                                                                     "category":  "stomachache_toilet_wait",
+                                                                     "startAt":  "2026-07-12T10:00:00+09:00",
+                                                                     "endAt":  "2026-07-12T10:40:00+09:00",
+                                                                     "details":  [
+                                                                                     "å¨ã®è\u0085¹çå¯¾å¿",
+                                                                                     "ãã¤ã¬å¾\u0085æ©"
+                                                                                 ]
+                                                                 },
+                                                                 {
+                                                                     "id":  "entry-104",
+                                                                     "title":  "åå¾©ã»ä¼æ¯",
+                                                                     "kind":  "recovery",
+                                                                     "category":  "after_school_support",
+                                                                     "startAt":  "2026-07-12T10:40:00+09:00",
+                                                                     "endAt":  "2026-07-12T11:10:00+09:00",
+                                                                     "details":  [
+                                                                                     "æ°æã¡ãæ´ãã"
+                                                                                 ]
+                                                                 }
+                                                             ],
+                                                 "difference":  {
+                                                                    "status":  "cancelled",
+                                                                    "startDelayMinutes":  0,
+                                                                    "plannedMinutes":  120,
+                                                                    "actualMinutes":  0,
+                                                                    "interruptionCount":  0,
+                                                                    "lostMinutes":  120,
+                                                                    "causes":  [
+                                                                                   "å¨ã®è\u0085¹çå¯¾å¿",
+                                                                                   "å¾\u0085æ©ã»ææ",
+                                                                                   "åå¾©"
+                                                                               ]
+                                                                }
+                                             },
+                                             {
+                                                 "timeRange":  {
+                                                                   "start":  "2026-07-12T12:00:00+09:00",
+                                                                   "end":  "2026-07-12T13:00:00+09:00"
+                                                               },
+                                                 "plan":  null,
+                                                 "actuals":  [
+
+                                                             ],
+                                                 "difference":  {
+                                                                    "status":  "no_plan_no_record",
+                                                                    "startDelayMinutes":  0,
+                                                                    "plannedMinutes":  0,
+                                                                    "actualMinutes":  0,
+                                                                    "interruptionCount":  0,
+                                                                    "lostMinutes":  0,
+                                                                    "causes":  [
+
+                                                                               ]
+                                                                }
+                                             },
+                                             {
+                                                 "timeRange":  {
+                                                                   "start":  "2026-07-12T13:00:00+09:00",
+                                                                   "end":  "2026-07-12T15:00:00+09:00"
+                                                               },
+                                                 "plan":  {
+                                                              "id":  "plan-103",
+                                                              "title":  "å¨å®\u0085è¨ç·´",
+                                                              "startAt":  "2026-07-12T13:00:00+09:00",
+                                                              "endAt":  "2026-07-12T15:00:00+09:00",
+                                                              "category":  "work_preparation",
+                                                              "details":  [
+                                                                              "ãã¼ããã©ãªãªå¶ä½"
+                                                                          ]
+                                                          },
+                                                 "actuals":  [
+                                                                 {
+                                                                     "id":  "entry-105",
+                                                                     "title":  "å¨å®\u0085è¨ç·´",
+                                                                     "kind":  "activity",
+                                                                     "category":  "work_preparation",
+                                                                     "startAt":  "2026-07-12T13:00:00+09:00",
+                                                                     "endAt":  "2026-07-12T15:00:00+09:00",
+                                                                     "details":  [
+                                                                                     "ãã¼ããã©ãªãªå¶ä½"
+                                                                                 ]
+                                                                 }
+                                                             ],
+                                                 "difference":  {
+                                                                    "status":  "on_schedule",
+                                                                    "startDelayMinutes":  0,
+                                                                    "plannedMinutes":  120,
+                                                                    "actualMinutes":  120,
+                                                                    "interruptionCount":  0,
+                                                                    "lostMinutes":  0,
+                                                                    "causes":  [
+
+                                                                               ]
+                                                                }
+                                             }
+                                         ]
+             },
+    "status":  "success",
+    "meta":  {
+                 "timezone":  "Asia/Tokyo"
+             }
+}
