@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\IdempotencyConflictException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -32,6 +33,18 @@ return Application::configure(basePath: dirname(__DIR__))
             ], $exception->status);
         });
 
+        $exceptions->render(function (IdempotencyConflictException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => '同じ idempotency_key でリクエスト内容が一致しません。',
+                'errors' => (object) [],
+            ], 409);
+        });
+
         $exceptions->render(function (Throwable $exception, Request $request) {
             if (! $request->is('api/*')) {
                 return null;
@@ -45,7 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 404 => 'エンドポイントが見つかりません。',
                 405 => '許可されていないメソッドです。',
                 default => $status >= 500
-                    ? 'データの取得中に問題が発生しました。'
+                    ? '処理中に問題が発生しました。'
                     : 'リクエストを処理できませんでした。',
             };
 
@@ -53,9 +66,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 ? $exception->getHeaders()
                 : [];
 
-            return response()->json([
+            $payload = [
                 'status' => 'error',
                 'message' => $message,
-            ], $status, $headers);
+                'errors' => (object) [],
+            ];
+
+            return response()->json($payload, $status, $headers);
         });
     })->create();

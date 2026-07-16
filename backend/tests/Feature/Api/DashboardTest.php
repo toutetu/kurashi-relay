@@ -128,10 +128,15 @@ class DashboardTest extends TestCase
 
     public function test_unsupported_methods_return_the_common_json_error(): void
     {
-        $this->post('/api/dashboard')
+        $response = $this->post('/api/dashboard');
+
+        $response
             ->assertMethodNotAllowed()
             ->assertJsonPath('status', 'error')
-            ->assertJsonPath('message', '許可されていないメソッドです。');
+            ->assertJsonPath('message', '許可されていないメソッドです。')
+            ->assertJsonPath('errors', []);
+
+        $this->assertStringContainsString('"errors":{}', $response->getContent());
     }
 
     public function test_server_exceptions_return_generic_json_without_internal_details(): void
@@ -144,8 +149,11 @@ class DashboardTest extends TestCase
             ->assertInternalServerError()
             ->assertExactJson([
                 'status' => 'error',
-                'message' => 'データの取得中に問題が発生しました。',
+                'message' => '処理中に問題が発生しました。',
+                'errors' => [],
             ])
             ->assertDontSee('sensitive details');
+
+        $this->assertStringContainsString('"errors":{}', $response->getContent());
     }
 }

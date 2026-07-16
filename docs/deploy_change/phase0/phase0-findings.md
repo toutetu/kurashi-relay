@@ -63,21 +63,52 @@
 - 切り戻し手順: Render Static Site の `VITE_API_BASE_URL` を旧APIへ戻し再デプロイ(指示書§8)
 - 旧APIはDB未使用のため、切り戻し時にLaravel Cloud保存データは旧画面に表示されない(指示書§8の注意どおり)
 
-## 3. 要確認(ダッシュボードアクセスが必要 — 推測しない)
+## 3. ダッシュボード実値(2026-07-16 ブラウザペインでログイン後に実確認)
 
-Chrome拡張(Claude in Chrome)が未接続のため、以下はユーザーのログイン済みブラウザでの確認待ち:
+### Render(ワークスペース: tomoko's workspace)
 
-- [ ] Renderサービス名(web / api それぞれ)
-- [ ] RenderフロントのBuild Command / Publish Directory / `VITE_API_BASE_URL`現在値
-- [ ] Render APIサービスのビルド方式(Dockerfileがリポジトリに無いため、どう動いているか)と環境変数一覧
-- [ ] Laravel Cloudの組織名・Projnextと同一組織か
-- [ ] Laravel Cloudで選択可能な東京リージョン名
-- [ ] Laravel Cloud利用上限・通知設定
-- [ ] 母・娘の実端末のlocalStorage実データ有無(コード上はUI設定のみのはずだが実機で確認)
-- [ ] 本番画面のスクリーンショット保存(アプリ内ブラウザのscreenshotがタイムアウトするため未取得。テキストスナップショットは取得済み)
+| 項目 | 実値 |
+|---|---|
+| フロントサービス名 | `kurashi-relay-web`(Static Site, region=global, Ungrouped) |
+| フロントService ID | `srv-d9b2ql3eo5us73dqv7jg` |
+| フロント対象ブランチ | `main`(PR Previews設定の参照から確認) |
+| フロントRoot Directory | `frontend/` |
+| **`VITE_API_BASE_URL`現在値** | **`https://kurashi-relay-api.onrender.com`**(本番配信中のJSバンドル`index-BHIE2MZf.js`から直接抽出。ロールバック時はこの値に戻す) |
+| APIサービス名 | `kurashi-relay-api`(Web Service, **Docker**, **region=singapore**, プロジェクト「My project」/Production内) |
+| API Service ID | `srv-d9b2150js32c73ai9ifg` |
+| **API対象ブランチ** | **`feature/render-preview-deployment`**(mainではない。Dockerfileはこのブランチの`backend/Dockerfile`にのみ存在) |
+| APIインスタンス | Free(0.1 CPU / 512MB)= 15分無アクセスで休止 |
+| API環境変数 | 5件(値はマスク表示。旧APIは変更しないため未展開) |
+| Auto-Deploy | web/apiともOn Commit |
+
+### Laravel Cloud(ワークスペース: tomoko takahashi 個人・組織名なし)
+
+- 既存アプリ: **ProjNexus**(`toutetu/ProjNexus`・環境main・Sleeping・`projnexus-main-butvrx.laravel.cloud`・2ヶ月前デプロイ)
+- くらしリレーAPIは同一ワークスペースに新規作成予定
+- 東京リージョン: 利用可(ユーザー確認済み。作成画面で正式名を最終確認)
 
 ## 4. Phase 0 完了条件の判定
 
 - URLとロールバック先: ✅ 実値で記録済み
 - 既存画面とAPIの正常状態: ✅ 確認済み(レスポンス保存済み)
-- サービス名・ビルド設定・Laravel Cloud構成: ⏸ ダッシュボード接続待ち(上記チェックリスト)
+- サービス名・ビルド設定・Laravel Cloud構成: ✅ 実値で記録済み(上表)
+
+## 5. Phase 1-2 実施記録(2026-07-17 追記)
+
+- **Laravel Cloud API(現行)**: `https://kurashi-relay-production-olnfy0.laravel.cloud`
+  (アプリ名 kurashi-relay-api / 環境 production / **Asia Pacific (Singapore)** / Flex 512MiB)
+- **DB**: Laravel Serverless Postgres **17.10** / Dev構成(¼vCPU・300秒休止・バックアップなし) /
+  クラスタ名 `kurashi_relay_api` / Singapore / production環境へAttach済み
+- リージョンが東京でない理由: Serverless Postgresの作成画面に東京が無かったため(DR-006参照)。
+  東京で作った初代アプリと誤作成のMySQLクラスタは削除済み
+- 環境変数(カスタム): APP_NAME/APP_LOCALE/APP_FALLBACK_LOCALE/APP_FAKER_LOCALE/
+  CACHE_STORE=file/QUEUE_CONNECTION=sync/CORS_ALLOWED_ORIGINS=RenderフロントURL(+自動生成APP_KEY)
+- 確認済み: /api/health 200・/api/dashboard 200・404はJSON・CORSプリフライト204(allow-origin=Renderフロント)・
+  `php artisan db:show`でpgsql疎通
+- デプロイはmainへのpushで自動実行され、マイグレーションも自動で走る(migrationsテーブル生成を確認)
+
+### 残る軽微な未確認(移行をブロックしない)
+
+- 母・娘の実端末のlocalStorage(コード上はUI設定2キーのみで記録データなし)
+- 本番画面のスクリーンショット(テキストスナップショットで代替済み)
+- Laravel Cloudの利用上限・通知設定(Phase 1作成時に確認)
