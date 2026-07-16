@@ -29,3 +29,6 @@ coverage/
 
 # Misc
 *.log
+
+# 日報自動生成の一時ファイル(メモ・実行ログ。下書き本体 daily_log_*.md は追跡する)
+docs/logs/_nippo_*
