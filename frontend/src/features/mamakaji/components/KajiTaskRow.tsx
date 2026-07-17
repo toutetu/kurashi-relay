@@ -1,70 +1,48 @@
+import { Plus } from "lucide-react";
+import { useState } from "react";
 import type { KajiTask } from "../data";
-
-const toneClasses: Record<KajiTask["tone"], string> = {
-  rasp: "bg-[var(--mkj-rasp-soft)]",
-  cara: "bg-[var(--mkj-caramel-soft)]",
-  sage: "bg-[var(--mkj-sage-soft)]",
-  plum: "bg-[var(--mkj-plum-soft)]",
-};
 
 type KajiTaskRowProps = {
   task: KajiTask;
-  onToggle: (id: string) => void;
-  showPlusOne?: boolean;
+  onIncrement: (id: string) => void;
 };
 
-export function KajiTaskRow({
-  task,
-  onToggle,
-  showPlusOne = false,
-}: KajiTaskRowProps) {
+export function KajiTaskRow({ task, onIncrement }: KajiTaskRowProps) {
+  const [flyKey, setFlyKey] = useState(0);
+
+  const handleClick = () => {
+    onIncrement(task.id);
+    setFlyKey((key) => key + 1);
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => onToggle(task.id)}
-      aria-pressed={task.done}
-      aria-label={`${task.label}${task.done ? "（できた）" : "（まだ）"}`}
-      className={`pressable relative flex w-full items-center gap-3 border-b border-[var(--mkj-line)] px-1.5 py-2.5 text-left transition active:scale-[0.98] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
-        task.done
-          ? "bg-[var(--mkj-rasp-soft)]/40"
-          : "bg-transparent hover:bg-[var(--mkj-card2)]/60"
-      }`}
-    >
-      {showPlusOne && (
+    <div className="border-b border-[var(--mkj-line)] last:border-b-0">
+      <button
+        type="button"
+        aria-label={`${task.label}を記録。きょう${task.count}件`}
+        onClick={handleClick}
+        className="pressable group relative flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-[13px] font-semibold text-[var(--mkj-ink)] transition hover:bg-[color-mix(in_srgb,var(--mkj-rasp-soft)_65%,var(--mkj-card))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+      >
+        <span className="min-w-0 flex-1 truncate">{task.label}</span>
         <span
-          aria-hidden="true"
-          className="mkj-plus-one pointer-events-none absolute -top-1 right-10 text-lg font-black text-[var(--mkj-rasp)]"
+          key={task.count}
+          className={`count-bump rounded-full px-2.5 text-xs font-black tabular-nums ${
+            task.count === 0
+              ? "bg-[var(--mkj-card2)] text-[var(--mkj-ink-faint)]"
+              : "bg-[var(--mkj-rasp-soft)] text-[var(--mkj-rasp-deep)]"
+          }`}
         >
-          +1
+          {task.count}件
         </span>
-      )}
-      <span
-        className={`grid size-[38px] shrink-0 place-items-center rounded-xl text-[19px] ${toneClasses[task.tone]} ${
-          task.done ? "outline-2 outline-[var(--mkj-rasp-soft)]" : ""
-        }`}
-        aria-hidden="true"
-      >
-        {task.emoji}
-      </span>
-      <span
-        className={`flex-1 text-[13.5px] font-bold leading-snug ${
-          task.done
-            ? "text-[var(--mkj-rasp-deep)]"
-            : "text-[var(--mkj-ink)]"
-        }`}
-      >
-        {task.label}
-      </span>
-      <span
-        className={`grid size-[27px] shrink-0 place-items-center rounded-full border-2 text-[13px] font-black ${
-          task.done
-            ? "border-[var(--mkj-rasp)] bg-[var(--mkj-rasp)] text-white"
-            : "border-[var(--mkj-line2)] bg-[var(--mkj-card)] text-transparent"
-        }`}
-        aria-hidden="true"
-      >
-        ✓
-      </span>
-    </button>
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--mkj-rasp-soft)] text-[var(--mkj-rasp-deep)] transition group-hover:bg-[var(--mkj-rasp)] group-hover:text-white">
+          <Plus aria-hidden="true" size={14} strokeWidth={2.4} />
+        </span>
+        {flyKey > 0 && (
+          <span key={flyKey} className="fly [--fly-color:var(--mkj-rasp)]" aria-hidden="true">
+            +1
+          </span>
+        )}
+      </button>
+    </div>
   );
 }

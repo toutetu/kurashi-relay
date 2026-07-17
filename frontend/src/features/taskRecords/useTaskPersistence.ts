@@ -12,7 +12,7 @@ import {
 } from "../../api/oshigoto";
 import {
   enqueueOperation,
-  findPendingCreate,
+  findLatestPendingCreate,
   getOperationId,
   loadQueue,
   markRewardRevealed,
@@ -49,6 +49,15 @@ function neutralErrorMessage(error: unknown): string {
   return "うまく保存できませんでした。もう一度試してね";
 }
 
+function decrementSummary(summary: TasksData["summary"]) {
+  return {
+    ...summary,
+    today_done_count: Math.max(0, summary.today_done_count - 1),
+    gauge_count:
+      (summary.gauge_count - 1 + summary.gauge_size) % summary.gauge_size,
+  };
+}
+
 export function useTaskPersistence(member: Member) {
   const queryClient = useQueryClient();
   const query = useTasksQuery(member);
@@ -61,10 +70,14 @@ export function useTaskPersistence(member: Member) {
     useState<RevealedReward | null>(null);
   const [gaugeOverride, setGaugeOverride] = useState<number | null>(null);
   const inFlightRef = useRef(new Set<string>());
+  const pendingUndoRef = useRef(new Set<string>());
   const flushingRef = useRef(false);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushQueueRef = useRef<() => Promise<void>>(async () => undefined);
+  const runCancelRef = useRef<
+    (operation: PendingCancel) => Promise<void>
+  >(async () => undefined);
 
   const updateCachedData = useCallback(
     (updater: (current: TasksData) => TasksData, synced: boolean) => {
@@ -115,21 +128,18 @@ export function useTaskPersistence(member: Member) {
       operation: PendingCreate,
       result: Awaited<ReturnType<typeof createTaskRecord>>,
     ) => {
-      const current = queryClient.getQueryData<TasksData>(
-        tasksQueryKey(member),
-      );
-      const stillDone = current?.tasks.find(
-        (task) => task.slug === operation.task,
-      )?.done;
+      const operationId = getOperationId(operation);
+      if (pendingUndoRef.current.has(operationId)) {
+        pendingUndoRef.current.delete(operationId);
 
-      if (stillDone === false) {
-        const cancel: PendingCancel = {
+        const cancelOperation: PendingCancel = {
           kind: "cancel",
           member,
           recordId: result.record.id,
           createdAt: new Date().toISOString(),
         };
-        enqueueOperation(cancel);
+        enqueueOperation(cancelOperation);
+        void runCancelRef.current(cancelOperation);
         return;
       }
 
@@ -138,7 +148,10 @@ export function useTaskPersistence(member: Member) {
           ...data,
           tasks: data.tasks.map((task) =>
             task.slug === operation.task
-              ? { ...task, done: true, record_id: result.record.id }
+              ? {
+                  ...task,
+                  last_record_id: result.record.id,
+                }
               : task,
           ),
           summary: result.summary,
@@ -147,7 +160,7 @@ export function useTaskPersistence(member: Member) {
       );
       scheduleReward(result.revealed_reward, result.summary.gauge_size);
     },
-    [member, queryClient, scheduleReward, updateCachedData],
+    [member, scheduleReward, updateCachedData],
   );
 
   const applyCancelResult = useCallback(
@@ -159,8 +172,14 @@ export function useTaskPersistence(member: Member) {
         (data) => ({
           ...data,
           tasks: data.tasks.map((task) =>
-            task.record_id === operation.recordId
-              ? { ...task, done: false, record_id: null }
+            task.slug === result.record.task
+              ? {
+                  ...task,
+                  last_record_id:
+                    task.last_record_id === operation.recordId
+                      ? null
+                      : task.last_record_id,
+                }
               : task,
           ),
           summary: result.summary,
@@ -168,12 +187,22 @@ export function useTaskPersistence(member: Member) {
         true,
       );
       setGaugeOverride(null);
+      const updated = queryClient.getQueryData<TasksData>(tasksQueryKey(member));
+      const task = updated?.tasks.find(
+        (item) => item.slug === result.record.task,
+      );
+      if (task && task.count > 0) {
+        void refetchTasks();
+      }
     },
-    [updateCachedData],
+    [member, queryClient, refetchTasks, updateCachedData],
   );
 
   const recoverFromDefinitiveError = useCallback(
     (operation: PendingOperation, error: unknown) => {
+      if (operation.kind === "create") {
+        pendingUndoRef.current.delete(getOperationId(operation));
+      }
       removeOperation(operation);
       setGaugeOverride(null);
       setSyncStatus("error");
@@ -296,7 +325,11 @@ export function useTaskPersistence(member: Member) {
     [applyCancelResult, cancelMutation, recoverFromDefinitiveError],
   );
 
-  const toggleTask = useCallback(
+  useEffect(() => {
+    runCancelRef.current = runCancel;
+  }, [runCancel]);
+
+  const incrementTask = useCallback(
     (slug: string) => {
       const data = queryClient.getQueryData<TasksData>(tasksQueryKey(member));
       const task = data?.tasks.find((item) => item.slug === slug);
@@ -305,80 +338,102 @@ export function useTaskPersistence(member: Member) {
       setGaugeOverride(null);
       setErrorMessage(null);
 
-      if (!task.done) {
-        const operation: PendingCreate = {
-          kind: "create",
-          member,
-          task: slug,
-          date: data.date,
-          idempotencyKey: crypto.randomUUID(),
-          createdAt: new Date().toISOString(),
-        };
-        enqueueOperation(operation);
+      const operation: PendingCreate = {
+        kind: "create",
+        member,
+        task: slug,
+        date: data.date,
+        idempotencyKey: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      enqueueOperation(operation);
+      updateCachedData(
+        (current) => ({
+          ...current,
+          tasks: current.tasks.map((item) =>
+            item.slug === slug
+              ? { ...item, count: item.count + 1 }
+              : item,
+          ),
+          summary: {
+            ...current.summary,
+            today_done_count: current.summary.today_done_count + 1,
+            gauge_count: Math.min(
+              current.summary.gauge_size,
+              current.summary.gauge_count + 1,
+            ),
+          },
+        }),
+        false,
+      );
+      void runCreate(operation);
+    },
+    [member, queryClient, runCreate, updateCachedData],
+  );
+
+  const decrementTask = useCallback(
+    (slug: string) => {
+      const data = queryClient.getQueryData<TasksData>(tasksQueryKey(member));
+      const task = data?.tasks.find((item) => item.slug === slug);
+      if (!data || !task || task.count <= 0) return;
+
+      setGaugeOverride(null);
+      setErrorMessage(null);
+
+      const pendingCreate = findLatestPendingCreate(
+        member,
+        slug,
+        data.date,
+        pendingUndoRef.current,
+      );
+      if (pendingCreate) {
+        const operationId = getOperationId(pendingCreate);
+        if (inFlightRef.current.has(operationId)) {
+          pendingUndoRef.current.add(operationId);
+        } else {
+          removeOperation(pendingCreate);
+          if (loadQueue(member).length === 0) setSyncStatus("idle");
+        }
         updateCachedData(
           (current) => ({
             ...current,
             tasks: current.tasks.map((item) =>
               item.slug === slug
-                ? { ...item, done: true, record_id: null }
+                ? { ...item, count: Math.max(0, item.count - 1) }
                 : item,
             ),
-            summary: {
-              ...current.summary,
-              today_done_count: current.summary.today_done_count + 1,
-              gauge_count: Math.min(
-                current.summary.gauge_size,
-                current.summary.gauge_count + 1,
-              ),
-            },
+            summary: decrementSummary(current.summary),
           }),
           false,
         );
-        void runCreate(operation);
         return;
       }
+
+      if (task.last_record_id === null) return;
 
       updateCachedData(
         (current) => ({
           ...current,
           tasks: current.tasks.map((item) =>
             item.slug === slug
-              ? { ...item, done: false, record_id: null }
+              ? { ...item, count: Math.max(0, item.count - 1) }
               : item,
           ),
-          summary: {
-            ...current.summary,
-            today_done_count: Math.max(
-              0,
-              current.summary.today_done_count - 1,
-            ),
-            gauge_count:
-              (current.summary.gauge_count -
-                1 +
-                current.summary.gauge_size) %
-              current.summary.gauge_size,
-          },
+          summary: decrementSummary(current.summary),
         }),
         false,
       );
 
-      if (task.record_id === null) {
-        const pendingCreate = findPendingCreate(member, slug, data.date);
-        if (pendingCreate) removeOperation(pendingCreate);
-        if (loadQueue(member).length === 0) setSyncStatus("idle");
-        return;
-      }
-
       const operation: PendingCancel = {
         kind: "cancel",
         member,
-        recordId: task.record_id,
+        recordId: task.last_record_id,
         createdAt: new Date().toISOString(),
       };
       enqueueOperation(operation);
       void runCancel(operation);
     },
-    [member, queryClient, runCancel, runCreate, updateCachedData],
+    [member, queryClient, runCancel, updateCachedData],
   );
 
   useEffect(() => {
@@ -412,7 +467,8 @@ export function useTaskPersistence(member: Member) {
 
   return {
     ...query,
-    toggleTask,
+    incrementTask,
+    decrementTask,
     revealedReward,
     closeReveal,
     gaugeCount: gaugeOverride ?? query.data?.summary.gauge_count ?? 0,
