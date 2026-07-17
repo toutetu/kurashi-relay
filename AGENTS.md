@@ -18,6 +18,36 @@
 - git commit / push は明示的な指示があるときのみ行う
 - ビルド・テストを通してから完了報告する(勝手なワークアラウンドで「通した」ことにしない。例: ビルドスクリプトの差し替えは禁止)
 
+## ブランチ運用
+
+- **1ブランチ = 1デプロイ単位**。main は自動デプロイ(バックエンド→Laravel Cloud、フロント→Render)。
+  1マージ = 本番反映なので、1回で出す「意味のかたまり」を1つに絞る。
+- **バックエンドとフロントは必ず別ブランチ・別PR**にする(マイグレーションと画面を同じPRに混ぜない)。
+- **必ず最新 main から切る**。他の feature ブランチに相乗りしない(過去にK0がfrontendブランチに乗った失敗例あり)。
+- **命名**: `<type>/<domain>-<topic>`。type = `feat` / `fix` / `chore` / `docs` / `refactor`。
+  例: `feat/koekake-api`・`feat/koekake-web`・`chore/k0-migration`・`docs/koekake-plan`。
+- **コード変更と docs のみの変更は混ぜない**(docs だけなら `docs/*` ブランチ)。ブランチは短命に保ち、大きくなったら分割。
+- commit/push は区切りごとに自律実行してよい。PR作成と main マージはユーザー確認後。
+
+## ドキュメント運用(2層 + 進行中)
+
+docs の無限増殖を防ぐため、ライフサイクルで置き場所を分ける。
+
+- **恒久層 `docs/` 直下 =「今の正」**: design-principles / design-decisions / architecture / data-model /
+  api-contract / product-plan / 各 plan / ui 系ガイド。上書き更新し、版番号(-2,-3…)で増やさない。重要な変更は DR に残す。
+- **運用リファレンス `docs/ops/`**: デプロイ手順など繰り返し使う運用文書。
+- **進行中 `docs/wip/`**: 未完のフェーズ runbook・スモーク依頼・実装指示書・バックログなど。完了したら archive へ。
+- **完了保管 `docs/archive/`**: 実装・検証が済んだ作業用 docs(レビュー依頼/報告・使い捨て spec・完了フェーズ・委譲指示書)。
+  `reviews/` `specs/` `phases/` で軽く分類。経緯を辿れるように残すだけで日常は見ない。
+- **結論は DR に蒸留**。archive は「経緯」、DR(`docs/design-decisions.md`)は「決定」。
+  archive を消しても DR を辿れば判断が復元できる状態を保つ。
+
+### 新機能の 提案 → 実装 → 完了 の流れ
+
+1. **提案・計画**: `docs/<機能>-plan-NN.md`(恒久層)に計画を書く。設計判断は DR で記録。
+2. **実装指示書 / レビュー依頼 / スモーク依頼**: `docs/wip/<機能>/` に置いて Cursor/Codex へ渡す(1タスク1フォルダ)。
+3. **完了(マージ済み)**: `docs/wip/<機能>/` を `docs/archive/<分類>/` へ移動。plan の該当項目に「完了」を追記し、結論は DR へ。
+
 ## プロジェクト
 
 このリポジトリは、母と娘の生活・支援・予定と実績を可視化する
