@@ -18,6 +18,7 @@ return new class extends Migration
             $table->timestampTz('cancelled_at')->nullable();
             $table->string('source', 20)->default('web');
             $table->string('idempotency_key', 64)->unique();
+            $table->unsignedSmallInteger('granted_point_value')->default(0);
             $table->timestampsTz();
 
             $table->index(['family_member_id', 'record_date']);
