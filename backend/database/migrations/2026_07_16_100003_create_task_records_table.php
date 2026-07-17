@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -23,18 +22,10 @@ return new class extends Migration
 
             $table->index(['family_member_id', 'record_date']);
         });
-
-        DB::statement(
-            'CREATE UNIQUE INDEX task_records_active_unique
-             ON task_records (family_member_id, task_definition_id, record_date)
-             WHERE cancelled_at IS NULL'
-        );
     }
 
     public function down(): void
     {
-        DB::statement('DROP INDEX IF EXISTS task_records_active_unique');
-
         Schema::dropIfExists('task_records');
     }
 };

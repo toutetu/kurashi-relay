@@ -28,11 +28,13 @@ final class TaskService
             ->whereNull('cancelled_at')
             ->whereDate('record_date', $date)
             ->get()
-            ->keyBy('task_definition_id');
+            ->groupBy('task_definition_id');
 
         $tasks = $definitions->map(function (TaskDefinition $definition) use ($recordsByTaskId): array {
-            /** @var TaskRecord|null $record */
-            $record = $recordsByTaskId->get($definition->id);
+            $taskRecords = $recordsByTaskId->get($definition->id, collect());
+            $count = $taskRecords->count();
+            /** @var int|null $lastRecordId */
+            $lastRecordId = $count > 0 ? (int) $taskRecords->max('id') : null;
 
             return [
                 'slug' => $definition->slug,
@@ -40,8 +42,10 @@ final class TaskService
                 'category' => $definition->category,
                 'point_value' => $definition->point_value,
                 'sort_order' => $definition->sort_order,
-                'done' => $record !== null,
-                'record_id' => $record?->id,
+                'count' => $count,
+                'last_record_id' => $lastRecordId,
+                'done' => $count > 0,
+                'record_id' => $lastRecordId,
             ];
         })->values()->all();
 

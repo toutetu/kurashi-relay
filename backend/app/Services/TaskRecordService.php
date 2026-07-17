@@ -61,36 +61,6 @@ final class TaskRecordService
                 );
             }
 
-            $existingActive = TaskRecord::query()
-                ->with(['familyMember', 'taskDefinition', 'rewardCollection'])
-                ->where('family_member_id', $member->id)
-                ->where('task_definition_id', $taskDefinition->id)
-                ->whereDate('record_date', $recordDate)
-                ->whereNull('cancelled_at')
-                ->first();
-
-            if ($existingActive !== null) {
-                try {
-                    $this->registerOperation(
-                        $idempotencyKey,
-                        $member,
-                        $taskDefinition,
-                        $recordDate,
-                        $existingActive,
-                    );
-                } catch (QueryException $exception) {
-                    return $this->recoverFromInsertConflict(
-                        $exception,
-                        $member,
-                        $taskDefinition,
-                        $recordDate,
-                        $idempotencyKey,
-                    );
-                }
-
-                return $this->buildStoreResult($existingActive, $recordDate, true, 200);
-            }
-
             try {
                 $record = DB::transaction(
                     function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $source): TaskRecord {
@@ -282,20 +252,12 @@ final class TaskRecordService
             ->where('idempotency_key', $idempotencyKey)
             ->first();
 
-        if ($winner !== null && ! $this->matchesPayload($winner, $member, $taskDefinition, $recordDate)) {
-            throw new IdempotencyConflictException('Idempotency key conflict.');
-        }
-
-        $winner ??= TaskRecord::query()
-            ->with(['familyMember', 'taskDefinition', 'rewardCollection'])
-            ->where('family_member_id', $member->id)
-            ->where('task_definition_id', $taskDefinition->id)
-            ->whereDate('record_date', $recordDate)
-            ->whereNull('cancelled_at')
-            ->first();
-
         if ($winner === null) {
             throw $exception;
+        }
+
+        if (! $this->matchesPayload($winner, $member, $taskDefinition, $recordDate)) {
+            throw new IdempotencyConflictException('Idempotency key conflict.');
         }
 
         try {
