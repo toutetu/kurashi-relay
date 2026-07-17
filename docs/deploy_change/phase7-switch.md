@@ -1,6 +1,6 @@
 # Phase 7: Render フロント接続先切替 手順書
 
-作成: 2026-07-17 / 状態: **切替前**(Render env は旧値のまま)
+作成: 2026-07-17 / 状態: **✅ 切替完了・検証OK**(2026-07-17)
 
 親指示書: `kurashi-relay_laravel-cloud_deployment_instructions.md` §7 Phase 7 / §8 ロールバック
 
@@ -32,12 +32,22 @@ Render Dashboard → Static Site **`kurashi-relay-web`**:
 4. **Events / Logs** で `Deploy live` を確認
 5. 旧 Render API `kurashi-relay-api` は**停止せず残す**(切り戻し用)
 
-## 切替後の検証(Fable が curl + ブラウザで実施)
+## 切替後の検証結果(2026-07-17・Fable が curl + ブラウザで実施)
 
-- 配信JSに新URLが焼き込まれているか(バンドルを取得して確認)
-- ブラウザで `kurashi-relay-web` を開き、通信が Laravel Cloud ドメインへ出ているか + Console に CORS エラーが無いか
-- 保存 → 再読込復元(タスク完了 → リロードで残る)
-- スマホ表示 / 同一操作の連打で二重加算されないか
+| 項目 | 結果 |
+|---|---|
+| 配信JSへ新URL反映 | ✅ `index-BoKCY1fj.js` に `...laravel.cloud` あり・旧 `api.onrender.com` なし |
+| 実オリジンからの API 疎通 | ✅ `GET /api/tasks?member=child` → 200(`kurashi-relay-web` オリジンの fetch が本文取得) |
+| CORS | ✅ クロスオリジン fetch 成功=CORS OK(Console エラーなし)。※`acao` が JS で null は正常仕様 |
+| 保存(POST) | ✅ 未完了タスク `shokki` を完了 → `record_id:5` が Postgres に採番(3→4→5) |
+| 再読込復元 | ✅ リロード後も `食器を流しに運んだ（できた）` を維持 |
+| 取消(DELETE) | ✅ 再度押下で record 削除・`done:false/record_id:null` に復元(テストデータは原状回復) |
+| スマホ表示 | ✅ 375px で `/oshigoto` 正常レンダリング |
+| 旧 Render API | ✅ 未停止のまま残置(切り戻し用) |
+
+- 連打での二重加算は **Codex report-03 の既知バックログ(H2)** 側。本検証では未実施(修正フェーズで確認)。
+- 現在の子タスク当日データ: `kigae`/`fuku` が完了済(record_id 3,4)= 過去テストの実データ。ゲージ「2/10」もこれを反映。
+  実家庭利用の開始時に初期化したい場合は要判断(下記)。
 
 ## 事前の心づもり
 
