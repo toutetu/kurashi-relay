@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { ChildPlanPage } from "./pages/ChildPlanPage";
 import { HomePage } from "./pages/HomePage";
+import { KoekakePage } from "./pages/KoekakePage";
 import { LastWarPage } from "./pages/LastWarPage";
 import { MamaKajiLayout } from "./pages/MamaKajiLayout";
 import { MamaKajiPage } from "./pages/MamaKajiPage";
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="zukan" element={<MamaKajiZukanPage />} />
         </Route>
         <Route path="child-plan" element={<ChildPlanPage />} />
+        <Route path="koekake" element={<KoekakePage />} />
         <Route path="oshigoto" element={<OshigotoPage />} />
         <Route path="oshigoto/zukan" element={<OshigotoZukanPage />} />
         <Route path="oshigoto/usj" element={<OshigotoUsjPage />} />
