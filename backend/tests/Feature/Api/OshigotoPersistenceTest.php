@@ -584,7 +584,7 @@ class OshigotoPersistenceTest extends TestCase
         $migrationFiles = glob(database_path('migrations/*.php'));
 
         $this->assertIsArray($migrationFiles);
-        $this->assertCount(6, $migrationFiles);
+        $this->assertCount(12, $migrationFiles);
 
         foreach ($migrationFiles as $migrationFile) {
             $contents = file_get_contents($migrationFile);
