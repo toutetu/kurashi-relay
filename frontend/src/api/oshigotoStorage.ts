@@ -135,6 +135,7 @@ export function findLatestPendingCreate(
   member: Member,
   task: string,
   date: string,
+  excludeOperationIds?: ReadonlySet<string>,
 ): PendingCreate | undefined {
   const queue = loadQueue(member);
   for (let index = queue.length - 1; index >= 0; index -= 1) {
@@ -142,7 +143,8 @@ export function findLatestPendingCreate(
     if (
       operation?.kind === "create" &&
       operation.task === task &&
-      operation.date === date
+      operation.date === date &&
+      !excludeOperationIds?.has(getOperationId(operation))
     ) {
       return operation;
     }

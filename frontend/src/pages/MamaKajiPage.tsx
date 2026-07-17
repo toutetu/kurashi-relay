@@ -1,4 +1,6 @@
+import { Undo2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "../components/ui/Button";
 import { KajiChallengeCard } from "../features/mamakaji/components/KajiChallengeCard";
 import { KajiCheerOverlay } from "../features/mamakaji/components/KajiCheerOverlay";
 import { KajiProgressHero } from "../features/mamakaji/components/KajiProgressHero";
@@ -79,9 +81,12 @@ export function MamaKajiPage() {
     saveError,
   } = useMamaKajiTasks();
   const [cheer, setCheer] = useState<{ taskId: string } | null>(null);
-  const [plusOneTaskId, setPlusOneTaskId] = useState<string | null>(null);
   const [dropTick, setDropTick] = useState(0);
-  const plusOneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [lastAction, setLastAction] = useState<{
+    id: string;
+    label: string;
+  } | null>(null);
+  const undoTimer = useRef<number | null>(null);
 
   const tasks: KajiTask[] = (data?.tasks ?? []).map((apiTask, index) => {
     const visual = INITIAL_KAJI.find((task) => task.id === apiTask.slug);
@@ -119,17 +124,23 @@ export function MamaKajiPage() {
     incrementTask(id);
     setCheer({ taskId: id });
     setDropTick((tick) => tick + 1);
-    if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
-    setPlusOneTaskId(id);
-    plusOneTimerRef.current = setTimeout(() => {
-      setPlusOneTaskId(null);
-      plusOneTimerRef.current = null;
-    }, 2400);
+    const task = tasks.find((item) => item.id === id);
+    if (task) {
+      setLastAction({ id, label: task.label });
+      if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
+      undoTimer.current = window.setTimeout(() => setLastAction(null), 5_000);
+    }
   };
 
-  const handleDecrementTask = (id: string) => {
-    decrementTask(id);
-    setPlusOneTaskId((current) => (current === id ? null : current));
+  const undoLastIncrement = () => {
+    if (!lastAction) return;
+    decrementTask(lastAction.id);
+    setLastAction(null);
+    setCheer(null);
+    if (undoTimer.current !== null) {
+      window.clearTimeout(undoTimer.current);
+      undoTimer.current = null;
+    }
   };
 
   const handleCloseReveal = () => {
@@ -139,11 +150,12 @@ export function MamaKajiPage() {
     closeReveal();
   };
 
-  useEffect(() => {
-    return () => {
-      if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
-    };
-  }, []);
+  useEffect(
+    () => () => {
+      if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
+    },
+    [],
+  );
 
   const carryover = revealed !== null ? (data?.summary.gauge_count ?? 0) : 0;
 
@@ -227,8 +239,6 @@ export function MamaKajiPage() {
               key={task.id}
               task={task}
               onIncrement={handleIncrementTask}
-              onDecrement={handleDecrementTask}
-              showPlusOne={plusOneTaskId === task.id}
             />
           ))}
         </div>
@@ -251,7 +261,7 @@ export function MamaKajiPage() {
             task={cheerTask}
             count={count}
             dropTick={dropTick}
-            onUndo={() => handleDecrementTask(cheer.taskId)}
+            onUndo={undoLastIncrement}
             onClose={() => setCheer(null)}
           />
         );
@@ -264,6 +274,28 @@ export function MamaKajiPage() {
           points={points}
           onClose={handleCloseReveal}
         />
+      )}
+
+      {lastAction && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-22 left-1/2 z-50 flex w-[min(92vw,30rem)] -translate-x-1/2 items-center justify-between gap-3 rounded-2xl bg-[var(--text)] px-4 py-3 text-sm text-white shadow-xl xl:bottom-7"
+        >
+          <span className="font-bold">
+            {lastAction.label}を1件記録しました
+          </span>
+          <Button
+            onClick={undoLastIncrement}
+            variant="solid"
+            tone="neutral"
+            size="compact"
+            icon={Undo2}
+            className="shrink-0 bg-white text-[var(--text)]"
+          >
+            取り消す
+          </Button>
+        </div>
       )}
     </>
   );

@@ -600,7 +600,7 @@ button:not(:disabled),
   top: -0.25rem;
   font-size: 12.5px;
   font-weight: 800;
-  color: var(--primary);
+  color: var(--fly-color, var(--primary));
   pointer-events: none;
   animation: kr-flyup 0.55s ease forwards;
 }

@@ -70,10 +70,14 @@ export function useTaskPersistence(member: Member) {
     useState<RevealedReward | null>(null);
   const [gaugeOverride, setGaugeOverride] = useState<number | null>(null);
   const inFlightRef = useRef(new Set<string>());
+  const pendingUndoRef = useRef(new Set<string>());
   const flushingRef = useRef(false);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushQueueRef = useRef<() => Promise<void>>(async () => undefined);
+  const runCancelRef = useRef<
+    (operation: PendingCancel) => Promise<void>
+  >(async () => undefined);
 
   const updateCachedData = useCallback(
     (updater: (current: TasksData) => TasksData, synced: boolean) => {
@@ -124,6 +128,21 @@ export function useTaskPersistence(member: Member) {
       operation: PendingCreate,
       result: Awaited<ReturnType<typeof createTaskRecord>>,
     ) => {
+      const operationId = getOperationId(operation);
+      if (pendingUndoRef.current.has(operationId)) {
+        pendingUndoRef.current.delete(operationId);
+
+        const cancelOperation: PendingCancel = {
+          kind: "cancel",
+          member,
+          recordId: result.record.id,
+          createdAt: new Date().toISOString(),
+        };
+        enqueueOperation(cancelOperation);
+        void runCancelRef.current(cancelOperation);
+        return;
+      }
+
       updateCachedData(
         (data) => ({
           ...data,
@@ -141,7 +160,7 @@ export function useTaskPersistence(member: Member) {
       );
       scheduleReward(result.revealed_reward, result.summary.gauge_size);
     },
-    [scheduleReward, updateCachedData],
+    [member, scheduleReward, updateCachedData],
   );
 
   const applyCancelResult = useCallback(
@@ -181,6 +200,9 @@ export function useTaskPersistence(member: Member) {
 
   const recoverFromDefinitiveError = useCallback(
     (operation: PendingOperation, error: unknown) => {
+      if (operation.kind === "create") {
+        pendingUndoRef.current.delete(getOperationId(operation));
+      }
       removeOperation(operation);
       setGaugeOverride(null);
       setSyncStatus("error");
@@ -303,6 +325,10 @@ export function useTaskPersistence(member: Member) {
     [applyCancelResult, cancelMutation, recoverFromDefinitiveError],
   );
 
+  useEffect(() => {
+    runCancelRef.current = runCancel;
+  }, [runCancel]);
+
   const incrementTask = useCallback(
     (slug: string) => {
       const data = queryClient.getQueryData<TasksData>(tasksQueryKey(member));
@@ -354,9 +380,20 @@ export function useTaskPersistence(member: Member) {
       setGaugeOverride(null);
       setErrorMessage(null);
 
-      const pendingCreate = findLatestPendingCreate(member, slug, data.date);
+      const pendingCreate = findLatestPendingCreate(
+        member,
+        slug,
+        data.date,
+        pendingUndoRef.current,
+      );
       if (pendingCreate) {
-        removeOperation(pendingCreate);
+        const operationId = getOperationId(pendingCreate);
+        if (inFlightRef.current.has(operationId)) {
+          pendingUndoRef.current.add(operationId);
+        } else {
+          removeOperation(pendingCreate);
+          if (loadQueue(member).length === 0) setSyncStatus("idle");
+        }
         updateCachedData(
           (current) => ({
             ...current,
@@ -369,7 +406,6 @@ export function useTaskPersistence(member: Member) {
           }),
           false,
         );
-        if (loadQueue(member).length === 0) setSyncStatus("idle");
         return;
       }
 

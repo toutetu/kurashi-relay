@@ -1,6 +1,6 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderApp } from "../../test/renderApp";
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -118,6 +118,10 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 describe("くらしのおしごと永続化", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     localStorage.clear();
     fetchMock.mockReset();
@@ -132,7 +136,7 @@ describe("くらしのおしごと永続化", () => {
 
     expect(
       await screen.findByRole("button", {
-        name: "自分で着替えた、きょう0回",
+        name: "自分で着替えたを記録。きょう0件",
       }),
     ).toBeInTheDocument();
     expect(screen.getByText(/三日月 2 \/ 10個/)).toBeInTheDocument();
@@ -156,12 +160,12 @@ describe("くらしのおしごと永続化", () => {
     renderApp("/oshigoto");
 
     const row = await screen.findByRole("button", {
-      name: "自分で着替えた、きょう0回",
+      name: "自分で着替えたを記録。きょう0件",
     });
     await user.click(row);
 
     expect(
-      screen.getByRole("button", { name: "自分で着替えた、きょう1回" }),
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう1件" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/上弦の月 3 \/ 10個/)).toBeInTheDocument();
 
@@ -202,7 +206,7 @@ describe("くらしのおしごと永続化", () => {
     renderApp("/oshigoto");
 
     const row = await screen.findByRole("button", {
-      name: "自分で着替えた、きょう0回",
+      name: "自分で着替えたを記録。きょう0件",
     });
     await user.click(row);
     await user.click(row);
@@ -210,7 +214,7 @@ describe("くらしのおしごと永続化", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "自分で着替えた、きょう3回" }),
+        screen.getByRole("button", { name: "自分で着替えたを記録。きょう3件" }),
       ).toBeInTheDocument(),
     );
 
@@ -221,20 +225,28 @@ describe("くらしのおしごと永続化", () => {
     expect(new Set(postBodies.map((body) => body.idempotency_key)).size).toBe(3);
   });
 
-  it("取り消しボタンで最後の1回分をDELETEし、サーバのsummaryを反映する", async () => {
-    fetchMock.mockImplementation((_input, init) =>
-      init?.method === "DELETE"
-        ? jsonResponse(cancelResponse(2, 0))
-        : jsonResponse(tasksResponse(3, 1, 7)),
-    );
+  it("取り消しトーストで最後の1回分をDELETEし、サーバのsummaryを反映する", async () => {
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        return jsonResponse(createResponse(3, 7, 1), 201);
+      }
+      if (init?.method === "DELETE") {
+        return jsonResponse(cancelResponse(2, 0));
+      }
+      return jsonResponse(tasksResponse(2));
+    });
     const user = userEvent.setup();
     renderApp("/oshigoto");
 
-    await user.click(
-      await screen.findByRole("button", {
-        name: "自分で着替えたを1回とりけす",
-      }),
-    );
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えたを記録。きょう0件",
+    });
+    await user.click(row);
+
+    expect(
+      await screen.findByText("自分で着替えたを1件記録しました"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "取り消す" }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -243,14 +255,14 @@ describe("くらしのおしごと永続化", () => {
       ),
     );
     expect(
-      screen.getByRole("button", { name: "自分で着替えた、きょう0回" }),
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
     ).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByText(/三日月 2 \/ 10個/)).toBeInTheDocument(),
     );
   });
 
-  it("未送信のpending createがある状態で取り消すとAPIを呼ばずキューから除去する", async () => {
+  it("送信中のcreateを取り消すとPOST成功後にcancelが発行され0件に収束する", async () => {
     let resolvePost: ((response: Response) => void) | undefined;
     fetchMock.mockImplementation((_input, init) => {
       if (init?.method === "POST") {
@@ -258,25 +270,26 @@ describe("くらしのおしごと永続化", () => {
           resolvePost = resolve;
         });
       }
+      if (init?.method === "DELETE") {
+        return jsonResponse(cancelResponse(2, 0));
+      }
       return jsonResponse(tasksResponse(2));
     });
     const user = userEvent.setup();
     renderApp("/oshigoto");
 
     const row = await screen.findByRole("button", {
-      name: "自分で着替えた、きょう0回",
+      name: "自分で着替えたを記録。きょう0件",
     });
     await user.click(row);
     expect(
-      screen.getByRole("button", { name: "自分で着替えた、きょう1回" }),
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう1件" }),
     ).toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: "自分で着替えたを1回とりけす" }),
-    );
+    await user.click(screen.getByRole("button", { name: "取り消す" }));
 
     expect(
-      screen.getByRole("button", { name: "自分で着替えた、きょう0回" }),
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
     ).toBeInTheDocument();
     expect(
       fetchMock.mock.calls.filter(([, init]) => init?.method === "DELETE"),
@@ -290,9 +303,101 @@ describe("くらしのおしごと永続化", () => {
         }),
       );
     });
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/api/task-records/7"),
+        expect.objectContaining({ method: "DELETE" }),
+      ),
+    );
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText(/三日月 2 \/ 10個/)).toBeInTheDocument(),
+    );
+  });
+
+  it("CheerOverlayとトーストの二重取り消しでdecrementは1回だけ", async () => {
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        return jsonResponse(createResponse(3, 7, 1), 201);
+      }
+      if (init?.method === "DELETE") {
+        return jsonResponse(cancelResponse(2, 0));
+      }
+      return jsonResponse(tasksResponse(2));
+    });
+    const user = userEvent.setup();
+    renderApp("/oshigoto");
+
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えたを記録。きょう0件",
+    });
+    await user.click(row);
+
+    await user.click(
+      await screen.findByRole("button", { name: "↩ とりけす" }),
+    );
+    const toastUndo = screen.queryByRole("button", { name: "取り消す" });
+    if (toastUndo) {
+      await user.click(toastUndo);
+    }
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([, init]) => init?.method === "DELETE"),
+      ).toHaveLength(1),
+    );
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
+    ).toBeInTheDocument();
+  });
+
+  it("未送信のpending createがある状態で取り消すとAPIを呼ばずキューから除去する", async () => {
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        return Promise.reject(new TypeError("Failed to fetch"));
+      }
+      return jsonResponse(tasksResponse(2));
+    });
+    const user = userEvent.setup();
+    renderApp("/oshigoto");
+
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えたを記録。きょう0件",
+    });
+    await user.click(row);
+    expect(await screen.findByText("あとで保存します")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう1件" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "取り消す" }));
+
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
+    ).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === "DELETE"),
+    ).toHaveLength(0);
+
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        return jsonResponse(createResponse(3, 7, 1), 201);
+      }
+      return jsonResponse(tasksResponse(2));
+    });
+    window.dispatchEvent(new Event("online"));
     await waitFor(() =>
       expect(screen.queryByText("保存中…")).not.toBeInTheDocument(),
     );
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
+    ).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === "POST"),
+    ).toHaveLength(1);
   });
 
   it("サーバが返したitem_slugの報酬だけを一度表示する", async () => {
@@ -314,7 +419,7 @@ describe("くらしのおしごと永続化", () => {
 
     await user.click(
       await screen.findByRole("button", {
-        name: "自分で着替えた、きょう0回",
+        name: "自分で着替えたを記録。きょう0件",
       }),
     );
     expect(
@@ -343,12 +448,12 @@ describe("くらしのおしごと永続化", () => {
 
     await user.click(
       await screen.findByRole("button", {
-        name: "自分で着替えた、きょう0回",
+        name: "自分で着替えたを記録。きょう0件",
       }),
     );
     expect(await screen.findByText("あとで保存します")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "自分で着替えた、きょう1回" }),
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう1件" }),
     ).toBeInTheDocument();
 
     offline = false;
@@ -428,7 +533,7 @@ describe("くらしのおしごと永続化", () => {
 
     expect(await screen.findByText(/0pt ／ 作る券まで/)).toBeInTheDocument();
     await user.click(
-      await screen.findByRole("button", { name: "食器を洗った、きょう0回" }),
+      await screen.findByRole("button", { name: "食器を洗ったを記録。きょう0件" }),
     );
     expect(await screen.findByText(/10pt ／ 作る券まで/)).toBeInTheDocument();
 
@@ -454,7 +559,208 @@ describe("くらしのおしごと永続化", () => {
       "おしごとのデータ形式が正しくありません。",
     );
     expect(
-      screen.queryByRole("button", { name: "自分で着替えた、きょう0回" }),
+      screen.queryByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("+1で取り消しトーストが表示される", async () => {
+    fetchMock.mockImplementation(() => jsonResponse(tasksResponse(2)));
+    const user = userEvent.setup();
+    renderApp("/oshigoto");
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "自分で着替えたを記録。きょう0件",
+      }),
+    );
+
+    expect(
+      screen.getByText("自分で着替えたを1件記録しました"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "取り消す" }),
+    ).toBeInTheDocument();
+  });
+
+  it("取り消しトーストは5秒後に自動で消える", async () => {
+    fetchMock.mockImplementation(() => jsonResponse(tasksResponse(2)));
+    renderApp("/oshigoto");
+
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えたを記録。きょう0件",
+    });
+
+    vi.useFakeTimers();
+    fireEvent.click(row);
+    act(() => vi.advanceTimersByTime(4_000));
+    fireEvent.click(row);
+
+    act(() => vi.advanceTimersByTime(4_999));
+    expect(
+      screen.getByRole("button", { name: "取り消す" }),
+    ).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(2));
+    expect(
+      screen.queryByRole("button", { name: "取り消す" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("取り消しトーストでcountが1減る", async () => {
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        return jsonResponse(createResponse(3, 7, 1), 201);
+      }
+      if (init?.method === "DELETE") {
+        return jsonResponse(cancelResponse(2, 0));
+      }
+      return jsonResponse(tasksResponse(2));
+    });
+    const user = userEvent.setup();
+    renderApp("/oshigoto");
+
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えたを記録。きょう0件",
+    });
+    await user.click(row);
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう1件" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
+    ).toBeInTheDocument();
+  });
+
+  it("確定エラー後は取り消し予約を破棄し、再記録したrecordを誤cancelしない", async () => {
+    let resolvePost: ((response: Response) => void) | undefined;
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        return new Promise<Response>((resolve) => {
+          resolvePost = resolve;
+        });
+      }
+      return jsonResponse(tasksResponse(2));
+    });
+    const user = userEvent.setup();
+    renderApp("/oshigoto");
+
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えたを記録。きょう0件",
+    });
+    await user.click(row);
+    await user.click(screen.getByRole("button", { name: "取り消す" }));
+
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        return jsonResponse(createResponse(3, 8, 1), 201);
+      }
+      if (init?.method === "DELETE") {
+        return jsonResponse(cancelResponse(2, 0));
+      }
+      return jsonResponse(tasksResponse(2, 0));
+    });
+
+    await act(async () => {
+      resolvePost?.(
+        new Response(
+          JSON.stringify({
+            status: "error",
+            message: "うまく保存できませんでした。もう一度試してね",
+          }),
+          {
+            status: 422,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      );
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
+      ).toBeInTheDocument(),
+    );
+
+    await user.click(row);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "自分で着替えたを記録。きょう1件" }),
+      ).toBeInTheDocument(),
+    );
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === "DELETE"),
+    ).toHaveLength(0);
+  });
+
+  it("in-flightのcreate2件を取り消すとそれぞれに補償DELETEが発行される", async () => {
+    const resolvers: Array<(response: Response) => void> = [];
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        return new Promise<Response>((resolve) => {
+          resolvers.push(resolve);
+        });
+      }
+      if (init?.method === "DELETE") {
+        return jsonResponse(cancelResponse(2, 0));
+      }
+      return jsonResponse(tasksResponse(2));
+    });
+    const user = userEvent.setup();
+    renderApp("/oshigoto");
+
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えたを記録。きょう0件",
+    });
+    await user.click(row);
+    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
+    ).toBeInTheDocument();
+
+    await user.click(row);
+    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      resolvers[0]?.(
+        new Response(JSON.stringify(createResponse(3, 7, 1)), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      resolvers[1]?.(
+        new Response(JSON.stringify(createResponse(3, 8, 1)), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([, init]) => init?.method === "DELETE"),
+      ).toHaveLength(2),
+    );
+    expect(
+      fetchMock.mock.calls.some(
+        ([url, init]) =>
+          init?.method === "DELETE" &&
+          String(url).includes("/api/task-records/7"),
+      ),
+    ).toBe(true);
+    expect(
+      fetchMock.mock.calls.some(
+        ([url, init]) =>
+          init?.method === "DELETE" &&
+          String(url).includes("/api/task-records/8"),
+      ),
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
+    ).toBeInTheDocument();
   });
 });
