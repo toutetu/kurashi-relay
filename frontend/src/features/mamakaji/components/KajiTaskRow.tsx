@@ -25,8 +25,7 @@ export function KajiTaskRow({ task, onIncrement }: KajiTaskRowProps) {
       >
         <span className="min-w-0 flex-1 truncate">{task.label}</span>
         <span
-          key={task.count}
-          className={`count-bump rounded-full px-2.5 text-xs font-black tabular-nums ${
+          className={`rounded-full px-2.5 text-xs font-black tabular-nums ${
             task.count === 0
               ? "bg-[var(--mkj-card2)] text-[var(--mkj-ink-faint)]"
               : "bg-[var(--mkj-rasp-soft)] text-[var(--mkj-rasp-deep)]"
