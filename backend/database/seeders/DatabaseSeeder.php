@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             FamilyMemberSeeder::class,
             TaskDefinitionSeeder::class,
+            KoekakeSeeder::class,
         ]);
     }
 }
