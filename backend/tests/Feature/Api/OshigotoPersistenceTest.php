@@ -113,7 +113,7 @@ class OshigotoPersistenceTest extends TestCase
             ->assertJsonPath('data.revealed_reward.milestone_number', $reward['milestone_number']);
     }
 
-    public function test_duplicate_key_replay_does_not_reveal_canonical_record_reward(): void
+    public function test_subsequent_record_does_not_reveal_previous_milestone_reward(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
 
@@ -125,35 +125,29 @@ class OshigotoPersistenceTest extends TestCase
             'date' => '2026-07-15',
             'idempotency_key' => 'milestone-creation-key',
         ];
-        $duplicatePayload = [
-            ...$creationPayload,
-            'idempotency_key' => 'milestone-duplicate-key',
-        ];
 
         $created = $this->postJson('/api/task-records', $creationPayload)->assertCreated();
         $reward = $created->json('data.revealed_reward');
 
         $this->assertNotNull($reward);
 
-        $this->postJson('/api/task-records', $duplicatePayload)
-            ->assertOk()
-            ->assertJsonPath('meta.deduplicated', true)
-            ->assertJsonMissingPath('data.revealed_reward');
-
-        $this->postJson('/api/task-records', $duplicatePayload)
-            ->assertOk()
-            ->assertJsonPath('meta.deduplicated', true)
+        $this->postJson('/api/task-records', [
+            ...$creationPayload,
+            'idempotency_key' => 'after-milestone-key',
+        ])
+            ->assertCreated()
             ->assertJsonMissingPath('data.revealed_reward');
 
         $this->postJson('/api/task-records', $creationPayload)
             ->assertOk()
+            ->assertJsonPath('meta.deduplicated', true)
             ->assertJsonPath('data.revealed_reward.item_slug', $reward['item_slug']);
 
-        $this->assertSame(10, TaskRecord::query()->count());
+        $this->assertSame(11, TaskRecord::query()->count());
         $this->assertSame(11, TaskRecordOperation::query()->count());
     }
 
-    public function test_duplicate_member_task_date_with_different_key_is_deduplicated(): void
+    public function test_different_idempotency_keys_create_multiple_records_and_count(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
 
@@ -161,63 +155,137 @@ class OshigotoPersistenceTest extends TestCase
             'member' => 'child',
             'task' => 'shokki',
             'date' => '2026-07-16',
-            'idempotency_key' => 'dup-key-a',
+            'idempotency_key' => 'count-key-a',
         ])->assertCreated();
 
         $second = $this->postJson('/api/task-records', [
             'member' => 'child',
             'task' => 'shokki',
             'date' => '2026-07-16',
-            'idempotency_key' => 'dup-key-b',
-        ]);
+            'idempotency_key' => 'count-key-b',
+        ])->assertCreated();
 
-        $second
+        $secondRecordId = $second->json('data.record.id');
+
+        $this->assertNotSame($first->json('data.record.id'), $secondRecordId);
+        $this->assertSame(2, TaskRecord::query()->count());
+
+        $this->getJson('/api/tasks?member=child&date=2026-07-16')
             ->assertOk()
-            ->assertJsonPath('meta.deduplicated', true)
-            ->assertJsonPath('data.record.id', $first->json('data.record.id'))
-            ->assertJsonMissingPath('data.revealed_reward');
-
-        $this->assertSame(1, TaskRecord::query()->count());
+            ->assertJsonPath('data.tasks.2.slug', 'shokki')
+            ->assertJsonPath('data.tasks.2.count', 2)
+            ->assertJsonPath('data.tasks.2.last_record_id', $secondRecordId)
+            ->assertJsonPath('data.tasks.2.done', true)
+            ->assertJsonPath('data.tasks.2.record_id', $secondRecordId);
     }
 
-    public function test_accepted_duplicate_key_replay_does_not_restore_cancelled_record(): void
+    public function test_idempotency_key_replay_does_not_restore_cancelled_record(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
 
-        $first = $this->postJson('/api/task-records', [
+        $payload = [
             'member' => 'child',
             'task' => 'shokki',
             'date' => '2026-07-16',
-            'idempotency_key' => 'accepted-key-a',
-        ])->assertCreated();
-
-        $recordId = $first->json('data.record.id');
-        $duplicatePayload = [
-            'member' => 'child',
-            'task' => 'shokki',
-            'date' => '2026-07-16',
-            'idempotency_key' => 'accepted-key-b',
+            'idempotency_key' => 'cancel-replay-key',
         ];
 
-        $this->postJson('/api/task-records', $duplicatePayload)
-            ->assertOk()
-            ->assertJsonPath('meta.deduplicated', true)
-            ->assertJsonPath('data.record.id', $recordId);
-
-        $this->assertSame(2, TaskRecordOperation::query()->count());
+        $first = $this->postJson('/api/task-records', $payload)->assertCreated();
+        $recordId = $first->json('data.record.id');
 
         $this->deleteJson("/api/task-records/{$recordId}")->assertOk();
 
-        $this->postJson('/api/task-records', $duplicatePayload)
+        $this->postJson('/api/task-records', $payload)
             ->assertOk()
             ->assertJsonPath('meta.deduplicated', true)
             ->assertJsonPath('data.record.id', $recordId)
             ->assertJsonPath('data.record.cancelled_at', fn (?string $value): bool => $value !== null)
             ->assertJsonPath('data.summary.lifetime_count', 0);
 
-        $this->assertSame(1, TaskRecord::query()->count());
-        $this->assertSame(2, TaskRecordOperation::query()->count());
-        $this->assertSame(0, TaskRecord::query()->whereNull('cancelled_at')->count());
+        $recreated = $this->postJson('/api/task-records', [
+            ...$payload,
+            'idempotency_key' => 'cancel-replay-new-key',
+        ])->assertCreated();
+
+        $this->assertNotSame($recordId, $recreated->json('data.record.id'));
+        $this->assertSame(2, TaskRecord::query()->count());
+        $this->assertSame(1, TaskRecord::query()->whereNull('cancelled_at')->count());
+    }
+
+    public function test_delete_decrements_count_and_recalculates_summary(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
+
+        $this->postJson('/api/task-records', [
+            'member' => 'child',
+            'task' => 'shokki',
+            'date' => '2026-07-16',
+            'idempotency_key' => 'decrement-key-a',
+        ])->assertCreated();
+
+        $second = $this->postJson('/api/task-records', [
+            'member' => 'child',
+            'task' => 'shokki',
+            'date' => '2026-07-16',
+            'idempotency_key' => 'decrement-key-b',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.summary.gauge_count', 2);
+
+        $lastRecordId = $second->json('data.record.id');
+
+        $this->getJson('/api/tasks?member=child&date=2026-07-16')
+            ->assertOk()
+            ->assertJsonPath('data.tasks.2.count', 2)
+            ->assertJsonPath('data.tasks.2.last_record_id', $lastRecordId);
+
+        $this->deleteJson("/api/task-records/{$lastRecordId}")
+            ->assertOk()
+            ->assertJsonPath('data.summary.gauge_count', 1)
+            ->assertJsonPath('data.summary.lifetime_count', 1);
+
+        $this->getJson('/api/tasks?member=child&date=2026-07-16')
+            ->assertOk()
+            ->assertJsonPath('data.tasks.2.count', 1)
+            ->assertJsonPath('data.tasks.2.done', true)
+            ->assertJsonPath('data.summary.gauge_count', 1);
+    }
+
+    public function test_ten_taps_on_same_task_grants_milestone_reward(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
+
+        for ($i = 1; $i <= 9; $i++) {
+            $this->postJson('/api/task-records', [
+                'member' => 'child',
+                'task' => 'shokki',
+                'date' => '2026-07-16',
+                'idempotency_key' => "same-task-tap-{$i}",
+            ])
+                ->assertCreated()
+                ->assertJsonMissingPath('data.revealed_reward');
+        }
+
+        $tenth = $this->postJson('/api/task-records', [
+            'member' => 'child',
+            'task' => 'shokki',
+            'date' => '2026-07-16',
+            'idempotency_key' => 'same-task-tap-10',
+        ])->assertCreated();
+
+        $tenth
+            ->assertJsonPath('data.summary.lifetime_count', 10)
+            ->assertJsonPath('data.summary.gauge_count', 0)
+            ->assertJsonPath('data.revealed_reward.milestone_number', 1)
+            ->assertJsonPath('data.revealed_reward.type', 'zombie');
+
+        $this->assertSame(1, RewardCollection::query()->count());
+        $this->assertSame(10, TaskRecord::query()->whereNull('cancelled_at')->count());
+
+        $this->getJson('/api/tasks?member=child&date=2026-07-16')
+            ->assertOk()
+            ->assertJsonPath('data.tasks.2.slug', 'shokki')
+            ->assertJsonPath('data.tasks.2.count', 10);
     }
 
     public function test_idempotency_key_payload_mismatch_returns_conflict(): void
@@ -390,9 +458,16 @@ class OshigotoPersistenceTest extends TestCase
             'idempotency_key' => 'tasks-index-done',
         ])->assertCreated();
 
+        $recordId = TaskRecord::query()
+            ->where('idempotency_key', 'tasks-index-done')
+            ->value('id');
+
         $this->getJson('/api/tasks?member=child&date=2026-07-16')
             ->assertOk()
             ->assertJsonPath('data.tasks.2.done', true)
+            ->assertJsonPath('data.tasks.2.count', 1)
+            ->assertJsonPath('data.tasks.2.last_record_id', $recordId)
+            ->assertJsonPath('data.tasks.2.record_id', $recordId)
             ->assertJsonPath('data.tasks.2.slug', 'shokki');
 
         $this->getJson('/api/tasks?member=invalid')
