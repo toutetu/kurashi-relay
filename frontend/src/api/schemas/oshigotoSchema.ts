@@ -21,6 +21,8 @@ export const taskSchema = z.object({
   category: z.string().nullable(),
   point_value: z.number().int(),
   sort_order: z.number().int(),
+  count: z.number().int(),
+  last_record_id: z.number().int().nullable(),
   done: z.boolean(),
   record_id: z.number().int().nullable(),
 });

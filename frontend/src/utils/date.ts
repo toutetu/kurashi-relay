@@ -1,5 +1,24 @@
 const TOKYO_TIME_ZONE = "Asia/Tokyo";
 
+export function shiftTokyoDate(date: string, days: number): string {
+  const shifted = new Date(`${date}T12:00:00+09:00`);
+  shifted.setTime(shifted.getTime() + days * 86_400_000);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TOKYO_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(shifted);
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+export function isTokyoDateAfter(date: string, other: string): boolean {
+  return date > other;
+}
+
 export function getTokyoToday(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: TOKYO_TIME_ZONE,
