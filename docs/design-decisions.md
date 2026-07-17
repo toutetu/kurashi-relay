@@ -32,7 +32,10 @@
   8aスモークはカウント方式を反映した改訂版で、task-count 本番反映後に実施する。
 - **理由**: 使われていないアプリを直しても検証にならない。実運用が始まれば「実家庭の連打・電波不安定」
   という本物のテストが回り、H1〜3 の優先度も実測で判断できる。記録閲覧は K3(レポート)の一部前倒しに
-  相当し、声かけ中心化計画(DR-012)と矛盾しない。スペック: `docs/wip/task-count/` `docs/wip/records-view/`。
+  相当し、声かけ中心化計画(DR-012)と矛盾しない。スペック: `docs/archive/specs/task-count/`
+  `docs/archive/specs/records-view/`(実装完了につきarchiveへ移動済み)。
+- **追記(2026-07-17)**: 本方針どおり task-count(PR #9/#11)と records-view(PR #10)を同日に
+  本番反映し、本番DBリセットも実施済み。「記録できて、記録を見る」運用が開始可能になった。
 
 ---
 
@@ -50,7 +53,14 @@
   ごほうび計算(有効レコード件数ベース)がそのまま使える。(a)は履歴が消え冪等処理が複雑化、(c)は定義の
   無限増殖を招く。副作用としてゲージが「タスク10個」→「タップ10回」で進むが、何回もやる動作をそのまま
   褒める形になるため意図どおりとする(速すぎれば `stamp_size` の config 調整で対応)。
-  スペック: `docs/wip/task-count/task-count-spec.md`。
+  スペック: `docs/archive/specs/task-count/task-count-spec.md`。
+- **追記(2026-07-17 実装完了時)**: UIは実機確認したユーザーの指定により、当初案(チェック丸の回数
+  バッジ+専用−ボタン)から**ホームの「クイック記録」カードと同じ操作感**(行タップ=+1・「N件」ピル・
+  丸「+」・下部トースト「取り消す」5秒)へ変更した(`task-count-ui-quickcards.md`)。
+  送信中(+1のPOST未応答)の取り消しは **operation id 単位の予約 → create確定時に補償cancel**
+  という設計で解決(Codexレビュー3周で検証、`codex-review-report-task-count-web*.md`)。
+  連打時のPOST並列・応答逆転は既知の並行系バックログ(`docs/wip/phase5-followup-fixes.md`)へ
+  積み、根治は member 単位の直列キュー化で行う。BE=PR #9 / FE=PR #11 で本番反映済み。
 
 ---
 
