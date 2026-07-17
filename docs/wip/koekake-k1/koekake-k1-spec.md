@@ -337,6 +337,11 @@ level の意味: 1=穏やかな予告・提案 / 2=時刻や見通しを短く /
 - 処理(トランザクション内・daily_task 行を `lockForUpdate`):
   1. prompt_events を insert(prompted_at=now、prompt_order=非キャンセル件数+1)
   2. キャッシュ再計算: prompt_count=非キャンセル件数、latest_prompt_at=非キャンセルの最新 prompted_at
+  - **INSERT は必ずネストした `DB::transaction(fn () => …, 1)`(=DBセーブポイント)で囲む**。
+    PostgreSQL では unique 違反で外側トランザクションが abort 状態になり、その後の SELECT も失敗するため、
+    セーブポイントで違反だけを吸収してから外側で勝者行を引く。**既存 `TaskRecordService::store()` と
+    `recoverFromInsertConflict()` のパターン(SQLState 23505 / "UNIQUE constraint failed" 判定)を踏襲**。
+    ローカルの SQLite はこの abort 挙動が無く、本番 PostgreSQL 17 でのみ顕在化する(DR-010 の教訓)。
 - 201 レスポンス(**サーバ値が唯一の真実**):
 
 ```json
@@ -349,8 +354,13 @@ level の意味: 1=穏やかな予告・提案 / 2=時刻や見通しを短く /
 }
 ```
 
-- **同一 idempotency_key の再送は 200 で同じ内容を返す**(新規行を作らない)。
-  既存 `TaskRecordController@store` の冪等パターンを踏襲。
+- **同一 idempotency_key の再送は 200 を返し、新規行を作らない**。返す `prompt_event_id` は初回と同一。
+  `prompt_count` / `latest_prompt_at` / `suggested_prompt` は**その時点のサーバ集計値(現在値)**を返す
+  (DR-008: サーバ値が唯一の真実。フロントは常にこの値で上書きする)。
+  ※初回応答の「スナップショット」を保持して返すのではない。フロントはタスク単位で mutation を直列化し、
+  押下ごとに新しい idempotency_key を採番するため(§7-1)、同一キー再送は実質ネットワーク再送のみで、
+  その間に同一タスクの別イベントは入らない。よって現在値=初回応答値になるのが通常。
+  既存 `TaskRecordService::store()` の冪等パターンを踏襲。
 - 二重押下防止は冪等キーのみで行う(「同一秒・同一タスク」判定は実装しない)。
 
 ### 4-4. `DELETE /api/koekake/prompt-events/{id}`(取り消し)
