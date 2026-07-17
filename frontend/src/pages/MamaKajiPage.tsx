@@ -70,7 +70,8 @@ export function MamaKajiPage() {
     isError,
     isPending,
     refetch,
-    toggleTask,
+    incrementTask,
+    decrementTask,
     revealedReward,
     closeReveal,
     gaugeCount: count,
@@ -95,7 +96,7 @@ export function MamaKajiPage() {
       emoji: visual?.emoji ?? "✨",
       label: apiTask.title,
       praise: visual?.praise ?? `${apiTask.title}、おつかれさま！`,
-      done: apiTask.done,
+      count: apiTask.count,
       tone: visual?.tone ?? fallbackTones[index % fallbackTones.length]!,
     };
   });
@@ -114,25 +115,21 @@ export function MamaKajiPage() {
           culture: "詳しいお話は、これからのお楽しみ。",
         });
 
-  const handleToggleTask = (id: string) => {
-    const task = data?.tasks.find((item) => item.slug === id);
-    if (!task) return;
+  const handleIncrementTask = (id: string) => {
+    incrementTask(id);
+    setCheer({ taskId: id });
+    setDropTick((tick) => tick + 1);
+    if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
+    setPlusOneTaskId(id);
+    plusOneTimerRef.current = setTimeout(() => {
+      setPlusOneTaskId(null);
+      plusOneTimerRef.current = null;
+    }, 2400);
+  };
 
-    const nextDone = !task.done;
-    toggleTask(id);
-
-    if (nextDone) {
-      setCheer({ taskId: id });
-      setDropTick((tick) => tick + 1);
-      if (plusOneTimerRef.current) clearTimeout(plusOneTimerRef.current);
-      setPlusOneTaskId(id);
-      plusOneTimerRef.current = setTimeout(() => {
-        setPlusOneTaskId(null);
-        plusOneTimerRef.current = null;
-      }, 2400);
-    } else {
-      setPlusOneTaskId((current) => (current === id ? null : current));
-    }
+  const handleDecrementTask = (id: string) => {
+    decrementTask(id);
+    setPlusOneTaskId((current) => (current === id ? null : current));
   };
 
   const handleCloseReveal = () => {
@@ -229,7 +226,8 @@ export function MamaKajiPage() {
             <KajiTaskRow
               key={task.id}
               task={task}
-              onToggle={handleToggleTask}
+              onIncrement={handleIncrementTask}
+              onDecrement={handleDecrementTask}
               showPlusOne={plusOneTaskId === task.id}
             />
           ))}
@@ -253,7 +251,7 @@ export function MamaKajiPage() {
             task={cheerTask}
             count={count}
             dropTick={dropTick}
-            onUndo={() => handleToggleTask(cheer.taskId)}
+            onUndo={() => handleDecrementTask(cheer.taskId)}
             onClose={() => setCheer(null)}
           />
         );

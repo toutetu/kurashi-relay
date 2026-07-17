@@ -36,8 +36,6 @@ function task(
     sort_order: sortOrder,
     count,
     last_record_id: count > 0 ? sortOrder : null,
-    done: count > 0,
-    record_id: count > 0 ? sortOrder : null,
   };
 }
 

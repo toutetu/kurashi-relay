@@ -3,7 +3,7 @@ export type Task = {
   emoji: string;
   label: string;
   praise: string;
-  done: boolean;
+  count: number;
   tone: "lav" | "peri" | "mint";
 };
 
@@ -20,7 +20,7 @@ export const INITIAL_TASKS: Task[] = [
     emoji: "👚",
     label: "自分で着替えた",
     praise: "自分で着替えられたね！",
-    done: true,
+    count: 1,
     tone: "lav",
   },
   {
@@ -28,7 +28,7 @@ export const INITIAL_TASKS: Task[] = [
     emoji: "👕",
     label: "脱いだ服をかごに入れた",
     praise: "お洗濯の準備、ばっちり！",
-    done: false,
+    count: 0,
     tone: "peri",
   },
   {
@@ -36,7 +36,7 @@ export const INITIAL_TASKS: Task[] = [
     emoji: "🥛",
     label: "食器を流しに運んだ",
     praise: "食器を運べたね！",
-    done: false,
+    count: 0,
     tone: "mint",
   },
   {
@@ -44,7 +44,7 @@ export const INITIAL_TASKS: Task[] = [
     emoji: "🎒",
     label: "カバンを棚に置いた",
     praise: "カバン、ちゃんと定位置！",
-    done: false,
+    count: 0,
     tone: "lav",
   },
   {
@@ -52,7 +52,7 @@ export const INITIAL_TASKS: Task[] = [
     emoji: "🧴",
     label: "水筒を流しに出した",
     praise: "水筒、出せたね！",
-    done: false,
+    count: 0,
     tone: "peri",
   },
 ];
@@ -78,7 +78,7 @@ export const ZOMBIES: Zombie[] = [
 ];
 
 export function countCompletedTasks(tasks: Task[]): number {
-  return tasks.filter((task) => task.done).length;
+  return tasks.filter((task) => task.count > 0).length;
 }
 
 export function pickRandomZombie(): Zombie {

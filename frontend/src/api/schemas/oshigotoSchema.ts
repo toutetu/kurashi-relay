@@ -23,8 +23,6 @@ export const taskSchema = z.object({
   sort_order: z.number().int(),
   count: z.number().int(),
   last_record_id: z.number().int().nullable(),
-  done: z.boolean(),
-  record_id: z.number().int().nullable(),
 });
 
 export const tasksDataSchema = z.object({

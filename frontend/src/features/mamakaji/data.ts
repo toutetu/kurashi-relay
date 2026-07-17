@@ -3,7 +3,7 @@ export type KajiTask = {
   emoji: string;
   label: string;
   praise: string;
-  done: boolean;
+  count: number;
   tone: "rasp" | "cara" | "sage" | "plum";
 };
 
@@ -13,7 +13,7 @@ export const INITIAL_KAJI: KajiTask[] = [
     emoji: "🍽️",
     label: "食器を洗った",
     praise: "食器、ぴかぴかになった！",
-    done: true,
+    count: 1,
     tone: "rasp",
   },
   {
@@ -21,7 +21,7 @@ export const INITIAL_KAJI: KajiTask[] = [
     emoji: "🧺",
     label: "洗濯を回して干した",
     praise: "洗濯物、おひさまの香り！",
-    done: false,
+    count: 0,
     tone: "sage",
   },
   {
@@ -29,7 +29,7 @@ export const INITIAL_KAJI: KajiTask[] = [
     emoji: "✨",
     label: "名もなき家事をやった",
     praise: "名もなき家事も、ちゃんと1個！",
-    done: false,
+    count: 0,
     tone: "plum",
   },
   {
@@ -37,7 +37,7 @@ export const INITIAL_KAJI: KajiTask[] = [
     emoji: "🧹",
     label: "床に掃除機をかけた",
     praise: "床、きれいになった！",
-    done: false,
+    count: 0,
     tone: "cara",
   },
   {
@@ -45,7 +45,7 @@ export const INITIAL_KAJI: KajiTask[] = [
     emoji: "🍳",
     label: "夕飯を作った",
     praise: "今日のごはんも、ありがとう！",
-    done: false,
+    count: 0,
     tone: "rasp",
   },
 ];
@@ -131,7 +131,7 @@ export const SWEETS: Sweet[] = [
 ];
 
 export function countCompletedKaji(tasks: KajiTask[]): number {
-  return tasks.filter((task) => task.done).length;
+  return tasks.filter((task) => task.count > 0).length;
 }
 
 export function pickRandomSweet(): Sweet {

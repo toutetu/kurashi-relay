@@ -4,7 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderApp } from "../../test/renderApp";
 
 const fetchMock = vi.fn<typeof fetch>();
-const UUID = "12345678-1234-4234-8234-123456789abc";
+let uuidCounter = 0;
+
+function nextUuid() {
+  uuidCounter += 1;
+  return `12345678-1234-4234-8234-123456789a${String(uuidCounter).padStart(2, "0")}`;
+}
 
 function summary(gaugeCount: number, doneCount = gaugeCount) {
   return {
@@ -21,7 +26,7 @@ function summary(gaugeCount: number, doneCount = gaugeCount) {
   };
 }
 
-function task(done = false, recordId: number | null = null, count = done ? 1 : 0) {
+function task(count = 0, lastRecordId: number | null = null) {
   return {
     slug: "kigae",
     title: "自分で着替えた",
@@ -29,24 +34,22 @@ function task(done = false, recordId: number | null = null, count = done ? 1 : 0
     point_value: 0,
     sort_order: 1,
     count,
-    last_record_id: recordId,
-    done,
-    record_id: recordId,
+    last_record_id: lastRecordId,
   };
 }
 
 function tasksResponse(
   gaugeCount = 0,
-  done = false,
-  recordId: number | null = null,
+  count = 0,
+  lastRecordId: number | null = null,
 ) {
   return {
     status: "success",
     data: {
       date: "2026-07-17",
       member: "child",
-      tasks: [task(done, recordId)],
-      summary: summary(gaugeCount, done ? 1 : 0),
+      tasks: [task(count, lastRecordId)],
+      summary: summary(gaugeCount, count),
     },
     meta: { timezone: "Asia/Tokyo" },
   };
@@ -54,6 +57,8 @@ function tasksResponse(
 
 function createResponse(
   gaugeCount: number,
+  recordId: number,
+  taskCount: number,
   revealedReward: null | {
     type: "zombie";
     item_slug: string;
@@ -65,7 +70,7 @@ function createResponse(
     status: "success",
     data: {
       record: {
-        id: 7,
+        id: recordId,
         member: "child",
         task: "kigae",
         record_date: "2026-07-17",
@@ -73,7 +78,7 @@ function createResponse(
         cancelled_at: null,
       },
       summary: {
-        ...summary(gaugeCount, 1),
+        ...summary(gaugeCount, taskCount),
         lifetime_count: revealedReward ? 10 : gaugeCount,
         full_count: revealedReward ? 1 : 0,
         coins: revealedReward ? 100 : 0,
@@ -85,7 +90,7 @@ function createResponse(
   };
 }
 
-function cancelResponse(gaugeCount: number) {
+function cancelResponse(gaugeCount: number, taskCount: number) {
   return {
     status: "success",
     data: {
@@ -97,7 +102,7 @@ function cancelResponse(gaugeCount: number) {
         completed_at: "2026-07-17T10:00:00+09:00",
         cancelled_at: "2026-07-17T10:01:00+09:00",
       },
-      summary: summary(gaugeCount, 0),
+      summary: summary(gaugeCount, taskCount),
     },
     meta: { timezone: "Asia/Tokyo" },
   };
@@ -116,8 +121,9 @@ describe("くらしのおしごと永続化", () => {
   beforeEach(() => {
     localStorage.clear();
     fetchMock.mockReset();
+    uuidCounter = 0;
     vi.stubGlobal("fetch", fetchMock);
-    vi.stubGlobal("crypto", { randomUUID: () => UUID });
+    vi.stubGlobal("crypto", { randomUUID: () => nextUuid() });
   });
 
   it("APIのタスクとゲージを初期値0から表示する", async () => {
@@ -126,7 +132,7 @@ describe("くらしのおしごと永続化", () => {
 
     expect(
       await screen.findByRole("button", {
-        name: "自分で着替えた（まだ）",
+        name: "自分で着替えた、きょう0回",
       }),
     ).toBeInTheDocument();
     expect(screen.getByText(/三日月 2 \/ 10個/)).toBeInTheDocument();
@@ -150,13 +156,13 @@ describe("くらしのおしごと永続化", () => {
     renderApp("/oshigoto");
 
     const row = await screen.findByRole("button", {
-      name: "自分で着替えた（まだ）",
+      name: "自分で着替えた、きょう0回",
     });
     await user.click(row);
 
     expect(
-      screen.getByRole("button", { name: "自分で着替えた（できた）" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      screen.getByRole("button", { name: "自分で着替えた、きょう1回" }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/上弦の月 3 \/ 10個/)).toBeInTheDocument();
 
     const postCall = fetchMock.mock.calls.find(
@@ -166,13 +172,13 @@ describe("くらしのおしごと永続化", () => {
     expect(JSON.parse(String(postCall?.[1]?.body))).toEqual({
       member: "child",
       task: "kigae",
-      idempotency_key: UUID,
+      idempotency_key: "12345678-1234-4234-8234-123456789a01",
       source: "web",
     });
 
     await act(async () => {
       resolvePost?.(
-        new Response(JSON.stringify(createResponse(3)), {
+        new Response(JSON.stringify(createResponse(3, 7, 1)), {
           status: 201,
           headers: { "Content-Type": "application/json" },
         }),
@@ -183,18 +189,50 @@ describe("くらしのおしごと永続化", () => {
     );
   });
 
-  it("完了済みタスクの取消をDELETEし、サーバのsummaryを反映する", async () => {
+  it("3回タップでPOSTが3回走り、バッジが3になる", async () => {
+    let postCount = 0;
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        postCount += 1;
+        return jsonResponse(createResponse(2 + postCount, 6 + postCount, postCount), 201);
+      }
+      return jsonResponse(tasksResponse(2));
+    });
+    const user = userEvent.setup();
+    renderApp("/oshigoto");
+
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えた、きょう0回",
+    });
+    await user.click(row);
+    await user.click(row);
+    await user.click(row);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "自分で着替えた、きょう3回" }),
+      ).toBeInTheDocument(),
+    );
+
+    const postBodies = fetchMock.mock.calls
+      .filter(([, init]) => init?.method === "POST")
+      .map(([, init]) => JSON.parse(String(init?.body)));
+    expect(postBodies).toHaveLength(3);
+    expect(new Set(postBodies.map((body) => body.idempotency_key)).size).toBe(3);
+  });
+
+  it("取り消しボタンで最後の1回分をDELETEし、サーバのsummaryを反映する", async () => {
     fetchMock.mockImplementation((_input, init) =>
       init?.method === "DELETE"
-        ? jsonResponse(cancelResponse(2))
-        : jsonResponse(tasksResponse(3, true, 7)),
+        ? jsonResponse(cancelResponse(2, 0))
+        : jsonResponse(tasksResponse(3, 1, 7)),
     );
     const user = userEvent.setup();
     renderApp("/oshigoto");
 
     await user.click(
       await screen.findByRole("button", {
-        name: "自分で着替えた（できた）",
+        name: "自分で着替えたを1回とりけす",
       }),
     );
 
@@ -205,10 +243,55 @@ describe("くらしのおしごと永続化", () => {
       ),
     );
     expect(
-      screen.getByRole("button", { name: "自分で着替えた（まだ）" }),
+      screen.getByRole("button", { name: "自分で着替えた、きょう0回" }),
     ).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByText(/三日月 2 \/ 10個/)).toBeInTheDocument(),
+    );
+  });
+
+  it("未送信のpending createがある状態で取り消すとAPIを呼ばずキューから除去する", async () => {
+    let resolvePost: ((response: Response) => void) | undefined;
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        return new Promise<Response>((resolve) => {
+          resolvePost = resolve;
+        });
+      }
+      return jsonResponse(tasksResponse(2));
+    });
+    const user = userEvent.setup();
+    renderApp("/oshigoto");
+
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えた、きょう0回",
+    });
+    await user.click(row);
+    expect(
+      screen.getByRole("button", { name: "自分で着替えた、きょう1回" }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "自分で着替えたを1回とりけす" }),
+    );
+
+    expect(
+      screen.getByRole("button", { name: "自分で着替えた、きょう0回" }),
+    ).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === "DELETE"),
+    ).toHaveLength(0);
+
+    await act(async () => {
+      resolvePost?.(
+        new Response(JSON.stringify(createResponse(3, 7, 1)), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    await waitFor(() =>
+      expect(screen.queryByText("保存中…")).not.toBeInTheDocument(),
     );
   });
 
@@ -216,7 +299,7 @@ describe("くらしのおしごと永続化", () => {
     fetchMock.mockImplementation((_input, init) =>
       init?.method === "POST"
         ? jsonResponse(
-            createResponse(0, {
+            createResponse(0, 7, 1, {
               type: "zombie",
               item_slug: "vampire",
               milestone_number: 1,
@@ -231,7 +314,7 @@ describe("くらしのおしごと永続化", () => {
 
     await user.click(
       await screen.findByRole("button", {
-        name: "自分で着替えた（まだ）",
+        name: "自分で着替えた、きょう0回",
       }),
     );
     expect(
@@ -251,7 +334,7 @@ describe("くらしのおしごと永続化", () => {
       if (init?.method === "POST") {
         return offline
           ? Promise.reject(new TypeError("Failed to fetch"))
-          : jsonResponse(createResponse(1), 201);
+          : jsonResponse(createResponse(1, 7, 1), 201);
       }
       return jsonResponse(tasksResponse(0));
     });
@@ -260,12 +343,12 @@ describe("くらしのおしごと永続化", () => {
 
     await user.click(
       await screen.findByRole("button", {
-        name: "自分で着替えた（まだ）",
+        name: "自分で着替えた、きょう0回",
       }),
     );
     expect(await screen.findByText("あとで保存します")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "自分で着替えた（できた）" }),
+      screen.getByRole("button", { name: "自分で着替えた、きょう1回" }),
     ).toBeInTheDocument();
 
     offline = false;
@@ -276,8 +359,12 @@ describe("くらしのおしごと永続化", () => {
       .filter(([, init]) => init?.method === "POST")
       .map(([, init]) => JSON.parse(String(init?.body)));
     expect(postBodies).toHaveLength(2);
-    expect(postBodies[0].idempotency_key).toBe(UUID);
-    expect(postBodies[1].idempotency_key).toBe(UUID);
+    expect(postBodies[0].idempotency_key).toBe(
+      "12345678-1234-4234-8234-123456789a01",
+    );
+    expect(postBodies[1].idempotency_key).toBe(
+      "12345678-1234-4234-8234-123456789a01",
+    );
   });
 
   it("ママの家事手帖もAPI由来のポイントとタスクへ同期する", async () => {
@@ -329,8 +416,6 @@ describe("くらしのおしごと永続化", () => {
               sort_order: 1,
               count: 0,
               last_record_id: null,
-              done: false,
-              record_id: null,
             },
           ],
           summary: motherSummary,
@@ -343,7 +428,7 @@ describe("くらしのおしごと永続化", () => {
 
     expect(await screen.findByText(/0pt ／ 作る券まで/)).toBeInTheDocument();
     await user.click(
-      await screen.findByRole("button", { name: "食器を洗った（まだ）" }),
+      await screen.findByRole("button", { name: "食器を洗った、きょう0回" }),
     );
     expect(await screen.findByText(/10pt ／ 作る券まで/)).toBeInTheDocument();
 
@@ -369,7 +454,7 @@ describe("くらしのおしごと永続化", () => {
       "おしごとのデータ形式が正しくありません。",
     );
     expect(
-      screen.queryByRole("button", { name: "自分で着替えた（まだ）" }),
+      screen.queryByRole("button", { name: "自分で着替えた、きょう0回" }),
     ).not.toBeInTheDocument();
   });
 });
