@@ -10,7 +10,6 @@ use App\Models\TaskRecord;
 use App\Models\TaskRecordOperation;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class OshigotoPersistenceTest extends TestCase
@@ -323,45 +322,6 @@ class OshigotoPersistenceTest extends TestCase
         ]);
     }
 
-    public function test_granted_point_value_migration_backfills_existing_records(): void
-    {
-        Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
-
-        $migration = require database_path(
-            'migrations/2026_07_17_000002_add_granted_point_value_to_task_records_table.php'
-        );
-        $migration->down();
-
-        $mother = FamilyMember::query()->where('role', 'mother')->firstOrFail();
-        $task = TaskDefinition::query()
-            ->where('owner_role', 'mother')
-            ->where('slug', 'shokki')
-            ->firstOrFail();
-        $task->update(['point_value' => 37]);
-
-        $recordId = DB::table('task_records')->insertGetId([
-            'family_member_id' => $mother->id,
-            'task_definition_id' => $task->id,
-            'record_date' => '2026-07-16',
-            'completed_at' => now('UTC'),
-            'cancelled_at' => null,
-            'source' => 'web',
-            'idempotency_key' => 'pre-point-snapshot-record',
-            'created_at' => now('UTC'),
-            'updated_at' => now('UTC'),
-        ]);
-
-        $migration->up();
-
-        $this->assertSame(
-            37,
-            (int) DB::table('task_records')->where('id', $recordId)->value('granted_point_value')
-        );
-        $this->getJson('/api/rewards/summary?member=mother&date=2026-07-16')
-            ->assertOk()
-            ->assertJsonPath('data.points', 37);
-    }
-
     public function test_cancelled_record_can_be_recreated_on_same_day(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
@@ -549,7 +509,7 @@ class OshigotoPersistenceTest extends TestCase
         $migrationFiles = glob(database_path('migrations/*.php'));
 
         $this->assertIsArray($migrationFiles);
-        $this->assertCount(7, $migrationFiles);
+        $this->assertCount(6, $migrationFiles);
 
         foreach ($migrationFiles as $migrationFile) {
             $contents = file_get_contents($migrationFile);
