@@ -1,6 +1,4 @@
-import { Undo2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { Button } from "../components/ui/Button";
+import { useState } from "react";
 import { ChallengeCard } from "../features/oshigoto/components/ChallengeCard";
 import { CheerOverlay } from "../features/oshigoto/components/CheerOverlay";
 import { OshigotoPageShell } from "../features/oshigoto/components/OshigotoPageShell";
@@ -80,11 +78,6 @@ export function OshigotoPage() {
   const [cheer, setCheer] = useState<{ taskId: string } | null>(null);
   const [collectedZombies, setCollectedZombies] = useState<Zombie[]>([]);
   const [dropTick, setDropTick] = useState(0);
-  const [lastAction, setLastAction] = useState<{
-    id: string;
-    label: string;
-  } | null>(null);
-  const undoTimer = useRef<number | null>(null);
 
   const tasks: Task[] = (data?.tasks ?? []).map((apiTask, index) => {
     const visual = INITIAL_TASKS.find((task) => task.id === apiTask.slug);
@@ -113,23 +106,6 @@ export function OshigotoPage() {
     incrementTask(id);
     setCheer({ taskId: id });
     setDropTick((tick) => tick + 1);
-    const task = tasks.find((item) => item.id === id);
-    if (task) {
-      setLastAction({ id, label: task.label });
-      if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
-      undoTimer.current = window.setTimeout(() => setLastAction(null), 5_000);
-    }
-  };
-
-  const undoLastIncrement = () => {
-    if (!lastAction) return;
-    decrementTask(lastAction.id);
-    setLastAction(null);
-    setCheer(null);
-    if (undoTimer.current !== null) {
-      window.clearTimeout(undoTimer.current);
-      undoTimer.current = null;
-    }
   };
 
   const handleCloseReveal = () => {
@@ -139,13 +115,6 @@ export function OshigotoPage() {
     setCheer(null);
     closeReveal();
   };
-
-  useEffect(
-    () => () => {
-      if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
-    },
-    [],
-  );
 
   const carryover = revealed !== null ? (data?.summary.gauge_count ?? 0) : 0;
 
@@ -254,7 +223,7 @@ export function OshigotoPage() {
             key={`${cheer.taskId}-${dropTick}`}
             task={cheerTask}
             count={count}
-            onUndo={undoLastIncrement}
+            onUndo={() => decrementTask(cheer.taskId)}
             onClose={() => setCheer(null)}
           />
         );
@@ -266,28 +235,6 @@ export function OshigotoPage() {
           carryover={carryover}
           onClose={handleCloseReveal}
         />
-      )}
-
-      {lastAction && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed bottom-22 left-1/2 z-50 flex w-[min(92vw,30rem)] -translate-x-1/2 items-center justify-between gap-3 rounded-2xl bg-[var(--text)] px-4 py-3 text-sm text-white shadow-xl xl:bottom-7"
-        >
-          <span className="font-bold">
-            {lastAction.label}を1件記録しました
-          </span>
-          <Button
-            onClick={undoLastIncrement}
-            variant="solid"
-            tone="neutral"
-            size="compact"
-            icon={Undo2}
-            className="shrink-0 bg-white text-[var(--text)]"
-          >
-            取り消す
-          </Button>
-        </div>
       )}
     </>
   );

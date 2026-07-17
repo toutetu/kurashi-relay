@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderApp } from "../../test/renderApp";
@@ -225,7 +225,32 @@ describe("くらしのおしごと永続化", () => {
     expect(new Set(postBodies.map((body) => body.idempotency_key)).size).toBe(3);
   });
 
-  it("取り消しトーストで最後の1回分をDELETEし、サーバのsummaryを反映する", async () => {
+  it("連打してもカウントピルは常に1個だけ表示される", async () => {
+    let postCount = 0;
+    fetchMock.mockImplementation((_input, init) => {
+      if (init?.method === "POST") {
+        postCount += 1;
+        return jsonResponse(createResponse(2 + postCount, 6 + postCount, postCount), 201);
+      }
+      return jsonResponse(tasksResponse(2));
+    });
+    const user = userEvent.setup();
+    renderApp("/oshigoto");
+
+    const row = await screen.findByRole("button", {
+      name: "自分で着替えたを記録。きょう0件",
+    });
+    await user.click(row);
+    await user.click(row);
+    await user.click(row);
+
+    const updatedRow = await screen.findByRole("button", {
+      name: "自分で着替えたを記録。きょう3件",
+    });
+    expect(within(updatedRow).getAllByText(/^\d+件$/)).toHaveLength(1);
+  });
+
+  it("↩ とりけすで最後の1回分をDELETEし、サーバのsummaryを反映する", async () => {
     fetchMock.mockImplementation((_input, init) => {
       if (init?.method === "POST") {
         return jsonResponse(createResponse(3, 7, 1), 201);
@@ -243,10 +268,9 @@ describe("くらしのおしごと永続化", () => {
     });
     await user.click(row);
 
-    expect(
-      await screen.findByText("自分で着替えたを1件記録しました"),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    await user.click(
+      await screen.findByRole("button", { name: "↩ とりけす" }),
+    );
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -286,7 +310,9 @@ describe("くらしのおしごと永続化", () => {
       screen.getByRole("button", { name: "自分で着替えたを記録。きょう1件" }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    await user.click(
+      await screen.findByRole("button", { name: "↩ とりけす" }),
+    );
 
     expect(
       screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
@@ -318,7 +344,7 @@ describe("くらしのおしごと永続化", () => {
     );
   });
 
-  it("CheerOverlayとトーストの二重取り消しでdecrementは1回だけ", async () => {
+  it("↩ とりけすでdecrementは1回だけ", async () => {
     fetchMock.mockImplementation((_input, init) => {
       if (init?.method === "POST") {
         return jsonResponse(createResponse(3, 7, 1), 201);
@@ -339,10 +365,6 @@ describe("くらしのおしごと永続化", () => {
     await user.click(
       await screen.findByRole("button", { name: "↩ とりけす" }),
     );
-    const toastUndo = screen.queryByRole("button", { name: "取り消す" });
-    if (toastUndo) {
-      await user.click(toastUndo);
-    }
 
     await waitFor(() =>
       expect(
@@ -352,6 +374,9 @@ describe("くらしのおしごと永続化", () => {
     expect(
       screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "取り消す" }),
+    ).not.toBeInTheDocument();
   });
 
   it("未送信のpending createがある状態で取り消すとAPIを呼ばずキューから除去する", async () => {
@@ -373,7 +398,9 @@ describe("くらしのおしごと永続化", () => {
       screen.getByRole("button", { name: "自分で着替えたを記録。きょう1件" }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    await user.click(
+      await screen.findByRole("button", { name: "↩ とりけす" }),
+    );
 
     expect(
       screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
@@ -563,7 +590,7 @@ describe("くらしのおしごと永続化", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("+1で取り消しトーストが表示される", async () => {
+  it("+1でキラキラ画面に↩ とりけすが表示される", async () => {
     fetchMock.mockImplementation(() => jsonResponse(tasksResponse(2)));
     const user = userEvent.setup();
     renderApp("/oshigoto");
@@ -575,14 +602,14 @@ describe("くらしのおしごと永続化", () => {
     );
 
     expect(
-      screen.getByText("自分で着替えたを1件記録しました"),
+      screen.getByRole("button", { name: "↩ とりけす" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "取り消す" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "取り消す" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("取り消しトーストは5秒後に自動で消える", async () => {
+  it("↩ とりけすはキラキラ画面とともに2秒後に消える", async () => {
     fetchMock.mockImplementation(() => jsonResponse(tasksResponse(2)));
     renderApp("/oshigoto");
 
@@ -592,20 +619,20 @@ describe("くらしのおしごと永続化", () => {
 
     vi.useFakeTimers();
     fireEvent.click(row);
-    act(() => vi.advanceTimersByTime(4_000));
-    fireEvent.click(row);
-
-    act(() => vi.advanceTimersByTime(4_999));
     expect(
-      screen.getByRole("button", { name: "取り消す" }),
+      screen.getByRole("button", { name: "↩ とりけす" }),
     ).toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(2));
+
+    act(() => vi.advanceTimersByTime(2_150));
+    expect(
+      screen.queryByRole("button", { name: "↩ とりけす" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "取り消す" }),
     ).not.toBeInTheDocument();
   });
 
-  it("取り消しトーストでcountが1減る", async () => {
+  it("↩ とりけすでcountが1減る", async () => {
     fetchMock.mockImplementation((_input, init) => {
       if (init?.method === "POST") {
         return jsonResponse(createResponse(3, 7, 1), 201);
@@ -626,7 +653,9 @@ describe("くらしのおしごと永続化", () => {
       screen.getByRole("button", { name: "自分で着替えたを記録。きょう1件" }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    await user.click(
+      await screen.findByRole("button", { name: "↩ とりけす" }),
+    );
     expect(
       screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
     ).toBeInTheDocument();
@@ -649,7 +678,9 @@ describe("くらしのおしごと永続化", () => {
       name: "自分で着替えたを記録。きょう0件",
     });
     await user.click(row);
-    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    await user.click(
+      await screen.findByRole("button", { name: "↩ とりけす" }),
+    );
 
     fetchMock.mockImplementation((_input, init) => {
       if (init?.method === "POST") {
@@ -714,13 +745,17 @@ describe("くらしのおしごと永続化", () => {
       name: "自分で着替えたを記録。きょう0件",
     });
     await user.click(row);
-    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    await user.click(
+      await screen.findByRole("button", { name: "↩ とりけす" }),
+    );
     expect(
       screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
     ).toBeInTheDocument();
 
     await user.click(row);
-    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    await user.click(
+      await screen.findByRole("button", { name: "↩ とりけす" }),
+    );
     expect(
       screen.getByRole("button", { name: "自分で着替えたを記録。きょう0件" }),
     ).toBeInTheDocument();
