@@ -2,7 +2,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
   CalendarDays,
-  ClipboardPenLine,
   FileText,
   Heart,
   Settings,
@@ -18,11 +17,6 @@ const placeholderContent: Record<
     title: "今日の予定",
     description: "予定の追加・編集は今後の実装で対応します。",
     icon: CalendarDays,
-  },
-  records: {
-    title: "記録",
-    description: "活動や支援の詳しい記録は今後の実装で対応します。",
-    icon: ClipboardPenLine,
   },
   childPlan: {
     title: "娘の希望",

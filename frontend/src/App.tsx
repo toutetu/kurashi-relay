@@ -10,6 +10,7 @@ import { OshigotoPage } from "./pages/OshigotoPage";
 import { OshigotoUsjPage } from "./pages/OshigotoUsjPage";
 import { OshigotoZukanPage } from "./pages/OshigotoZukanPage";
 import { NotFoundPage, PlaceholderPage } from "./pages/PlaceholderPage";
+import { RecordsPage } from "./pages/RecordsPage";
 import { ScheduleComparisonPage } from "./pages/ScheduleComparisonPage";
 import { SummaryPage } from "./pages/SummaryPage";
 
@@ -23,7 +24,7 @@ export default function App() {
           element={<ScheduleComparisonPage />}
         />
         <Route path="schedule" element={<PlaceholderPage page="schedule" />} />
-        <Route path="records" element={<PlaceholderPage page="records" />} />
+        <Route path="records" element={<RecordsPage />} />
         <Route path="mama-kaji" element={<MamaKajiLayout />}>
           <Route index element={<MamaKajiPage />} />
           <Route path="zukan" element={<MamaKajiZukanPage />} />

@@ -21,13 +21,15 @@ function summary(gaugeCount: number, doneCount = gaugeCount) {
   };
 }
 
-function task(done = false, recordId: number | null = null) {
+function task(done = false, recordId: number | null = null, count = done ? 1 : 0) {
   return {
     slug: "kigae",
     title: "自分で着替えた",
     category: null,
     point_value: 0,
     sort_order: 1,
+    count,
+    last_record_id: recordId,
     done,
     record_id: recordId,
   };
@@ -325,6 +327,8 @@ describe("くらしのおしごと永続化", () => {
               category: null,
               point_value: 10,
               sort_order: 1,
+              count: 0,
+              last_record_id: null,
               done: false,
               record_id: null,
             },
