@@ -105,4 +105,4 @@ npm run build
 - 通知、メール、外部ゲーム連携
 - 本番デプロイ
 
-詳細は [第1実装指示書](docs/codex-implementation-01.md) と [API契約](docs/api-contract-01.md) を参照してください。
+詳細は [第1実装指示書](docs/archive/specs/codex-implementation-01.md) と [API契約](docs/api-contract.md) を参照してください。

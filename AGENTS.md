@@ -13,9 +13,9 @@
 
 運用ルール:
 
-- 実装依頼は `docs/` に実装指示書(仕様書)を置いて渡す
+- 実装依頼は `docs/wip/<機能>/` に実装指示書(仕様書)を置いて渡す
 - 複数のエージェントに同じ作業ツリーを同時に触らせない
-- git commit / push は明示的な指示があるときのみ行う
+- git commit / push: Cursor/Codex は明示的な指示があるときのみ。Fable は区切りごとに自律実行してよい(「ブランチ運用」参照)
 - ビルド・テストを通してから完了報告する(勝手なワークアラウンドで「通した」ことにしない。例: ビルドスクリプトの差し替えは禁止)
 
 ## ブランチ運用
@@ -38,7 +38,9 @@ docs の無限増殖を防ぐため、ライフサイクルで置き場所を分
 - **運用リファレンス `docs/ops/`**: デプロイ手順など繰り返し使う運用文書。
 - **進行中 `docs/wip/`**: 未完のフェーズ runbook・スモーク依頼・実装指示書・バックログなど。完了したら archive へ。
 - **完了保管 `docs/archive/`**: 実装・検証が済んだ作業用 docs(レビュー依頼/報告・使い捨て spec・完了フェーズ・委譲指示書)。
-  `reviews/` `specs/` `phases/` で軽く分類。経緯を辿れるように残すだけで日常は見ない。
+  `reviews/` `specs/` `phases/` `requirements/` `design/` などで軽く分類。経緯を辿れるように残すだけで日常は見ない。
+- **例外(資産・ログ)**: `docs/mockups/`(恒久層から「正解の見た目」として参照される)・`docs/icons/`・
+  `docs/logs/`(日報)は恒久扱いの資産・ログ置き場。archive へ移さない。
 - **結論は DR に蒸留**。archive は「経緯」、DR(`docs/design-decisions.md`)は「決定」。
   archive を消しても DR を辿れば判断が復元できる状態を保つ。
 
@@ -61,14 +63,10 @@ Webアプリ「くらしリレー」のPoCです。
 
 1. `docs/product-plan.md`
 2. `docs/architecture.md`
-3. `docs/codex-design-spec.md`
-4. `docs/design-principles.md`
-5. `docs/data-model.md`
-6. `docs/api-contract-01.md`
-7. 対象タスクの実装指示書
-8. `docs/wireframes/README.md`
-
-第1実装では `docs/codex-implementation-01.md` を優先してください。
+3. `docs/design-principles.md`
+4. `docs/data-model.md`
+5. `docs/api-contract.md`
+6. 対象タスクの実装指示書(`docs/wip/<機能>/` 配下)
 
 ## 採用技術
 

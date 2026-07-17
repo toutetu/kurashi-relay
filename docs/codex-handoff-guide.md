@@ -83,7 +83,7 @@ Codexの回答が次を満たすこと。
 認証、Sanctum、Google Calendar、DB永続化、
 本番デプロイを削除してください。
 
-docs/codex-implementation-01.mdの受け入れ条件に戻し、
+docs/archive/specs/codex-implementation-01.mdの受け入れ条件に戻し、
 Laravel APIの固定データ取得と指定された画面に絞ってください。
 ```
 
