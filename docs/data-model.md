@@ -646,5 +646,5 @@ flowchart TB
 ## 16. 実装順
 
 実際の移行順、バックフィル、互換期間、検証条件は
-`docs/wip/database-unification/implementation-plan.md` をDR-027に合わせて改訂してから実装する。
-改訂までの間、同計画と本書が矛盾する箇所は本書とDR-027を優先する。
+`docs/wip/database-unification/implementation-plan.md` を正とする。同計画は2026-07-19にDR-027へ同期済みである。
+今後同計画と本書が矛盾した場合は、最新のDRと本書を先に更新してから実装する。
