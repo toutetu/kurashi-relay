@@ -1,9 +1,5 @@
 import { useMemo } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "../../api/client";
 import {
   cancelTaskRecord,
@@ -24,7 +20,10 @@ export function tasksQueryKey(member: Member) {
 }
 
 export function isTransientApiError(error: unknown): boolean {
-  return error instanceof ApiError && (error.status === 0 || error.status >= 500);
+  return (
+    error instanceof ApiError &&
+    ([0, 408, 425, 429].includes(error.status) || error.status >= 500)
+  );
 }
 
 export function useTasksQuery(member: Member) {

@@ -18,7 +18,7 @@ export function OshigotoTabs() {
           to={tab.to}
           end={tab.end}
           className={({ isActive }) =>
-            `pressable flex min-h-10 items-center justify-center rounded-xl px-2 text-sm font-extrabold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] active:scale-[0.98] ${
+            `pressable flex min-h-11 items-center justify-center rounded-xl px-2 text-sm font-extrabold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] active:scale-[0.98] ${
               isActive
                 ? "bg-[var(--osh-violet)] text-white shadow-sm"
                 : "text-[var(--osh-ink-soft)] hover:bg-[var(--osh-violet-soft)]/60"
