@@ -1,315 +1,532 @@
 # くらしリレー
-## データモデル設計 v0.2
-### Laravel向け概要
+## データモデル設計（現在の正）
 
-第1実装ではDBへ保存しない。
-Laravel側のダミーデータとTypeScript型は、
-将来の以下のデータモデルに沿って作る。
+更新日: 2026-07-18
 
-# 1. households
+この文書は、現在のDBと今後の統合先を示す恒久ドキュメントである。
+実装手順は `docs/wip/database-unification/implementation-plan.md`、設計判断は
+`docs/design-decisions.md` の DR-023 / DR-024 を参照する。
 
-家庭単位。
+## 1. 前提
+
+- くらしリレーは**我が家専用の単一家庭システム**として運用する。
+- 複数家庭・SaaS化は対象外。全テーブルへの `household_id` 追加は行わない。
+- 人物の区別には既存の `family_members` を使用する。
+- 母・娘以外の家族を追加できる余地は残すが、複数家庭テナント分離は設計しない。
+- 本番データが存在するため、スキーマ変更は必ず差分マイグレーションで行う。
+- 記録は監視・評価ではなく、支援・待機・回復・役割分担の把握に使う。
+- Google Calendarは予定の入力源の1つとして扱い、Calendar側を実績の正本にはしない。
+
+## 2. 現在のスキーマ
+
+現在は次の3系統に分かれており、系統間の外部キーはない。
+
+### 2.1 おしごと・ポイント・ごほうび
+
+- `family_members`
+- `task_definitions`
+- `task_records`
+- `task_record_operations`
+- `reward_collections`
+- `reward_adjustments`
+
+### 2.2 声かけ・日次タスク・リマインダー
+
+- `routine_templates`
+- `prompt_templates`
+- `daily_tasks`
+- `prompt_events`
+- `completion_events`
+- `reminder_schedules`
+
+### 2.3 娘の見通し・予定・振り返り
+
+- `daily_plans`
+- `plan_items`
+- `reflection_sessions`
+
+主な問題は、同じ「着替え」「宿題」「入浴」などが `task_definitions` と
+`routine_templates` に別々に存在し、完了も `task_records` と `completion_events` に
+別々に保存されることである。
+
+## 3. 統合後の全体像
+
+```mermaid
+flowchart LR
+    FM["family_members<br/>人物"]
+    AD["activity_definitions<br/>活動マスタ"]
+    RT["routine_templates<br/>日常ルーチン"]
+    PA["planned_activities<br/>予定"]
+    AE["activity_events<br/>実績・完了イベント"]
+    PE["prompt_events<br/>声かけ履歴"]
+    RS["reminder_schedules<br/>再通知履歴"]
+    RTx["reward_transactions<br/>ポイント台帳"]
+    DP["daily_plans<br/>娘の日次見通し"]
+    PAV["plan_answer_versions<br/>回答履歴"]
+    CE["calendar_events / versions<br/>Google Calendar取込"]
+    PAL["plan_actual_links<br/>予定と実績の対応"]
+    SI["schedule_impacts<br/>遅延・中断・回復等の影響"]
+
+    FM --> RT
+    FM --> PA
+    FM --> AE
+    AD --> RT
+    RT --> PA
+    PA --> PE
+    PA --> RS
+    PA --> AE
+    AE --> RTx
+    FM --> DP
+    DP --> PAV
+    PAV -. "必要な回答だけ予定化" .-> PA
+    CE --> PA
+    PA --> PAL
+    AE --> PAL
+    PAL --> SI
+```
+
+統合の中心は次の3層とする。
+
+1. `activity_definitions`: 何の活動か
+2. `planned_activities`: いつ・誰が・何をする予定か
+3. `activity_events`: 実際に何が起きたか
+
+声かけは活動実績と混ぜず、`prompt_events` として予定へ関連付ける。
+ポイントは活動実績そのものへ持たせず、`reward_transactions` から導出する。
+
+## 4. 人物
+
+### 4.1 `family_members`（既存・継続）
+
+我が家の人物。単一家庭のため `household_id` は持たない。
 
 - id
-- name
-- timezone
+- role: `mother | child | family | supporter`
+- display_name
+- is_active
 - created_at
 - updated_at
 
-# 2. people
+制約:
 
-母・娘など記録対象者。
+- `role` は現在の母・娘について一意を維持する。
+- 将来同じ役割の人物を複数登録する場合は、`role` の一意制約を外し `member_key` を追加する。
+- 履歴から参照されている人物は物理削除せず `is_active=false` とする。
 
-- id
-- household_id
-- role: mother | daughter
-- display_name
-- is_active
+## 5. 活動マスタ
 
-# 3. users
+### 5.1 `activity_definitions`（新規）
 
-Laravelの認証ユーザー。
-第2実装以降。
+「着替え」「宿題」「入浴」など、3系統で共有する活動の意味を1か所にまとめる。
 
 - id
-- household_id
-- person_id
-- role: owner | caregiver | viewer
-- name
-- email
-
-# 4. stakeholders
-
-家族・学校・支援機関。
-
-- id
-- household_id
-- type
-- name
-- organization_name
-- contact_note
-- is_active
-
-# 5. plans
-
-予定。
-
-- id
-- household_id
-- person_id
-- source_type: google | manual
-- external_calendar_id
-- external_event_id
-- title
+- activity_key: `ACT-xxx`
 - category
-- planned_start_at
-- planned_end_at
+- name
+- child_label
+- parent_prompt_label
+- quick_label
+- kind: `activity | support | waiting | recovery | sleep`
+- is_active
+- created_at
+- updated_at
+
+制約:
+
+- `activity_key` UNIQUE
+- `kind` CHECK
+- 過去実績から参照されている活動は物理削除せず無効化する。
+
+### 5.2 既存マスタとの関係
+
+- `task_definitions` に `activity_definition_id` を追加し、ポイント対象としての設定だけを残す。
+- `routine_templates` に `activity_definition_id` を追加し、時間帯・時刻・表示条件だけを残す。
+- `activity_key` と3種類のラベルの正本は `activity_definitions` とする。
+- 移行完了後、重複する名称・ラベル列は必要なスナップショットを除いて廃止する。
+
+## 6. 予定
+
+### 6.1 `planned_activities`（新規）
+
+ルーチン、娘の見通し、手入力、Google Calendarを共通形式の予定に変換する。
+
+- id
+- subject_member_id FK -> family_members
+- activity_definition_id FK nullable
+- source_type: `routine | child_plan | manual | google_calendar`
+- source_key
+- title_snapshot
+- category_snapshot
+- planned_start_at nullable
+- planned_end_at nullable
 - is_all_day
-- location
-- description
-- status
+- local_date
+- status: `planned | changed | cancelled`
+- routine_template_id FK nullable
+- plan_answer_version_id FK nullable
+- calendar_event_version_id FK nullable
+- created_at
+- updated_at
 
-# 6. time_entries
+制約:
 
-実際の時間。
+- UNIQUE (`source_type`, `source_key`)
+- `planned_end_at IS NULL OR planned_end_at >= planned_start_at`
+- 予定元FKは `source_type` と整合することをアプリ層とテストで保証する。
+- Google Calendarの更新・削除で物理削除せず、版または取消状態を残す。
 
-- id
-- household_id
-- person_id
-- kind: sleep | activity | waiting | recovery
-- category
-- title
-- started_at
-- ended_at
-- status: running | paused | completed
-- source_type: timer | manual | calendar
-- related_plan_id
-- note
-- enjoyment_score
-- recovery_effect_score
-- obligation_score
+### 6.2 `routine_templates`（既存・変更）
 
-同一人物の通常活動は原則1件。
-待機・拘束は活動と並行する場合がある。
-
-# 7. support_events
-
-娘への支援。
+活動そのものではなく、日常のどの枠に出すかを定義する。
 
 - id
-- household_id
-- child_person_id
-- type
-- performed_by_person_id
-- performed_by_stakeholder_id
-- record_mode: instant | timed
+- slug
+- activity_definition_id FK
+- subject_member_id FK
+- phase: `morning | evening | night | anytime`
+- default_time nullable
+- daily_limit nullable
+- display_rule nullable
+- sort_order
+- is_active
+- created_at
+- updated_at
+
+制約:
+
+- `slug` UNIQUE
+- `slug` は表示名と独立した安定キーとし、Seederのupsertキーにも使用する。
+- `daily_limit IS NULL OR daily_limit > 0`
+- `sort_order >= 0`
+
+### 6.3 `daily_tasks`（移行期間中に継続）
+
+統合移行中は既存API互換のため残す。最終的には `planned_activities` が日次予定の正本になる。
+
+- `planned_activity_id` を追加して1対1で関連付ける。
+- `phase`、`name`、`icon`、`scheduled_at` は当時表示された内容のスナップショットとして残してよい。
+- `status`、`prompt_count`、`latest_prompt_at` は正本にしない。
+
+## 7. 実績・完了履歴
+
+### 7.1 `activity_events`（新規・正本）
+
+おしごとのタップ記録と声かけ側の完了結果を統合する。声かけ履歴自体は統合しない。
+
+- id
+- planned_activity_id FK nullable
+- activity_definition_id FK
+- subject_member_id FK
+- performed_by_member_id FK nullable
+- recorded_by_member_id FK nullable
+- result: `completed | partial | together | parent_done | deferred | unknown`
+- started_at nullable
+- ended_at nullable
 - occurred_at
-- started_at
-- ended_at
-- count
-- result
-- related_plan_id
-- note
+- source: `oshigoto | koekake | manual | calendar_match | import`
+- idempotency_key
+- note nullable
+- supersedes_event_id FK nullable
+- cancelled_at nullable
+- created_at
+- updated_at
 
-支援例：
+制約:
 
-- 起床の声かけ
-- 着替えの声かけ
-- 学校への連絡
-- 腹痛対応
-- 服薬の声かけ
-- 持ち物確認
-- 自転車送迎
-- 校内付き添い
-- 引き渡し確認
-- 夜の聞き取り
+- `idempotency_key` UNIQUE
+- `ended_at IS NULL OR started_at IS NULL OR ended_at >= started_at`
+- `cancelled_at IS NULL OR cancelled_at >= occurred_at`
+- 訂正は既存行の上書きではなく、新しい行を追加して `supersedes_event_id` で結ぶ。
+- 取消は物理削除せず `cancelled_at` を記録する。
 
-# 8. condition_logs
+### 7.2 既存完了テーブルの移行
 
-母・娘の体調と気分。
+- `task_records` は `activity_events` へバックフィルする。
+- `completion_events` も `activity_events` へバックフィルする。
+- 新規書き込みを `activity_events` へ切り替えた後、旧APIは互換アダプターとして残す。
+- 比較期間を設け、件数・日時・ポイント集計が一致してから旧テーブルへの書き込みを停止する。
+- 旧テーブルの削除は別フェーズとし、同じリリースで行わない。
+
+## 8. 声かけとリマインダー
+
+### 8.1 `prompt_events`（既存・継続）
+
+声かけは支援行為の履歴であり、活動完了とは分離する。
+
+- `daily_task_id` に加え `planned_activity_id` を追加する。
+- `performed_by_member_id` と `recorded_by_member_id` を追加し、声をかけた人と入力した人を区別できるようにする。
+- 既存の `prompted_at`、`prompt_text`、`source`、`idempotency_key`、`cancelled_at` を維持する。
+- `prompt_count` は非取消イベントの件数から導出する。
+- `latest_prompt_at` は非取消イベントの最大日時から導出する。
+
+### 8.2 `prompt_templates`（既存・強化）
+
+- UNIQUE (`routine_template_id`, `prompt_level`, `sort_order`)
+- `prompt_level BETWEEN 1 AND 3`
+- 優先文を1レベル1件に制限する場合は部分ユニーク制約を追加する。
+
+### 8.3 `reminder_schedules`（既存・履歴保持）
+
+- `status`: `scheduled | fired | cancelled`
+- `fired_at` nullable
+- `cancelled_at` nullable
+- 同じ日次予定に有効な `scheduled` は1件だけとする部分ユニーク制約を追加する。
+- 再通知変更時は既存行を削除せず取消にし、新しい行を追加する。
+
+## 9. 娘の見通しと回答履歴
+
+### 9.1 `daily_plans`（既存・変更）
 
 - id
-- household_id
-- person_id
-- physical_score
-- mood_score
-- input_source:
-  - self
-  - guardian_confirmed
-  - guardian_observation
-- comment
-- recorded_at
-- created_by
-
-# 9. child_daily_plans
-
-娘の希望・今日の作戦。
-
-- id
-- household_id
-- child_person_id
+- subject_member_id FK -> family_members
 - plan_date
-- desired_outcome
-- first_step
-- requested_supports
-- fallback_plans
-- confidence
-- input_source
-- daily_note
-- reflection
-- reflection_note
+- mode
+- created_at
+- updated_at
 
-# 10. child_need_records
+制約:
 
-情報源を混同しない。
+- UNIQUE (`subject_member_id`, `plan_date`)
+- 単一の娘しかいない間も人物FKを明示する。
+- `review_completed_at` は `reflection_sessions` から導出し、正本にしない。
+
+### 9.2 `plan_questions`（新規）
+
+質問カードを追加してもマイグレーションが不要な構造にする。
 
 - id
-- household_id
-- child_person_id
-- record_type:
-  - child_statement
-  - mother_observation
-  - mother_inference
-  - supporter_interview
-- category
-- content
-- source_person_id
-- source_stakeholder_id
-- occurred_on
-- sensitivity_level
+- question_key
+- label
+- answer_type: `text | multi_select | choice | time | boolean`
+- mode_rule nullable
+- activity_definition_id FK nullable
+- sort_order
+- is_active
+
+制約:
+
+- `question_key` UNIQUE
+- `sort_order >= 0`
+
+### 9.3 `plan_answer_versions`（新規・履歴の正本）
+
+回答の置換・削除をせず、変更のたびに新しい版を追加する。
+
+- id
+- daily_plan_id FK
+- question_id FK
+- version_no
+- value_json
+- decided_with_member_id FK nullable
+- recorded_by_member_id FK nullable
 - recorded_at
+- supersedes_version_id FK nullable
+- created_at
 
-# 11. schedule_impacts
+制約:
 
-予定と実績の差。
+- UNIQUE (`daily_plan_id`, `question_id`, `version_no`)
+- `version_no > 0`
+- 最新回答は最大 `version_no` から導出する。
+- 「今は決めない」を記録する必要が生じた場合も回答種別または明示イベントとして追加できる。
+
+### 9.4 `plan_items` の移行
+
+- 既存 `plan_items` と `wake_up_time` / `school_start_period` を回答版へバックフィルする。
+- 現行APIレスポンスは最新回答から従来形式へ組み立てる。
+- 移行完了まで `plan_items` を互換テーブルとして残す。
+
+### 9.5 `reflection_sessions`（既存・履歴化）
+
+- `daily_plan_id` UNIQUEを廃止し、複数回の振り返りを追記できるようにする。
+- `revision_no` を追加し UNIQUE (`daily_plan_id`, `revision_no`)。
+- `recorded_by_member_id` を追加する。
+- 完了後の訂正は既存行を上書きせず新しい版を追加する。
+- `daily_plans.review_completed_at` は最新の完了セッションから導出する。
+
+## 10. ポイント・ごほうび
+
+### 10.1 `reward_rules`（新規）
+
+活動とポイント・コイン・ごほうび条件を分離する。
 
 - id
-- household_id
-- affected_plan_id
-- impact_type:
-  - delayed
-  - shortened
-  - interrupted
-  - cancelled
-  - postponed
-  - moved_to_night
-  - changed_to_support
-  - changed_to_recovery
-- cause_type
-- cause_id
-- lost_minutes
-- interruption_count
-- actual_return_at
-- concentration_level
-- carryover_type
-- note
+- activity_definition_id FK nullable
+- member_id FK
+- reward_kind: `gauge | coin | point | collection`
+- amount
+- valid_from nullable
+- valid_until nullable
+- is_active
 
-# 12. support_handoffs
-
-支援の役割移管。
+### 10.2 `reward_transactions`（新規・台帳の正本）
 
 - id
-- household_id
-- child_person_id
-- from_person_id
-- to_stakeholder_id
-- support_scope
-- valid_from
-- valid_until
-- target_time
-- conditions
-- prohibited_actions
-- completion_condition
-- fallback_procedure
+- member_id FK
+- activity_event_id FK nullable
+- reward_rule_id FK nullable
+- transaction_type: `earn | adjustment | reversal`
+- kind: `gauge | coin | point`
+- amount
+- occurred_at
+- idempotency_key
+- reverses_transaction_id FK nullable
+- reason nullable
+
+制約:
+
+- `idempotency_key` UNIQUE
+- `amount <> 0`
+- 通常付与は UNIQUE (`activity_event_id`, `reward_rule_id`, `transaction_type`)
+- 訂正は更新・削除せず反対符号の `reversal` を追加する。
+
+### 10.3 `reward_collections`（既存・変更）
+
+- `reward_program_key` を追加し、将来テーマやシーズンを分けられるようにする。
+- UNIQUE (`family_member_id`, `reward_program_key`, `milestone_number`)
+- 1つの実績を獲得契機1件に限定する場合、`activity_event_id` に部分ユニーク制約を追加する。
+
+## 11. Google Calendar
+
+### 11.1 `calendar_connections`（新規）
+
+- id
+- provider: `google`
+- external_calendar_id
+- provider_account_id
+- display_name
+- timezone
+- refresh_token_encrypted nullable
+- sync_token_encrypted nullable
+- token_expires_at nullable
+- is_active
+- last_synced_at nullable
+
+制約:
+
+- UNIQUE (`provider`, `external_calendar_id`)
+- OAuthトークン・同期トークンは平文保存しない。
+
+### 11.2 `calendar_events`（新規・外部IDの軸）
+
+- id
+- calendar_connection_id FK
+- external_event_id
+- created_at
+- updated_at
+
+制約:
+
+- UNIQUE (`calendar_connection_id`, `external_event_id`)
+
+### 11.3 `calendar_event_versions`（新規・取込履歴）
+
+- id
+- calendar_event_id FK
+- version_no
+- provider_updated_at
 - status
-
-# 13. support_executions
-
-移管された支援の実施結果。
-
-- id
-- household_id
-- handoff_id
-- execution_date
-- performed_by_stakeholder_id
-- started_at
-- ended_at
-- status
-- conditions_followed
-- returned_to_mother
-- returned_reason
-- completion_confirmed
-- child_willingness_after
-- note
-
-# 14. action_items
-
-次のアクション。
-
-- id
-- household_id
 - title
-- description
-- assignee_person_id
-- assignee_stakeholder_id
-- due_at
-- priority
-- status
-- recoordination_owner
-- source_type
-- source_id
-- completed_at
-- note
+- start_at nullable
+- end_at nullable
+- is_all_day
+- location nullable
+- description nullable
+- raw_payload nullable
+- imported_at
 
-# 15. game_progress
+制約:
 
-本人向けゲーム進捗。
+- UNIQUE (`calendar_event_id`, `version_no`)
+- UNIQUE (`calendar_event_id`, `provider_updated_at`) は同一時刻更新が保証される場合のみ採用する。
+- Calendar側の取消・削除も版として残す。
 
-- id
-- household_id
-- person_id
-- game_name
-- progress_date
-- planned_tasks
-- completed_tasks
-- play_minutes
-- enjoyment_score
-- recovery_effect_score
-- obligation_score
-- next_action
-- note
+最新のCalendar版から `planned_activities` を作成・更新する。Calendarの内容を直接
+`activity_events` へ保存しない。
 
-# 16. report_exports
+## 12. 予定と実績の突き合わせ
 
-将来の支援者別共有。
+### 12.1 `plan_actual_links`（新規）
 
-元データを直接公開せず、
-共有時点のスナップショットを保存する。
+予定と実績は1対1とは限らないため、中間テーブルで関連付ける。
 
 - id
-- household_id
-- report_type
-- period_start
-- period_end
-- included_sections
-- excluded_sections
-- report_snapshot
-- generated_by
-- generated_at
+- planned_activity_id FK
+- activity_event_id FK
+- link_type: `primary | partial | interruption | cause`
+- matched_by: `automatic | manual`
+- confidence nullable
+- created_at
 
-# 17. Laravel実装方針
+制約:
 
-第2実装以降：
+- UNIQUE (`planned_activity_id`, `activity_event_id`, `link_type`)
+- `confidence IS NULL OR confidence BETWEEN 0 AND 100`
 
-- UUIDまたはULIDを統一して使用
-- Eloquent Model
-- Migration
-- Factory
-- Seeder
-- Policy
-- Form Request
-- API Resource
-- 論理削除が必要な記録を明示
-- household_idによるデータ分離
-- 外部キーの削除動作を明示
-- スコア値と日時整合性に制約
+### 12.2 `schedule_impacts`（新規）
+
+- id
+- planned_activity_id FK
+- cause_activity_event_id FK nullable
+- impact_type: `delayed | shortened | interrupted | cancelled | postponed | moved_to_night | changed_to_support | changed_to_recovery`
+- lost_minutes nullable
+- interruption_count nullable
+- actual_return_at nullable
+- note nullable
+- created_at
+
+制約:
+
+- `lost_minutes IS NULL OR lost_minutes >= 0`
+- `interruption_count IS NULL OR interruption_count >= 0`
+
+## 13. 派生値の扱い
+
+### 削除または非正本化する値
+
+| 現在の列 | 正本 | 方針 |
+|---|---|---|
+| `daily_tasks.prompt_count` | 非取消 `prompt_events` の件数 | APIで集計。移行後に列削除 |
+| `daily_tasks.latest_prompt_at` | 非取消 `prompt_events.prompted_at` の最大値 | APIで集計。移行後に列削除 |
+| `daily_tasks.status` | 最新の有効な `activity_events.result` | APIで導出。移行後に列削除 |
+| `daily_plans.review_completed_at` | 最新の完了 `reflection_sessions.completed_at` | APIで導出。移行後に列削除 |
+
+次は履歴スナップショットなので残す。
+
+- `task_records.granted_point_value`: 完了時点単価
+- 日次予定の表示名・時刻: その日に見えていた内容
+- Calendarイベントの版ごとのタイトル・時刻
+
+性能上キャッシュが必要になった場合は、正本から再構築できる列またはマテリアライズドビューとして追加し、
+正本扱いしない。再構築コマンドと整合性テストを同時に実装する。
+
+## 14. DB制約の共通方針
+
+- 変更しやすさを優先し、PostgreSQLのネイティブENUMではなく `string + CHECK` を使う。
+- 必須値は `NOT NULL`。
+- 数値範囲・日時順序・状態値をCHECK制約で守る。
+- 外部キー削除動作を全て明示する。
+  - マスタ・履歴: `RESTRICT`
+  - 一時的な従属データ: 必要な場合のみ `CASCADE`
+- 記録・履歴・台帳は物理削除しない。
+- 一意制約追加前に重複監査SQLを実行し、重複があれば先に修復する。
+- 既存CREATEマイグレーションは変更せず、差分ALTERを追加する。
+
+## 15. APIアクセス保護
+
+単一家庭でも、本番APIが公開URLにある以上、家庭数とは無関係にアクセス保護が必要である。
+ただし複数ユーザー認証は不要なため、当面は家族共有トークン方式とする。
+
+- 環境変数 `FAMILY_TOKEN` をLaravel側だけに保存する。
+- `/api/health` 以外の取得・更新APIを `X-Family-Token` ミドルウェアで保護する。
+- トークンはフロントのソースやビルド時環境変数へ埋め込まない。
+- 初回に利用者が「あいことば」を入力し、端末側へ保存する。
+- 比較は `hash_equals`、失敗は401、連続失敗にはRate Limitを適用する。
+- トークンは環境変数差し替えでローテーション可能にする。
+- 本番で `FAMILY_TOKEN` が未設定の場合は保護を無効化せず、起動失敗または保護APIを503にする（fail closed）。
+- 将来、端末紛失・個別失効が必要になった時点でSanctum等へ移行する。
+
+## 16. 実装順
+
+実際の移行順、バックフィル、互換期間、検証条件は
+`docs/wip/database-unification/implementation-plan.md` を正とする。
