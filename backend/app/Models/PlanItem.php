@@ -15,6 +15,7 @@ class PlanItem extends Model
         'category',
         'title',
         'status',
+        'decided_with',
         'sort_order',
     ];
 

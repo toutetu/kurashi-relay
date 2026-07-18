@@ -14,9 +14,7 @@ return new class extends Migration
             $table->string('mode', 20)->default('school');
             $table->string('school_start_period', 20)->nullable();
             $table->time('wake_up_time')->nullable();
-            $table->string('today_state', 20)->default('undecided');
-            $table->string('tomorrow_items_state', 20)->default('undecided');
-            $table->string('start_state', 20)->default('undecided');
+            $table->string('start_decided_with', 10)->nullable();
             $table->timestampTz('review_completed_at')->nullable();
             $table->timestampsTz();
 

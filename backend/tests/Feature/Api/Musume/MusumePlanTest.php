@@ -63,7 +63,7 @@ class MusumePlanTest extends TestCase
             ->assertJsonPath('plan.mode', 'school');
     }
 
-    public function test_replace_items_updates_state_for_today_task_and_tomorrow_item(): void
+    public function test_replace_items_persists_today_task_and_tomorrow_item(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
 
@@ -76,9 +76,9 @@ class MusumePlanTest extends TestCase
             'titles' => ['夏休みの宿題', '遊ぶ'],
         ])
             ->assertOk()
-            ->assertJsonPath('plan.today_state', 'decided')
             ->assertJsonCount(2, 'plan.items.today_task')
             ->assertJsonPath('plan.items.today_task.0.title', '夏休みの宿題')
+            ->assertJsonPath('plan.items.today_task.0.decided_with', null)
             ->assertJsonPath('plan.items.today_task.1.title', '遊ぶ');
 
         $this->putJson("/api/musume/plan/{$planId}/items", [
@@ -86,7 +86,6 @@ class MusumePlanTest extends TestCase
             'titles' => [],
         ])
             ->assertOk()
-            ->assertJsonPath('plan.today_state', 'undecided')
             ->assertJsonCount(0, 'plan.items.today_task');
 
         $this->putJson("/api/musume/plan/{$planId}/items", [
@@ -94,25 +93,26 @@ class MusumePlanTest extends TestCase
             'titles' => ['水筒'],
         ])
             ->assertOk()
-            ->assertJsonPath('plan.tomorrow_items_state', 'decided');
+            ->assertJsonCount(1, 'plan.items.tomorrow_item')
+            ->assertJsonPath('plan.items.tomorrow_item.0.title', '水筒');
 
         $this->putJson("/api/musume/plan/{$planId}/items", [
             'category' => 'tomorrow_item',
             'titles' => [],
         ])
             ->assertOk()
-            ->assertJsonPath('plan.tomorrow_items_state', 'undecided');
+            ->assertJsonCount(0, 'plan.items.tomorrow_item');
 
         $this->putJson("/api/musume/plan/{$planId}/items", [
             'category' => 'memo',
             'titles' => ['メモ'],
         ])
             ->assertOk()
-            ->assertJsonPath('plan.today_state', 'undecided')
+            ->assertJsonCount(0, 'plan.items.today_task')
             ->assertJsonCount(1, 'plan.items.memo');
     }
 
-    public function test_patch_can_set_with_mama_state(): void
+    public function test_replace_items_persists_tomorrow_plan_category(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
 
@@ -120,14 +120,46 @@ class MusumePlanTest extends TestCase
             ->assertOk()
             ->json('plan.id');
 
-        $this->patchJson("/api/musume/plan/{$planId}", [
-            'today_state' => 'with_mama',
+        $this->putJson("/api/musume/plan/{$planId}/items", [
+            'category' => 'tomorrow_plan',
+            'titles' => ['友達と遊ぶ', 'ゆっくりする'],
         ])
             ->assertOk()
-            ->assertJsonPath('plan.today_state', 'with_mama');
+            ->assertJsonCount(2, 'plan.items.tomorrow_plan')
+            ->assertJsonPath('plan.items.tomorrow_plan.0.title', '友達と遊ぶ');
+
+        $this->getJson('/api/musume/plan?date=2026-07-18')
+            ->assertOk()
+            ->assertJsonCount(2, 'plan.items.tomorrow_plan')
+            ->assertJsonPath('plan.items.tomorrow_plan.1.title', 'ゆっくりする');
     }
 
-    public function test_patch_wake_up_time_sets_start_state_decided(): void
+    public function test_replace_items_persists_decided_with_on_all_rows(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
+
+        $planId = $this->getJson('/api/musume/plan?date=2026-07-18')
+            ->assertOk()
+            ->json('plan.id');
+
+        $this->putJson("/api/musume/plan/{$planId}/items", [
+            'category' => 'today_task',
+            'titles' => ['夏休みの宿題', '遊ぶ'],
+            'decided_with' => 'mama',
+        ])
+            ->assertOk()
+            ->assertJsonPath('plan.items.today_task.0.decided_with', 'mama')
+            ->assertJsonPath('plan.items.today_task.1.decided_with', 'mama');
+
+        $this->putJson("/api/musume/plan/{$planId}/items", [
+            'category' => 'today_task',
+            'titles' => ['自分で決めた'],
+        ])
+            ->assertOk()
+            ->assertJsonPath('plan.items.today_task.0.decided_with', null);
+    }
+
+    public function test_patch_wake_up_time_and_start_decided_with_together(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
 
@@ -137,10 +169,11 @@ class MusumePlanTest extends TestCase
 
         $this->patchJson("/api/musume/plan/{$planId}", [
             'wake_up_time' => '07:30',
+            'start_decided_with' => 'mama',
         ])
             ->assertOk()
             ->assertJsonPath('plan.wake_up_time', '07:30')
-            ->assertJsonPath('plan.start_state', 'decided');
+            ->assertJsonPath('plan.start_decided_with', 'mama');
     }
 
     public function test_reflection_complete_is_idempotent(): void
@@ -202,10 +235,17 @@ class MusumePlanTest extends TestCase
         $this->putJson("/api/musume/plan/{$planId}/items", [
             'category' => 'today_task',
             'titles' => ['夏休みの宿題'],
+            'decided_with' => 'mama',
+        ])->assertOk();
+
+        $this->putJson("/api/musume/plan/{$planId}/items", [
+            'category' => 'tomorrow_plan',
+            'titles' => ['ママとお出かけ'],
         ])->assertOk();
 
         $this->patchJson("/api/musume/plan/{$planId}", [
             'wake_up_time' => '07:30',
+            'start_decided_with' => 'mama',
         ])->assertOk();
 
         $this->postJson("/api/musume/plan/{$planId}/reflection/complete", [
@@ -217,9 +257,12 @@ class MusumePlanTest extends TestCase
             ->assertOk()
             ->assertJsonPath('summary.mode', 'summer')
             ->assertJsonPath('summary.today_tasks', ['夏休みの宿題'])
+            ->assertJsonPath('summary.tomorrow_plans', ['ママとお出かけ'])
             ->assertJsonPath('summary.wake_up_time', '07:30')
-            ->assertJsonPath('summary.today_state', 'decided')
-            ->assertJsonPath('summary.start_state', 'decided')
+            ->assertJsonPath('summary.decided_with.today', 'mama')
+            ->assertJsonPath('summary.decided_with.tomorrow_plan', null)
+            ->assertJsonPath('summary.decided_with.tomorrow_item', null)
+            ->assertJsonPath('summary.decided_with.start', 'mama')
             ->assertJsonPath('summary.review_completed_at', '2026-07-18T08:00:00+09:00');
     }
 

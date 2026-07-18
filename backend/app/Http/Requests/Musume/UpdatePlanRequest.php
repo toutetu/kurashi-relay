@@ -35,9 +35,7 @@ final class UpdatePlanRequest extends FormRequest
                 ]),
             ],
             'wake_up_time' => ['sometimes', 'nullable', 'date_format:H:i'],
-            'today_state' => ['sometimes', 'string', Rule::in(['undecided', 'with_mama', 'decided'])],
-            'tomorrow_items_state' => ['sometimes', 'string', Rule::in(['undecided', 'with_mama', 'decided'])],
-            'start_state' => ['sometimes', 'string', Rule::in(['undecided', 'with_mama', 'decided'])],
+            'start_decided_with' => ['sometimes', 'nullable', 'string', Rule::in(['mama'])],
         ];
     }
 }
