@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { DecidedWith } from "../api/schemas/musumeSchema";
 import type { MusumePlan } from "../api/schemas/musumeSchema";
 import {
   SCHOOL_START_OPTIONS,
@@ -6,10 +7,13 @@ import {
   SCHOOL_TOMORROW_CHIPS,
   SUMMER_TODAY_CHIPS,
   SUMMER_TOMORROW_CHIPS,
+  SUMMER_TOMORROW_PLAN_CHIPS,
   WAKE_UP_OPTIONS,
   type OutlookSheetKind,
 } from "../utils";
 import { MusumeBottomSheet } from "./MusumeBottomSheet";
+
+type ItemCategory = "today_task" | "tomorrow_plan" | "tomorrow_item";
 
 type OutlookSheetProps = {
   kind: OutlookSheetKind | null;
@@ -17,15 +21,19 @@ type OutlookSheetProps = {
   open: boolean;
   resetKey: number;
   onClose: () => void;
-  onSaveItems: (category: "today_task" | "tomorrow_item", titles: string[]) => void;
-  onSaveStart: (value: string) => void;
-  onWithMama: (stateKey: "today_state" | "tomorrow_items_state" | "start_state") => void;
+  onSaveItems: (
+    category: ItemCategory,
+    titles: string[],
+    decidedWith: DecidedWith | null,
+  ) => void;
+  onSaveStart: (value: string | null, decidedWith: DecidedWith | null) => void;
   isSaving: boolean;
 };
 
 function getPresetChips(kind: OutlookSheetKind, plan: MusumePlan): readonly string[] {
   const summer = plan.mode === "summer";
   if (kind === "today") return summer ? SUMMER_TODAY_CHIPS : SCHOOL_TODAY_CHIPS;
+  if (kind === "tomorrow_plan") return SUMMER_TOMORROW_PLAN_CHIPS;
   if (kind === "tomorrow") {
     return summer ? SUMMER_TOMORROW_CHIPS : SCHOOL_TOMORROW_CHIPS;
   }
@@ -34,6 +42,9 @@ function getPresetChips(kind: OutlookSheetKind, plan: MusumePlan): readonly stri
 
 function getInitialSelected(kind: OutlookSheetKind, plan: MusumePlan): string[] {
   if (kind === "today") return plan.items.today_task.map((item) => item.title);
+  if (kind === "tomorrow_plan") {
+    return plan.items.tomorrow_plan.map((item) => item.title);
+  }
   if (kind === "tomorrow") return plan.items.tomorrow_item.map((item) => item.title);
   if (kind === "start") {
     if (plan.mode === "summer" && plan.wake_up_time) return [plan.wake_up_time];
@@ -73,13 +84,22 @@ function buildInitialSelection(kind: OutlookSheetKind, plan: MusumePlan) {
   return { selected: [...chips], otherText: other };
 }
 
+function itemCategoryForKind(kind: OutlookSheetKind): ItemCategory {
+  if (kind === "today") return "today_task";
+  if (kind === "tomorrow_plan") return "tomorrow_plan";
+  return "tomorrow_item";
+}
+
 type OutlookSheetEditorProps = {
   kind: OutlookSheetKind;
   plan: MusumePlan;
   onClose: () => void;
-  onSaveItems: (category: "today_task" | "tomorrow_item", titles: string[]) => void;
-  onSaveStart: (value: string) => void;
-  onWithMama: (stateKey: "today_state" | "tomorrow_items_state" | "start_state") => void;
+  onSaveItems: (
+    category: ItemCategory,
+    titles: string[],
+    decidedWith: DecidedWith | null,
+  ) => void;
+  onSaveStart: (value: string | null, decidedWith: DecidedWith | null) => void;
   isSaving: boolean;
 };
 
@@ -89,7 +109,6 @@ function OutlookSheetEditor({
   onClose,
   onSaveItems,
   onSaveStart,
-  onWithMama,
   isSaving,
 }: OutlookSheetEditorProps) {
   const initial = buildInitialSelection(kind, plan);
@@ -103,25 +122,20 @@ function OutlookSheetEditor({
   const title =
     kind === "today"
       ? "❤️ いまから何する?"
-      : kind === "tomorrow"
-        ? "🎒 明日 何がいる?"
-        : summer
-          ? "⏰ 明日 何時に起きる?"
-          : "🕒 明日 何時間目から登校?";
+      : kind === "tomorrow_plan"
+        ? "🔮 明日 なにする?"
+        : kind === "tomorrow"
+          ? "🎒 明日 何がいる?"
+          : summer
+            ? "⏰ 明日 何時に起きる?"
+            : "🕒 明日 何時間目から登校?";
 
   const hint =
-    kind === "today"
+    kind === "today" || kind === "tomorrow_plan"
       ? "いくつ選んでもOK。あとから変えてもOK。"
       : kind === "tomorrow"
         ? "よく使う物から選べるよ。"
         : "だいたいでOK。";
-
-  const stateKey =
-    kind === "today"
-      ? "today_state"
-      : kind === "tomorrow"
-        ? "tomorrow_items_state"
-        : "start_state";
 
   const toggleChip = (chip: string) => {
     if (!isMulti) {
@@ -151,16 +165,13 @@ function OutlookSheetEditor({
     return titles;
   };
 
-  const handleSave = () => {
+  const handleSave = (decidedWith: DecidedWith | null) => {
     if (kind === "start") {
-      const value = selected[0];
-      if (value) onSaveStart(value);
+      const value = selected[0] ?? null;
+      onSaveStart(value, value ? decidedWith : null);
       return;
     }
-    onSaveItems(
-      kind === "today" ? "today_task" : "tomorrow_item",
-      buildTitles(),
-    );
+    onSaveItems(itemCategoryForKind(kind), buildTitles(), decidedWith);
   };
 
   const renderChips = () => {
@@ -221,9 +232,9 @@ function OutlookSheetEditor({
           type="button"
           className="msm-btn-mama"
           disabled={isSaving}
-          onClick={() => onWithMama(stateKey)}
+          onClick={() => handleSave("mama")}
         >
-          🎀 ママと決める
+          🎀 ママと決めた
         </button>
         <button type="button" className="msm-btn-later" onClick={onClose}>
           今は決めない
@@ -233,7 +244,7 @@ function OutlookSheetEditor({
         type="button"
         className="msm-btn-save"
         disabled={isSaving}
-        onClick={handleSave}
+        onClick={() => handleSave(null)}
       >
         これにする!
       </button>
@@ -249,7 +260,6 @@ export function OutlookSheet({
   onClose,
   onSaveItems,
   onSaveStart,
-  onWithMama,
   isSaving,
 }: OutlookSheetProps) {
   if (!kind) return null;
@@ -257,11 +267,13 @@ export function OutlookSheet({
   const title =
     kind === "today"
       ? "いまから何する?"
-      : kind === "tomorrow"
-        ? "明日 何がいる?"
-        : plan.mode === "summer"
-          ? "明日 何時に起きる?"
-          : "明日 何時間目から登校?";
+      : kind === "tomorrow_plan"
+        ? "明日 なにする?"
+        : kind === "tomorrow"
+          ? "明日 何がいる?"
+          : plan.mode === "summer"
+            ? "明日 何時に起きる?"
+            : "明日 何時間目から登校?";
 
   return (
     <MusumeBottomSheet open={open} onClose={onClose} title={title}>
@@ -273,7 +285,6 @@ export function OutlookSheet({
           onClose={onClose}
           onSaveItems={onSaveItems}
           onSaveStart={onSaveStart}
-          onWithMama={onWithMama}
           isSaving={isSaving}
         />
       )}

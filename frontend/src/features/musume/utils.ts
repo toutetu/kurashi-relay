@@ -1,15 +1,13 @@
 import type {
   MusumeMode,
   MusumePlan,
-  MusumeSummary,
-  PlanState,
   SchoolStartPeriod,
 } from "./api/schemas/musumeSchema";
 
 const TOKYO_TIME_ZONE = "Asia/Tokyo";
 
-export const WITH_MAMA_LABEL = "🎀 ママと決める";
 export const UNDECIDED_LABEL = "タップして決めよう";
+export const MAMA_DECIDED_RIBBON = "🎀";
 
 export const SUMMER_TODAY_CHIPS = [
   "夏休みの宿題",
@@ -27,6 +25,15 @@ export const SCHOOL_TODAY_CHIPS = [
   "遊ぶ",
   "休む",
   "入浴",
+  "その他",
+] as const;
+
+export const SUMMER_TOMORROW_PLAN_CHIPS = [
+  "友達と遊ぶ",
+  "ゆっくりする",
+  "ママとお出かけ",
+  "塾に行く",
+  "宿題・勉強をする",
   "その他",
 ] as const;
 
@@ -87,7 +94,7 @@ export const SCHOOL_REVIEW_ITEMS = [
   "明日の予定",
 ] as const;
 
-export type OutlookSheetKind = "today" | "tomorrow" | "start";
+export type OutlookSheetKind = "today" | "tomorrow_plan" | "tomorrow" | "start";
 
 export function isSummerMode(mode: MusumeMode): boolean {
   return mode === "summer";
@@ -119,48 +126,62 @@ function joinTitles(titles: string[]): string {
   return titles.join("・");
 }
 
-function stateAnswer(state: PlanState, decidedText: string): string {
-  if (state === "with_mama") return WITH_MAMA_LABEL;
-  if (state === "decided") return decidedText;
-  return UNDECIDED_LABEL;
+function withMamaRibbon(text: string, decidedWith: string | null | undefined): string {
+  return decidedWith === "mama" ? `${text} ${MAMA_DECIDED_RIBBON}` : text;
+}
+
+function itemsAnswer(
+  items: MusumePlan["items"]["today_task"],
+): { text: string; decided: boolean } {
+  if (items.length === 0) {
+    return { text: UNDECIDED_LABEL, decided: false };
+  }
+  const text = withMamaRibbon(
+    joinTitles(items.map((item) => item.title)),
+    items[0]?.decided_with,
+  );
+  return { text, decided: true };
 }
 
 export function getTodayAnswer(plan: MusumePlan): {
   text: string;
   decided: boolean;
 } {
-  const text = stateAnswer(
-    plan.today_state,
-    joinTitles(plan.items.today_task.map((item) => item.title)),
-  );
-  return { text, decided: plan.today_state !== "undecided" };
+  return itemsAnswer(plan.items.today_task);
+}
+
+export function getTomorrowPlanAnswer(plan: MusumePlan): {
+  text: string;
+  decided: boolean;
+} {
+  return itemsAnswer(plan.items.tomorrow_plan);
 }
 
 export function getTomorrowItemsAnswer(plan: MusumePlan): {
   text: string;
   decided: boolean;
 } {
-  const text = stateAnswer(
-    plan.tomorrow_items_state,
-    joinTitles(plan.items.tomorrow_item.map((item) => item.title)),
-  );
-  return { text, decided: plan.tomorrow_items_state !== "undecided" };
+  return itemsAnswer(plan.items.tomorrow_item);
 }
 
 export function getStartAnswer(plan: MusumePlan): { text: string; decided: boolean } {
-  if (plan.start_state === "with_mama") {
-    return { text: WITH_MAMA_LABEL, decided: true };
+  if (isSummerMode(plan.mode) && plan.wake_up_time) {
+    return {
+      text: withMamaRibbon(
+        formatWakeUpTime(plan.wake_up_time),
+        plan.start_decided_with,
+      ),
+      decided: true,
+    };
   }
-  if (plan.start_state === "decided") {
-    if (isSummerMode(plan.mode) && plan.wake_up_time) {
-      return { text: formatWakeUpTime(plan.wake_up_time), decided: true };
-    }
-    if (!isSummerMode(plan.mode) && plan.school_start_period) {
-      return {
-        text: formatSchoolStartPeriod(plan.school_start_period),
-        decided: true,
-      };
-    }
+  if (!isSummerMode(plan.mode) && plan.school_start_period) {
+    return {
+      text: withMamaRibbon(
+        formatSchoolStartPeriod(plan.school_start_period),
+        plan.start_decided_with,
+      ),
+      decided: true,
+    };
   }
   return { text: UNDECIDED_LABEL, decided: false };
 }
@@ -173,15 +194,12 @@ export function isReviewCompleted(plan: MusumePlan): boolean {
   return plan.review.completed_at !== null;
 }
 
-export function getSummaryStartLabel(summary: MusumeSummary): string | null {
-  if (isSummerMode(summary.mode) && summary.wake_up_time) {
-    return `⏰ ${formatWakeUpTime(summary.wake_up_time)}`;
-  }
-  if (!isSummerMode(summary.mode) && summary.school_start_period) {
-    return `🕒 ${formatSchoolStartPeriod(summary.school_start_period)}`;
-  }
-  if (summary.start_state === "with_mama") {
-    return WITH_MAMA_LABEL;
-  }
-  return null;
+export function formatSummaryItemLine(
+  label: string,
+  titles: string[],
+  decidedWith: string | null | undefined,
+): string {
+  if (titles.length === 0) return `${label}: まだ決めてないよ`;
+  const content = withMamaRibbon(joinTitles(titles), decidedWith);
+  return `${label}: ${content}`;
 }
