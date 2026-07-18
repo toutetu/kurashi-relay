@@ -26,16 +26,13 @@ final class StoreTaskRecordResource extends JsonResource
 
         $revealedReward = $payload['revealed_reward'];
 
-        $data = [
+        return [
             'record' => new TaskRecordResource($payload['record']),
             'summary' => $payload['summary'],
+            'revealed_reward' => $revealedReward === null
+                ? null
+                : new RevealedRewardResource($revealedReward),
         ];
-
-        if ($revealedReward !== null) {
-            $data['revealed_reward'] = new RevealedRewardResource($revealedReward);
-        }
-
-        return $data;
     }
 
     /**

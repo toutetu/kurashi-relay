@@ -48,7 +48,7 @@ class OshigotoPersistenceTest extends TestCase
             ->assertJsonPath('data.summary.gauge_count', 1)
             ->assertJsonPath('data.summary.coins', 0)
             ->assertJsonPath('data.summary.points', null)
-            ->assertJsonMissingPath('data.revealed_reward');
+            ->assertJsonPath('data.revealed_reward', null);
 
         $motherResponse = $this->postJson('/api/task-records', [
             'member' => 'mother',
@@ -136,7 +136,7 @@ class OshigotoPersistenceTest extends TestCase
             'idempotency_key' => 'after-milestone-key',
         ])
             ->assertCreated()
-            ->assertJsonMissingPath('data.revealed_reward');
+            ->assertJsonPath('data.revealed_reward', null);
 
         $this->postJson('/api/task-records', $creationPayload)
             ->assertOk()
@@ -263,7 +263,7 @@ class OshigotoPersistenceTest extends TestCase
                 'idempotency_key' => "same-task-tap-{$i}",
             ])
                 ->assertCreated()
-                ->assertJsonMissingPath('data.revealed_reward');
+                ->assertJsonPath('data.revealed_reward', null);
         }
 
         $tenth = $this->postJson('/api/task-records', [
@@ -441,7 +441,7 @@ class OshigotoPersistenceTest extends TestCase
 
         $recompleted
             ->assertCreated()
-            ->assertJsonMissingPath('data.revealed_reward');
+            ->assertJsonPath('data.revealed_reward', null);
 
         $this->assertSame(1, RewardCollection::query()->count());
         $this->assertSame(10, TaskRecord::query()->whereNull('cancelled_at')->count());
