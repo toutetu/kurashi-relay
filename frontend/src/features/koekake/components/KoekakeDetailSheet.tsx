@@ -36,6 +36,7 @@ type KoekakeDetailSheetProps = {
   pendingPrompt?: boolean;
   pendingSnooze?: boolean;
   pendingCompletion?: boolean;
+  pendingCancel?: boolean;
 };
 
 export function KoekakeDetailSheet({
@@ -51,7 +52,9 @@ export function KoekakeDetailSheet({
   pendingPrompt = false,
   pendingSnooze = false,
   pendingCompletion = false,
+  pendingCancel = false,
 }: KoekakeDetailSheetProps) {
+  const promptPending = pendingPrompt || pendingCancel;
   const titleId = useId();
   const sheetRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -170,7 +173,7 @@ export function KoekakeDetailSheet({
                               type="button"
                               size="compact"
                               tone="blue"
-                              loading={pendingPrompt}
+                              loading={promptPending}
                               onClick={() =>
                                 onPromptWithText(summary, item.text, "template")
                               }
@@ -205,7 +208,7 @@ export function KoekakeDetailSheet({
                                 type="button"
                                 size="compact"
                                 tone="blue"
-                                loading={pendingPrompt}
+                                loading={promptPending}
                                 disabled={editedText.trim() === ""}
                                 onClick={() => {
                                   onPromptWithText(
@@ -249,8 +252,8 @@ export function KoekakeDetailSheet({
               className="mt-2"
               size="compact"
               tone="blue"
-              loading={pendingPrompt}
-              disabled={customText.trim() === ""}
+              loading={promptPending}
+              disabled={customText.trim() === "" || pendingCancel}
               onClick={() => {
                 onPromptWithText(summary, customText.trim(), "custom");
                 setCustomText("");

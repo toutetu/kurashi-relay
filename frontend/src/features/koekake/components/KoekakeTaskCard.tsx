@@ -15,6 +15,7 @@ type KoekakeTaskCardProps = {
   onOpenDetail: (task: KoekakeTaskSummary) => void;
   isPromptPending?: boolean;
   isSnoozePending?: boolean;
+  isPromptBlocked?: boolean;
 };
 
 export function KoekakeTaskCard({
@@ -24,6 +25,7 @@ export function KoekakeTaskCard({
   onOpenDetail,
   isPromptPending = false,
   isSnoozePending = false,
+  isPromptBlocked = false,
 }: KoekakeTaskCardProps) {
   const [flyKey, setFlyKey] = useState(0);
   const due = isKoekakeTaskDue(task);
@@ -89,10 +91,12 @@ export function KoekakeTaskCard({
           tone="blue"
           className="min-w-[7.5rem] flex-1 [--fly-color:var(--mother-blue-strong)]"
           aria-label={`${task.name}に声かけ済み`}
-          aria-busy={isPromptPending || undefined}
+          loading={isPromptBlocked}
+          disabled={isPromptBlocked}
+          aria-busy={isPromptPending || isPromptBlocked || undefined}
           onClick={handlePrompt}
         >
-          声かけ済み
+          {isPromptBlocked && !isPromptPending ? "更新中…" : "声かけ済み"}
           {flyKey > 0 && (
             <span
               key={flyKey}

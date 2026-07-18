@@ -1,3 +1,4 @@
+import { ApiError } from "../../api/client";
 import type {
   CompletionStatus,
   KoekakePhase,
@@ -46,6 +47,12 @@ export function isKoekakeTaskDue(task: KoekakeTaskSummary, now = new Date()): bo
     return true;
   }
   return false;
+}
+
+export function getKoekakeMutationErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error && error.message) return error.message;
+  return "保存に失敗しました。もう一度お試しください。";
 }
 
 export function buildDefaultPromptPayload(task: KoekakeTaskSummary): {

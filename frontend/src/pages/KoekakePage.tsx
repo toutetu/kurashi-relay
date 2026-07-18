@@ -1,7 +1,9 @@
 import { MessageCircleHeart } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "../api/client";
 import type {
+  CompletionStatus,
   KoekakePhase,
   KoekakeTaskSummary,
   PromptSource,
@@ -13,6 +15,7 @@ import { KoekakePhaseTabs } from "../features/koekake/components/KoekakePhaseTab
 import { KoekakeTaskCard } from "../features/koekake/components/KoekakeTaskCard";
 import { KoekakeUndoToast } from "../features/koekake/components/KoekakeUndoToast";
 import {
+  koekakeTasksQueryKey,
   useCancelPromptEvent,
   useCreatePromptEvent,
   useKoekakeTaskQuery,
@@ -23,6 +26,7 @@ import {
 import {
   buildDefaultPromptPayload,
   getInitialKoekakePhase,
+  getKoekakeMutationErrorMessage,
   KOEKAKE_PHASE_TABS,
 } from "../features/koekake/utils";
 
@@ -36,9 +40,12 @@ type PendingUndo = {
 
 export function KoekakePage() {
   const today = getTokyoToday();
+  const queryClient = useQueryClient();
   const [phase, setPhase] = useState<KoekakePhase>(() => getInitialKoekakePhase());
   const [detailTask, setDetailTask] = useState<KoekakeTaskSummary | null>(null);
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const tasksQuery = useKoekakeTasksQuery(today, phase);
@@ -65,8 +72,10 @@ export function KoekakePage() {
   const scheduleUndo = (undo: PendingUndo) => {
     clearUndoTimer();
     setPendingUndo(undo);
+    setUndoError(null);
     undoTimerRef.current = setTimeout(() => {
       setPendingUndo(null);
+      setUndoError(null);
       undoTimerRef.current = null;
     }, UNDO_TIMEOUT_MS);
   };
@@ -76,6 +85,7 @@ export function KoekakePage() {
     promptText: string,
     source: PromptSource,
   ) => {
+    setActionError(null);
     try {
       const response = await createPrompt.mutateAsync({
         daily_task_id: task.id,
@@ -88,29 +98,78 @@ export function KoekakePage() {
         taskName: task.name,
         promptEventId: response.prompt_event_id,
       });
-    } catch {
-      /* mutation error surfaces via isError if needed */
+    } catch (error) {
+      setActionError(getKoekakeMutationErrorMessage(error));
     }
   };
 
   const handleCardPrompt = (task: KoekakeTaskSummary) => {
-    const payload = buildDefaultPromptPayload(task);
-    void submitPrompt(task, payload.prompt_text, payload.source);
+    const list = queryClient.getQueryData<{
+      date: string;
+      tasks: KoekakeTaskSummary[];
+    }>(koekakeTasksQueryKey(today, phase));
+    const latestTask = list?.tasks.find((item) => item.id === task.id) ?? task;
+    const payload = buildDefaultPromptPayload(latestTask);
+    void submitPrompt(latestTask, payload.prompt_text, payload.source);
   };
 
-  const handleCardSnooze = (task: KoekakeTaskSummary) => {
-    void snoozeMutation.mutateAsync({
-      taskId: task.id,
-      body: { minutes: 5 },
-    });
+  const handleCardSnooze = async (task: KoekakeTaskSummary) => {
+    setActionError(null);
+    try {
+      await snoozeMutation.mutateAsync({
+        taskId: task.id,
+        body: { minutes: 5 },
+      });
+    } catch (error) {
+      setActionError(getKoekakeMutationErrorMessage(error));
+    }
   };
 
-  const handleUndo = () => {
+  const handleUndo = async () => {
     if (!pendingUndo) return;
     clearUndoTimer();
-    const { promptEventId } = pendingUndo;
-    setPendingUndo(null);
-    void cancelPrompt.mutateAsync(promptEventId);
+    setUndoError(null);
+    const undo = pendingUndo;
+    try {
+      await cancelPrompt.mutateAsync({
+        taskId: undo.taskId,
+        promptEventId: undo.promptEventId,
+      });
+      setPendingUndo(null);
+      setUndoError(null);
+    } catch (error) {
+      setUndoError(getKoekakeMutationErrorMessage(error));
+    }
+  };
+
+  const isTaskCancelPending = (taskId: number) =>
+    cancelPrompt.isPending && cancelPrompt.variables?.taskId === taskId;
+
+  const handleDetailSnooze = async (
+    taskId: number,
+    body: { minutes: 5 | 10 | 15 } | { none_today: true },
+  ) => {
+    setActionError(null);
+    try {
+      await snoozeMutation.mutateAsync({ taskId, body });
+    } catch (error) {
+      setActionError(getKoekakeMutationErrorMessage(error));
+    }
+  };
+
+  const handleDetailCompletion = async (
+    taskId: number,
+    status: CompletionStatus,
+  ) => {
+    setActionError(null);
+    try {
+      await completionMutation.mutateAsync({
+        taskId,
+        body: { status },
+      });
+    } catch (error) {
+      setActionError(getKoekakeMutationErrorMessage(error));
+    }
   };
 
   const detailSummary =
@@ -131,6 +190,15 @@ export function KoekakePage() {
           {tasksQuery.data ? formatDate(tasksQuery.data.date) : formatDate(today)}
         </p>
       </div>
+
+      {actionError && (
+        <p
+          role="alert"
+          className="mb-4 rounded-xl border border-[var(--mother-red)] bg-[var(--mother-red-soft)] px-4 py-3 text-sm text-[var(--mother-red-strong)]"
+        >
+          {actionError}
+        </p>
+      )}
 
       <KoekakePhaseTabs
         tabs={KOEKAKE_PHASE_TABS}
@@ -181,6 +249,7 @@ export function KoekakePage() {
                   createPrompt.isPending &&
                   createPrompt.variables?.daily_task_id === task.id
                 }
+                isPromptBlocked={isTaskCancelPending(task.id)}
                 isSnoozePending={
                   snoozeMutation.isPending &&
                   snoozeMutation.variables?.taskId === task.id
@@ -192,7 +261,13 @@ export function KoekakePage() {
       )}
 
       {pendingUndo && (
-        <KoekakeUndoToast taskName={pendingUndo.taskName} onUndo={handleUndo} />
+        <KoekakeUndoToast
+          taskName={pendingUndo.taskName}
+          onUndo={() => void handleUndo()}
+          onRetry={undoError ? () => void handleUndo() : undefined}
+          errorMessage={undoError}
+          isUndoing={cancelPrompt.isPending}
+        />
       )}
 
       {detailTask && detailSummary && (
@@ -205,22 +280,15 @@ export function KoekakePage() {
           onPromptWithText={(task, promptText, source) =>
             void submitPrompt(task, promptText, source)
           }
-          onSnooze={(taskId, minutes) =>
-            void snoozeMutation.mutateAsync({ taskId, body: { minutes } })
-          }
+          onSnooze={(taskId, minutes) => void handleDetailSnooze(taskId, { minutes })}
           onSnoozeNoneToday={(taskId) =>
-            void snoozeMutation.mutateAsync({
-              taskId,
-              body: { none_today: true },
-            })
+            void handleDetailSnooze(taskId, { none_today: true })
           }
           onCompletion={(taskId, status) =>
-            void completionMutation.mutateAsync({
-              taskId,
-              body: { status },
-            })
+            void handleDetailCompletion(taskId, status)
           }
           pendingPrompt={createPrompt.isPending}
+          pendingCancel={isTaskCancelPending(detailTask.id)}
           pendingSnooze={snoozeMutation.isPending}
           pendingCompletion={completionMutation.isPending}
         />

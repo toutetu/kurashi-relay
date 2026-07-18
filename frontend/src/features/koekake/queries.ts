@@ -27,6 +27,10 @@ import type {
 
 const taskMutationChains = new Map<number, Promise<unknown>>();
 
+export function resetKoekakeTaskMutationChainsForTests() {
+  taskMutationChains.clear();
+}
+
 function enqueueTaskMutation<T>(
   taskId: number,
   operation: () => Promise<T>,
@@ -158,6 +162,23 @@ function applyCompletionResponse(
   );
 }
 
+async function invalidateTaskDetail(
+  queryClient: QueryClient,
+  taskId: number,
+) {
+  await queryClient.invalidateQueries({ queryKey: koekakeTaskQueryKey(taskId) });
+}
+
+async function invalidateTasksList(
+  queryClient: QueryClient,
+  date: string,
+  phase: KoekakePhase,
+) {
+  await queryClient.invalidateQueries({
+    queryKey: koekakeTasksQueryKey(date, phase),
+  });
+}
+
 export function useKoekakeTasksQuery(date: string, phase: KoekakePhase) {
   return useQuery({
     queryKey: koekakeTasksQueryKey(date, phase),
@@ -185,6 +206,11 @@ export function useCreatePromptEvent(date: string, phase: KoekakePhase) {
       enqueueTaskMutation(input.daily_task_id, () => createPromptEvent(input)),
     onSuccess: (response) => {
       applyPromptEventResponse(queryClient, date, phase, response);
+      void invalidateTaskDetail(queryClient, response.daily_task_id);
+    },
+    onError: (_error, variables) => {
+      void invalidateTasksList(queryClient, date, phase);
+      void invalidateTaskDetail(queryClient, variables.daily_task_id);
     },
   });
 }
@@ -192,9 +218,22 @@ export function useCreatePromptEvent(date: string, phase: KoekakePhase) {
 export function useCancelPromptEvent(date: string, phase: KoekakePhase) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (promptEventId: number) => cancelPromptEvent(promptEventId),
-    onSuccess: (response) => {
+    mutationFn: ({
+      taskId,
+      promptEventId,
+    }: {
+      taskId: number;
+      promptEventId: number;
+    }) =>
+      enqueueTaskMutation(taskId, () => cancelPromptEvent(promptEventId)),
+    onSuccess: async (response) => {
       applyPromptEventResponse(queryClient, date, phase, response);
+      await invalidateTasksList(queryClient, date, phase);
+      await invalidateTaskDetail(queryClient, response.daily_task_id);
+    },
+    onError: (_error, variables) => {
+      void invalidateTasksList(queryClient, date, phase);
+      void invalidateTaskDetail(queryClient, variables.taskId);
     },
   });
 }
@@ -208,9 +247,14 @@ export function useUpdateCompletion(date: string, phase: KoekakePhase) {
     }: {
       taskId: number;
       body: UpdateCompletionInput;
-    }) => updateCompletion(taskId, body),
+    }) => enqueueTaskMutation(taskId, () => updateCompletion(taskId, body)),
     onSuccess: (response) => {
       applyCompletionResponse(queryClient, date, phase, response);
+      void invalidateTaskDetail(queryClient, response.task_id);
+    },
+    onError: (_error, variables) => {
+      void invalidateTasksList(queryClient, date, phase);
+      void invalidateTaskDetail(queryClient, variables.taskId);
     },
   });
 }
@@ -219,9 +263,14 @@ export function useSnooze(date: string, phase: KoekakePhase) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ taskId, body }: { taskId: number; body: SnoozeInput }) =>
-      snooze(taskId, body),
+      enqueueTaskMutation(taskId, () => snooze(taskId, body)),
     onSuccess: (response) => {
       applySnoozeResponse(queryClient, date, phase, response);
+      void invalidateTaskDetail(queryClient, response.task_id);
+    },
+    onError: (_error, variables) => {
+      void invalidateTasksList(queryClient, date, phase);
+      void invalidateTaskDetail(queryClient, variables.taskId);
     },
   });
 }

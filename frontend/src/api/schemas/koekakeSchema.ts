@@ -13,9 +13,11 @@ export const completionStatusSchema = z.enum([
   "unknown",
 ]);
 
+const promptLevelSchema = z.number().int().min(1).max(3);
+
 export const suggestedPromptSchema = z.object({
   prompt_template_id: z.number().int(),
-  level: z.number().int(),
+  level: promptLevelSchema,
   text: z.string(),
 });
 
@@ -59,7 +61,7 @@ export const promptCandidateItemSchema = z.object({
 });
 
 export const promptCandidateGroupSchema = z.object({
-  level: z.number().int(),
+  level: promptLevelSchema,
   items: z.array(promptCandidateItemSchema),
 });
 
@@ -90,7 +92,7 @@ export const cancelPromptEventResponseSchema = z.object({
 
 export const updateCompletionResponseSchema = z.object({
   task_id: z.number().int(),
-  status: z.string(),
+  status: completionStatusSchema,
   completion: completionSchema,
 });
 
