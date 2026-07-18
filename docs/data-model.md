@@ -180,7 +180,7 @@ flowchart LR
 活動そのものではなく、日常のどの枠に出すかを定義する。
 
 - id
-- routine_key
+- slug
 - activity_definition_id FK
 - subject_member_id FK
 - phase: `morning | evening | night | anytime`
@@ -194,7 +194,8 @@ flowchart LR
 
 制約:
 
-- `routine_key` UNIQUE
+- `slug` UNIQUE
+- `slug` は表示名と独立した安定キーとし、Seederのupsertキーにも使用する。
 - `daily_limit IS NULL OR daily_limit > 0`
 - `sort_order >= 0`
 

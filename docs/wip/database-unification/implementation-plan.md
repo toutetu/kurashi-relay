@@ -18,6 +18,7 @@
 
 - 我が家専用の単一家庭システムを維持し、`households` / `household_id` は追加しない。
 - 人物軸は既存 `family_members` を使う。
+- `routine_templates` は表示名から独立した `slug` を安定キーとして追加する。
 - APIは家族共有トークンで保護する。本格的な複数ユーザー認証は導入しない。
 - 活動の意味は `activity_definitions` に統合する。
 - 予定は `planned_activities`、実績は `activity_events` を正本とする。
@@ -76,7 +77,7 @@
 | テーブル | 制約 |
 |---|---|
 | `activity_definitions` | `activity_key` |
-| `routine_templates` | `routine_key` |
+| `routine_templates` | `slug` |
 | `planned_activities` | (`source_type`, `source_key`) |
 | `activity_events` | `idempotency_key` |
 | `plan_questions` | `question_key` |
@@ -208,6 +209,21 @@ PostgreSQL ENUMは使わず、文字列+CHECKとする。
 バックエンドとフロントは別ブランチ・別PRにする。各DBフェーズは、原則として
 「追加→バックフィル→読取切替→書込切替→旧構造停止」の順で進める。
 
+### 8.0 2026-07-18からの4日間の優先順
+
+ユーザー判断により、家族共有トークンよりDB統合の中核を先に進める。順序は次のとおり。
+
+1. 夏休み対応の本番書き込み確認（`migrate:fresh` は実施済み。再実行しない）
+2. Phase Bのうち安定キー・低リスク制約・人物FK
+3. Phase Cの活動マスタ統合
+4. Phase Dの共通予定・実績軸
+5. Phase Eのうち娘の見通しから予定へ接続する最小範囲
+6. Phase Aの家族共有トークン
+7. 支援者向けレポートMVP
+
+DB中核の品質ゲートが木曜午前までに通らない場合は、追加機能へ進まず移行の安全性を優先する。
+Phase Aは番号を変更せず、DB中核完了後かつ支援者向け情報提供より前に実施する。
+
 ### Phase A: APIアクセス保護
 
 バックエンド:
@@ -232,6 +248,8 @@ PostgreSQL ENUMは使わず、文字列+CHECKとする。
 ### Phase B: 低リスク制約と人物FK
 
 - 既存重複監査
+- `routine_templates.slug` をnullableで追加、既存22件をバックフィル、重複監査後にUNIQUE・NOT NULL化
+- `KoekakeSeeder` のupsertキーを (`phase`, `name`) から `slug` へ変更
 - `prompt_templates` 複合UNIQUE
 - `plan_items` 並び順UNIQUE
 - `reminder_schedules` 有効1件の部分UNIQUE
@@ -243,6 +261,7 @@ PostgreSQL ENUMは使わず、文字列+CHECKとする。
 完了条件:
 
 - 既存件数が変わらない。
+- 表示名を変更してSeederを再実行しても `routine_templates` が増殖しない。
 - 既存69テストに加え、制約違反テストが通る。
 
 ### Phase C: 活動マスタ統合
@@ -378,4 +397,5 @@ PostgreSQL ENUMは使わず、文字列+CHECKとする。
 - 既存本番データの削除
 - 既存テーブルの即時廃止
 
-この計画の最初の実装対象は Phase A（家族共有トークン）と Phase B（低リスク制約）とする。
+この計画の最初の実装対象は、8.0の順に Phase B、Phase C、Phase D、Phase Eの最小接続とする。
+Phase A（家族共有トークン）はDB中核の直後かつ支援者向け情報提供より前に実装する。
