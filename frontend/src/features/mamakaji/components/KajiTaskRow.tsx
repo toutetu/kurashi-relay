@@ -21,7 +21,7 @@ export function KajiTaskRow({ task, onIncrement }: KajiTaskRowProps) {
         type="button"
         aria-label={`${task.label}を記録。きょう${task.count}件`}
         onClick={handleClick}
-        className="pressable group relative flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-[13px] font-semibold text-[var(--mkj-ink)] transition hover:bg-[color-mix(in_srgb,var(--mkj-rasp-soft)_65%,var(--mkj-card))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+        className="pressable group relative flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-[13px] font-semibold text-[var(--mkj-ink)] transition hover:bg-[color-mix(in_srgb,var(--mkj-rasp-soft)_65%,var(--mkj-card))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
       >
         <span className="min-w-0 flex-1 truncate">{task.label}</span>
         <span
