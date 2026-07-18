@@ -131,6 +131,24 @@ DR-013 に従い、**新規マイグレーションを足さず既存の CREATE 
 `start_decided_with` は `wake_up_time`(または `school_start_period`)と**同じリクエストで同時に**
 送られてくる。
 
+#### 不変条件: 決定内容が無いなら決め方も無い
+
+`decided_with` は「**決定に付随する属性**」なので、決定内容が消えたら属性も消えなければならない。
+`plan_items` 側はカテゴリごと delete → 再作成するため自動的に満たされるが、
+**スカラ値で持つ start 系は明示的に守る必要がある**(Codexレビューで不整合を再現。
+`{"wake_up_time": null, "start_decided_with": "mama"}` = 「決定内容なし・ママと決めた」が作れてしまった)。
+
+`MusumePlanService` の更新処理で、**更新後の状態に対して**次を強制する:
+
+```
+基準値 = (更新後の mode === 'summer') ? wake_up_time : school_start_period
+基準値が null なら start_decided_with を null にする
+```
+
+- モードを基準にするのは、学期モードの残骸 `school_start_period` が夏休みの判定に
+  混ざらないようにするため。モード切替をまたいでも整合する。
+- リクエストが `start_decided_with` を明示指定していても、基準値が null ならこの規則が勝つ。
+
 ### 4-3. レスポンス形
 
 `MusumePlanService::formatPlanResponse()`:

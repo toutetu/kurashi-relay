@@ -44,6 +44,15 @@ final class MusumePlanService
 
             if ($updates !== []) {
                 $plan->update($updates);
+                $plan->refresh();
+            }
+
+            $baseline = $plan->mode === 'summer'
+                ? $plan->wake_up_time
+                : $plan->school_start_period;
+
+            if ($baseline === null && $plan->start_decided_with !== null) {
+                $plan->update(['start_decided_with' => null]);
             }
 
             return $this->formatPlanResponse($this->reloadPlan($plan));

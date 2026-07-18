@@ -6,6 +6,7 @@ use App\Models\DailyPlan;
 use App\Models\ReflectionSession;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
 
 class MusumePlanTest extends TestCase
@@ -33,7 +34,10 @@ class MusumePlanTest extends TestCase
         $first = $this->getJson('/api/musume/plan?date=2026-07-18');
         $first->assertOk()
             ->assertJsonPath('plan.plan_date', '2026-07-18')
-            ->assertJsonPath('plan.mode', 'summer');
+            ->assertJsonPath('plan.mode', 'summer')
+            ->assertJson(fn (AssertableJson $json) => $json
+                ->has('plan.items.tomorrow_plan')
+                ->where('plan.items.tomorrow_plan', []));
 
         $this->assertSame(1, DailyPlan::query()->where('plan_date', '2026-07-18')->count());
 
@@ -78,7 +82,9 @@ class MusumePlanTest extends TestCase
             ->assertOk()
             ->assertJsonCount(2, 'plan.items.today_task')
             ->assertJsonPath('plan.items.today_task.0.title', '夏休みの宿題')
-            ->assertJsonPath('plan.items.today_task.0.decided_with', null)
+            ->assertJson(fn (AssertableJson $json) => $json
+                ->has('plan.items.today_task.0.decided_with')
+                ->where('plan.items.today_task.0.decided_with', null))
             ->assertJsonPath('plan.items.today_task.1.title', '遊ぶ');
 
         $this->putJson("/api/musume/plan/{$planId}/items", [
@@ -156,7 +162,87 @@ class MusumePlanTest extends TestCase
             'titles' => ['自分で決めた'],
         ])
             ->assertOk()
-            ->assertJsonPath('plan.items.today_task.0.decided_with', null);
+            ->assertJson(fn (AssertableJson $json) => $json
+                ->has('plan.items.today_task.0.decided_with')
+                ->where('plan.items.today_task.0.decided_with', null));
+    }
+
+    public function test_clearing_wake_up_time_clears_start_decided_with(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
+
+        $planId = $this->getJson('/api/musume/plan?date=2026-07-18')
+            ->assertOk()
+            ->json('plan.id');
+
+        $this->patchJson("/api/musume/plan/{$planId}", [
+            'wake_up_time' => '07:30',
+            'start_decided_with' => 'mama',
+        ])
+            ->assertOk()
+            ->assertJsonPath('plan.wake_up_time', '07:30')
+            ->assertJsonPath('plan.start_decided_with', 'mama');
+
+        $this->patchJson("/api/musume/plan/{$planId}", [
+            'wake_up_time' => null,
+            'start_decided_with' => 'mama',
+        ])
+            ->assertOk()
+            ->assertJson(fn (AssertableJson $json) => $json
+                ->has('plan.wake_up_time')
+                ->where('plan.wake_up_time', null)
+                ->has('plan.start_decided_with')
+                ->where('plan.start_decided_with', null));
+    }
+
+    public function test_start_decided_with_stays_consistent_across_mode_switches(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
+
+        $planId = $this->getJson('/api/musume/plan?date=2026-07-18')
+            ->assertOk()
+            ->json('plan.id');
+
+        $this->patchJson("/api/musume/plan/{$planId}", [
+            'mode' => 'school',
+            'school_start_period' => 'first_period',
+            'start_decided_with' => 'mama',
+        ])
+            ->assertOk()
+            ->assertJsonPath('plan.mode', 'school')
+            ->assertJsonPath('plan.school_start_period', 'first_period')
+            ->assertJsonPath('plan.start_decided_with', 'mama');
+
+        $this->patchJson("/api/musume/plan/{$planId}", [
+            'mode' => 'summer',
+            'start_decided_with' => 'mama',
+        ])
+            ->assertOk()
+            ->assertJsonPath('plan.mode', 'summer')
+            ->assertJson(fn (AssertableJson $json) => $json
+                ->has('plan.start_decided_with')
+                ->where('plan.start_decided_with', null));
+
+        $this->patchJson("/api/musume/plan/{$planId}", [
+            'wake_up_time' => '07:00',
+            'start_decided_with' => 'mama',
+        ])
+            ->assertOk()
+            ->assertJsonPath('plan.wake_up_time', '07:00')
+            ->assertJsonPath('plan.start_decided_with', 'mama');
+
+        $this->patchJson("/api/musume/plan/{$planId}", [
+            'mode' => 'school',
+            'school_start_period' => null,
+            'start_decided_with' => 'mama',
+        ])
+            ->assertOk()
+            ->assertJsonPath('plan.mode', 'school')
+            ->assertJson(fn (AssertableJson $json) => $json
+                ->has('plan.school_start_period')
+                ->where('plan.school_start_period', null)
+                ->has('plan.start_decided_with')
+                ->where('plan.start_decided_with', null));
     }
 
     public function test_patch_wake_up_time_and_start_decided_with_together(): void
@@ -260,9 +346,14 @@ class MusumePlanTest extends TestCase
             ->assertJsonPath('summary.tomorrow_plans', ['ママとお出かけ'])
             ->assertJsonPath('summary.wake_up_time', '07:30')
             ->assertJsonPath('summary.decided_with.today', 'mama')
-            ->assertJsonPath('summary.decided_with.tomorrow_plan', null)
-            ->assertJsonPath('summary.decided_with.tomorrow_item', null)
-            ->assertJsonPath('summary.decided_with.start', 'mama')
+            ->assertJson(fn (AssertableJson $json) => $json
+                ->has('summary.decided_with.today')
+                ->has('summary.decided_with.tomorrow_plan')
+                ->where('summary.decided_with.tomorrow_plan', null)
+                ->has('summary.decided_with.tomorrow_item')
+                ->where('summary.decided_with.tomorrow_item', null)
+                ->has('summary.decided_with.start')
+                ->where('summary.decided_with.start', 'mama'))
             ->assertJsonPath('summary.review_completed_at', '2026-07-18T08:00:00+09:00');
     }
 
