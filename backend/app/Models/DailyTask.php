@@ -13,6 +13,7 @@ class DailyTask extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'subject_member_id',
         'task_date',
         'routine_template_id',
         'phase',
@@ -35,6 +36,11 @@ class DailyTask extends Model
             'prompt_count' => 'integer',
             'latest_prompt_at' => 'datetime',
         ];
+    }
+
+    public function subjectMember(): BelongsTo
+    {
+        return $this->belongsTo(FamilyMember::class, 'subject_member_id');
     }
 
     public function routineTemplate(): BelongsTo

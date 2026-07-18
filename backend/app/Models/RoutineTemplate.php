@@ -11,6 +11,7 @@ class RoutineTemplate extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'slug',
         'activity_key',
         'phase',
         'name',
