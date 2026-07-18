@@ -42,7 +42,7 @@
 
 docs の無限増殖を防ぐため、ライフサイクルで置き場所を分ける。
 
-- **恒久層 `docs/` 直下 =「今の正」**: design-principles / design-decisions / architecture / data-model /
+- **恒久層 `docs/` 直下 =「今の正」**: development-plan / design-principles / design-decisions / architecture / data-model /
   api-contract / product-plan / 各 plan / ui 系ガイド。上書き更新し、版番号(-2,-3…)で増やさない。重要な変更は DR に残す。
 - **運用リファレンス `docs/ops/`**: デプロイ手順など繰り返し使う運用文書。
 - **進行中 `docs/wip/`**: 未完のフェーズ runbook・スモーク依頼・実装指示書・バックログなど。完了したら archive へ。
@@ -72,11 +72,12 @@ Webアプリ「くらしリレー」のPoCです。
 ## 作業前に必ず読む資料
 
 1. `docs/product-plan.md`
-2. `docs/architecture.md`
-3. `docs/design-principles.md`
-4. `docs/data-model.md`
-5. `docs/api-contract.md`
-6. 対象タスクの実装指示書(`docs/wip/<機能>/` 配下)
+2. `docs/development-plan.md`
+3. `docs/architecture.md`
+4. `docs/design-principles.md`
+5. `docs/data-model.md`
+6. `docs/api-contract.md`
+7. 対象タスクの実装指示書(`docs/wip/<機能>/` 配下)
 
 ## 採用技術
 
