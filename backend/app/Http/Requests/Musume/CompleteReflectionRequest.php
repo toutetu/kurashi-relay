@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Koekake;
+namespace App\Http\Requests\Musume;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-final class KoekakeTaskIndexRequest extends FormRequest
+final class CompleteReflectionRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -18,8 +18,8 @@ final class KoekakeTaskIndexRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date' => ['nullable', 'date_format:Y-m-d'],
-            'phase' => ['nullable', 'string', Rule::in(['morning', 'evening', 'night', 'anytime'])],
+            'mode' => ['required', 'string', Rule::in(['normal', 'summer'])],
+            'note' => ['nullable', 'string', 'max:200'],
         ];
     }
 }
