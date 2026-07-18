@@ -135,3 +135,41 @@ no_plan_no_record
 
 活動開始、クイック記録、体調変更等はReactのローカル状態だけに反映する。
 更新APIは第2実装で追加する。
+
+# 9. 現行のおしごと保存API
+
+2026-07-19時点では、第2実装として次の更新APIが存在する。
+
+```text
+POST   /api/task-records
+DELETE /api/task-records/{id}
+```
+
+`POST /api/task-records` の成功レスポンスは、報酬の有無にかかわらず同じJSON形を返す。
+報酬が発生しない通常保存でも `data.revealed_reward` を省略せず `null` とする。
+
+```json
+{
+  "status": "success",
+  "data": {
+    "record": {
+      "id": 1,
+      "member": "child",
+      "task": "shokki",
+      "record_date": "2026-07-19",
+      "completed_at": "2026-07-19T19:30:00+09:00",
+      "cancelled_at": null
+    },
+    "summary": {},
+    "revealed_reward": null
+  },
+  "meta": {
+    "timezone": "Asia/Tokyo",
+    "deduplicated": false
+  }
+}
+```
+
+節目報酬が発生したときだけ、`revealed_reward` は
+`type`、`item_slug`、`milestone_number`、`obtained_on` を持つオブジェクトになる。
+同一 `idempotency_key` の再送は同じrecordを返し、`meta.deduplicated` を `true` とする。
