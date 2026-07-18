@@ -1,0 +1,552 @@
+<title>くらしリレー 娘用ホーム(K2モック)</title>
+<style>
+  /* ============ tokens: 昼のラベンダー / よるモード ============ */
+  :root {
+    --ground: #F2EFFA;
+    --card: #FFFFFF;
+    --ink: #3A3260;
+    --ink-soft: #7A72A3;
+    --violet: #8676C4;
+    --violet-deep: #5C4E9C;
+    --peri: #AAB4E8;
+    --rose: #C46A9E;
+    --rose-soft: #F3E2EC;
+    --lace: #E3DCF4;
+    --moon: #E9C76F;
+    --night-a: #2A2450;
+    --night-b: #191434;
+    --sheet-scrim: rgba(42, 36, 80, 0.45);
+    --shadow: 0 6px 24px rgba(92, 78, 156, 0.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #1D1838;
+      --card: #2A2450;
+      --ink: #ECE7FA;
+      --ink-soft: #A99ED6;
+      --violet: #A497DD;
+      --violet-deep: #C4BAF0;
+      --peri: #8A96D8;
+      --rose: #E09AC4;
+      --rose-soft: #4A3059;
+      --lace: #453C77;
+      --moon: #EFD189;
+      --sheet-scrim: rgba(10, 8, 24, 0.6);
+      --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #1D1838; --card: #2A2450; --ink: #ECE7FA; --ink-soft: #A99ED6;
+    --violet: #A497DD; --violet-deep: #C4BAF0; --peri: #8A96D8;
+    --rose: #E09AC4; --rose-soft: #4A3059; --lace: #453C77; --moon: #EFD189;
+    --sheet-scrim: rgba(10, 8, 24, 0.6); --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  }
+  :root[data-theme="light"] {
+    --ground: #F2EFFA; --card: #FFFFFF; --ink: #3A3260; --ink-soft: #7A72A3;
+    --violet: #8676C4; --violet-deep: #5C4E9C; --peri: #AAB4E8;
+    --rose: #C46A9E; --rose-soft: #F3E2EC; --lace: #E3DCF4; --moon: #E9C76F;
+    --sheet-scrim: rgba(42, 36, 80, 0.45); --shadow: 0 6px 24px rgba(92, 78, 156, 0.14);
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Hiragino Maru Gothic ProN", "Zen Maru Gothic", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .phone {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 0 16px 56px;
+  }
+
+  /* ============ レース縁ヘッダー ============ */
+  .lace-edge {
+    height: 18px;
+    margin: 0 -16px;
+    background:
+      radial-gradient(circle at 10px -4px, var(--violet) 12px, transparent 13px) repeat-x;
+    background-size: 22px 18px;
+    opacity: .9;
+  }
+  header.hero { padding: 14px 4px 6px; }
+  .hero-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .hello {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    color: var(--violet-deep);
+    text-wrap: balance;
+  }
+  .hello .moon { display: inline-block; }
+  .date-chip {
+    font-size: .8rem;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .mode-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .mode-toggle {
+    display: inline-flex;
+    border: 1.5px solid var(--lace);
+    border-radius: 999px;
+    background: var(--card);
+    padding: 3px;
+    gap: 2px;
+  }
+  .mode-toggle button {
+    border: 0; background: transparent; color: var(--ink-soft);
+    font: inherit; font-size: .82rem; font-weight: 700;
+    padding: 4px 12px; border-radius: 999px; cursor: pointer;
+  }
+  .mode-toggle button.on { background: var(--violet); color: #fff; }
+  .mode-note { font-size: .74rem; color: var(--ink-soft); }
+
+  /* ============ カード共通 ============ */
+  section.stack { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+  .card {
+    background: var(--card);
+    border: 1.5px solid var(--lace);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+  }
+  .eyebrow {
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    color: var(--violet);
+    margin: 6px 2px 0;
+  }
+  .ribbon-line { display: flex; align-items: center; gap: 8px; }
+  .ribbon-line::after { content: ""; flex: 1; border-top: 1.5px dashed var(--lace); }
+
+  /* 見通し3項目 */
+  .outlook {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; text-align: left;
+    cursor: pointer; font: inherit; color: inherit;
+    background: var(--card); border: 1.5px solid var(--lace);
+    border-radius: 20px; box-shadow: var(--shadow); padding: 14px 16px;
+    transition: transform .12s ease;
+  }
+  .outlook:active { transform: scale(.985); }
+  .outlook:focus-visible, button:focus-visible {
+    outline: 2.5px solid var(--rose); outline-offset: 2px;
+  }
+  .outlook .icon {
+    width: 46px; height: 46px; flex: none;
+    display: grid; place-items: center;
+    font-size: 1.35rem;
+    background: linear-gradient(150deg, var(--rose-soft), var(--ground));
+    border: 1.5px solid var(--lace);
+    border-radius: 15px;
+  }
+  .outlook .txt { flex: 1; min-width: 0; }
+  .outlook .q { font-weight: 800; font-size: 1.02rem; }
+  .outlook .ans { font-size: .8rem; color: var(--ink-soft); margin-top: 2px; }
+  .outlook .ans.decided { color: var(--rose); font-weight: 700; }
+  .outlook .arrow { color: var(--peri); font-weight: 800; }
+
+  /* 振り返り・メモ・おしごと */
+  .row-card { display: flex; align-items: center; gap: 12px; cursor: pointer; width: 100%; text-align: left; font: inherit; color: inherit; }
+  .row-card .icon { font-size: 1.3rem; }
+  .row-card .q { font-weight: 800; }
+  .row-card .sub { font-size: .78rem; color: var(--ink-soft); }
+  .badge-done {
+    font-size: .72rem; font-weight: 700; color: var(--violet-deep);
+    background: var(--rose-soft); border-radius: 999px; padding: 2px 10px;
+    white-space: nowrap;
+  }
+
+  .oshigoto-door {
+    position: relative; overflow: hidden;
+    border: 0; border-radius: 20px; width: 100%; cursor: pointer;
+    background: linear-gradient(160deg, var(--night-a), var(--night-b));
+    color: #EFEAFF; text-align: left; font: inherit;
+    padding: 16px; box-shadow: var(--shadow);
+  }
+  .oshigoto-door .q { font-weight: 800; font-size: 1.05rem; }
+  .oshigoto-door .sub { font-size: .78rem; color: #B8AEE6; margin-top: 2px; }
+  .oshigoto-door .go {
+    display: inline-block; margin-top: 10px;
+    background: var(--moon); color: #3A3260;
+    font-weight: 800; font-size: .85rem;
+    border-radius: 999px; padding: 5px 14px;
+  }
+  .oshigoto-door .crescent {
+    position: absolute; right: 14px; top: 12px;
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--moon);
+    box-shadow: inset 10px -6px 0 4px var(--night-b);
+    transform: rotate(-15deg);
+  }
+  .oshigoto-door .star { position: absolute; font-size: .7rem; opacity: .85; color: #CFC6F2; }
+  .s1 { right: 70px; top: 18px; } .s2 { right: 96px; top: 44px; } .s3 { right: 60px; top: 58px; }
+
+  /* ============ ボトムシート ============ */
+  .scrim {
+    position: fixed; inset: 0; background: var(--sheet-scrim);
+    opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 40;
+  }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    max-width: 420px; margin: 0 auto;
+    background: var(--card);
+    border: 1.5px solid var(--lace); border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 30px rgba(42, 36, 80, .25);
+    padding: 10px 18px calc(18px + env(safe-area-inset-bottom));
+    transform: translateY(105%); transition: transform .25s ease;
+    max-height: 82vh; overflow-y: auto;
+  }
+  body.sheet-open .scrim { opacity: 1; pointer-events: auto; }
+  .sheet.open { transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) {
+    .sheet, .scrim, .outlook { transition: none; }
+  }
+  .sheet .grab { width: 42px; height: 5px; border-radius: 999px; background: var(--lace); margin: 4px auto 10px; }
+  .sheet h2 { font-size: 1.05rem; font-weight: 800; color: var(--violet-deep); margin: 0 0 2px; }
+  .sheet .hint { font-size: .76rem; color: var(--ink-soft); margin-bottom: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+  .chip {
+    border: 1.5px solid var(--lace); background: var(--card); color: var(--ink);
+    font: inherit; font-size: .88rem; font-weight: 700;
+    border-radius: 999px; padding: 7px 14px; cursor: pointer;
+  }
+  .chip.on { background: var(--violet); border-color: var(--violet); color: #fff; }
+  .soft-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .soft-actions button {
+    flex: 1; font: inherit; font-weight: 800; font-size: .9rem;
+    border-radius: 14px; padding: 11px 8px; cursor: pointer;
+  }
+  .btn-mama { border: 1.5px solid var(--rose); background: var(--rose-soft); color: var(--rose); }
+  .btn-later { border: 1.5px solid var(--lace); background: transparent; color: var(--ink-soft); }
+  .btn-save {
+    width: 100%; margin-top: 8px; border: 0; cursor: pointer;
+    background: var(--rose); color: #fff; font: inherit; font-weight: 800; font-size: 1rem;
+    border-radius: 14px; padding: 12px;
+  }
+
+  /* 振り返りチェック */
+  .check-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; }
+  .check-row {
+    display: flex; align-items: center; gap: 10px;
+    border: 1.5px solid var(--lace); border-radius: 14px;
+    background: var(--card); color: var(--ink);
+    padding: 10px 12px; font: inherit; font-weight: 700; font-size: .92rem;
+    cursor: pointer; text-align: left;
+  }
+  .check-row .box {
+    width: 22px; height: 22px; flex: none; border-radius: 8px;
+    border: 2px solid var(--peri); display: grid; place-items: center;
+    color: transparent; font-size: .8rem;
+  }
+  .check-row.on { border-color: var(--violet); background: var(--rose-soft); }
+  .check-row.on .box { background: var(--violet); border-color: var(--violet); color: #fff; }
+  .done-msg {
+    display: none; text-align: center; padding: 8px 0 2px;
+    color: var(--violet-deep); font-weight: 800;
+  }
+  .done-msg .sparkle { letter-spacing: .3em; color: var(--moon); }
+  .sheet.finished .done-msg { display: block; }
+  .sheet.finished .btn-save { display: none; }
+
+  /* メモ */
+  .memo-look {
+    border: 1.5px dashed var(--peri); border-radius: 14px;
+    color: var(--ink-soft); font-size: .85rem; padding: 10px 12px; margin-top: 8px;
+  }
+
+  /* ママ向けメモ */
+  details.note { margin-top: 26px; color: var(--ink-soft); font-size: .8rem; }
+  details.note summary { cursor: pointer; font-weight: 700; color: var(--violet); }
+  details.note ul { margin: 8px 0 0; padding-left: 18px; }
+  details.note li { margin: 4px 0; }
+</style>
+
+<div class="lace-edge" aria-hidden="true"></div>
+<div class="phone">
+  <header class="hero">
+    <div class="hero-row">
+      <div class="hello"><span class="moon">🌙</span> おかえり、あきちゃん</div>
+      <div class="date-chip">7/18(土)</div>
+    </div>
+    <div class="mode-row">
+      <div class="mode-toggle" role="group" aria-label="モード切替">
+        <button type="button" id="mode-summer" class="on">🌻 夏休み</button>
+        <button type="button" id="mode-school">🏫 学校</button>
+      </div>
+      <span class="mode-note" id="mode-note">夏休み 1日目!</span>
+    </div>
+  </header>
+
+  <p class="eyebrow ribbon-line">あしたの じゅんび 🎀</p>
+  <section class="stack" aria-label="見通し3項目">
+    <button type="button" class="outlook" data-sheet="sheet-today">
+      <span class="icon">❤️</span>
+      <span class="txt">
+        <span class="q">いまから何する?</span>
+        <span class="ans" id="ans-today">タップして決めよう</span>
+      </span>
+      <span class="arrow">›</span>
+    </button>
+
+    <button type="button" class="outlook" data-sheet="sheet-items">
+      <span class="icon">🎒</span>
+      <span class="txt">
+        <span class="q">明日 何がいる?</span>
+        <span class="ans" id="ans-items">タップして決めよう</span>
+      </span>
+      <span class="arrow">›</span>
+    </button>
+
+    <button type="button" class="outlook" data-sheet="sheet-when">
+      <span class="icon" id="when-icon">⏰</span>
+      <span class="txt">
+        <span class="q" id="when-q">明日 何時に起きる?</span>
+        <span class="ans" id="ans-when">タップして決めよう</span>
+      </span>
+      <span class="arrow">›</span>
+    </button>
+  </section>
+
+  <p class="eyebrow ribbon-line">よるの おたのしみ 🌙</p>
+  <section class="stack">
+    <button type="button" class="oshigoto-door" data-sheet="">
+      <span class="crescent" aria-hidden="true"></span>
+      <span class="star s1" aria-hidden="true">✦</span>
+      <span class="star s2" aria-hidden="true">✧</span>
+      <span class="star s3" aria-hidden="true">✦</span>
+      <span class="q">よるのハロウィン・ラリー</span>
+      <span class="sub">今日のおしごと、まとめて記録しよう 🧟</span>
+      <span class="go">おしごとへ ›</span>
+    </button>
+
+    <button type="button" class="card row-card" data-sheet="sheet-review">
+      <span class="icon">🔄</span>
+      <span class="txt" style="flex:1">
+        <span class="q">今日の振り返り</span><br>
+        <span class="sub">19時ごろ・ママといっしょに</span>
+      </span>
+      <span class="badge-done" id="review-badge" hidden>できた 🎀</span>
+      <span class="arrow" style="color:var(--peri);font-weight:800">›</span>
+    </button>
+
+    <div class="card">
+      <div class="row-card" style="cursor:default">
+        <span class="icon">⭐</span>
+        <span class="q">メモ・思いついたこと</span>
+      </div>
+      <div class="memo-look">「USJでゾンビに会いたい」とか、なんでも書いてOK</div>
+    </div>
+  </section>
+
+  <details class="note">
+    <summary>デザインメモ(ママ向け)</summary>
+    <ul>
+      <li>主役は見通し3項目(確認済み)。できたこと記録はK3へ。</li>
+      <li>夏休みモードでは3つ目が「明日何時に起きる?」に変わる提案(学校モード=「何時間目から登校?」)。D-05夏休み版の「起きる時刻」をホームに昇格。</li>
+      <li>「ママと決める」「今は決めない」は全シートに常設。未完了の赤表示なし・声かけ回数は娘画面に出さない。</li>
+      <li>おしごと(ハロウィン・ラリー)は入口のみ。世界観は無変更。</li>
+      <li>振り返り完了でママの/koekakeに「確認完了」が届く。</li>
+    </ul>
+  </details>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- D-02 今日すること -->
+<div class="sheet" id="sheet-today" role="dialog" aria-modal="true" aria-label="いまから何する?">
+  <div class="grab"></div>
+  <h2>❤️ いまから何する?</h2>
+  <p class="hint">いくつ選んでもOK。あとから変えてもOK。</p>
+  <div class="chips" data-multi="true">
+    <button type="button" class="chip">夏休みの宿題</button>
+    <button type="button" class="chip">自由研究</button>
+    <button type="button" class="chip">遊ぶ</button>
+    <button type="button" class="chip">休む</button>
+    <button type="button" class="chip">入浴</button>
+    <button type="button" class="chip">その他</button>
+  </div>
+  <div class="soft-actions">
+    <button type="button" class="btn-mama">🎀 ママと決める</button>
+    <button type="button" class="btn-later">今は決めない</button>
+  </div>
+  <button type="button" class="btn-save" data-ans="ans-today">これにする!</button>
+</div>
+
+<!-- D-03 明日必要な物 -->
+<div class="sheet" id="sheet-items" role="dialog" aria-modal="true" aria-label="明日何がいる?">
+  <div class="grab"></div>
+  <h2>🎒 明日 何がいる?</h2>
+  <p class="hint">よく使う物から選べるよ。</p>
+  <div class="chips" data-multi="true">
+    <button type="button" class="chip">水筒</button>
+    <button type="button" class="chip">ぼうし</button>
+    <button type="button" class="chip">宿題</button>
+    <button type="button" class="chip">財布</button>
+    <button type="button" class="chip">ハンカチ</button>
+    <button type="button" class="chip">その他</button>
+  </div>
+  <div class="soft-actions">
+    <button type="button" class="btn-mama">🎀 ママと決める</button>
+    <button type="button" class="btn-later">今は決めない</button>
+  </div>
+  <button type="button" class="btn-save" data-ans="ans-items">これにする!</button>
+</div>
+
+<!-- D-04 起床/登校 -->
+<div class="sheet" id="sheet-when" role="dialog" aria-modal="true" aria-label="明日の予定">
+  <div class="grab"></div>
+  <h2 id="sheet-when-title">⏰ 明日 何時に起きる?</h2>
+  <p class="hint">だいたいでOK。</p>
+  <div class="chips" data-multi="false" id="when-chips-summer">
+    <button type="button" class="chip">7:00</button>
+    <button type="button" class="chip">7:30</button>
+    <button type="button" class="chip">8:00</button>
+    <button type="button" class="chip">8:30</button>
+    <button type="button" class="chip">9:00より あと</button>
+  </div>
+  <div class="chips" data-multi="false" id="when-chips-school" hidden>
+    <button type="button" class="chip">1時間目から</button>
+    <button type="button" class="chip">2時間目から</button>
+    <button type="button" class="chip">3時間目から</button>
+    <button type="button" class="chip">給食から</button>
+    <button type="button" class="chip">午後から</button>
+    <button type="button" class="chip">明日の朝に決める</button>
+    <button type="button" class="chip">休む予定</button>
+  </div>
+  <div class="soft-actions">
+    <button type="button" class="btn-mama">🎀 ママと決める</button>
+    <button type="button" class="btn-later">今は決めない</button>
+  </div>
+  <button type="button" class="btn-save" data-ans="ans-when">これにする!</button>
+</div>
+
+<!-- D-05 19時の振り返り -->
+<div class="sheet" id="sheet-review" role="dialog" aria-modal="true" aria-label="今日の振り返り">
+  <div class="grab"></div>
+  <h2>🔄 明日の予定を いっしょに確認しよう</h2>
+  <p class="hint" id="review-hint">夏休みモード:明日のことを5つだけ。</p>
+  <div class="check-list" id="review-summer">
+    <button type="button" class="check-row"><span class="box">✓</span>外出の予定</button>
+    <button type="button" class="check-row"><span class="box">✓</span>学習(宿題・自由研究)</button>
+    <button type="button" class="check-row"><span class="box">✓</span>休憩・遊び</button>
+    <button type="button" class="check-row"><span class="box">✓</span>必要な物</button>
+    <button type="button" class="check-row"><span class="box">✓</span>起きる時刻</button>
+  </div>
+  <div class="check-list" id="review-school" hidden>
+    <button type="button" class="check-row"><span class="box">✓</span>できたこと</button>
+    <button type="button" class="check-row"><span class="box">✓</span>手伝ってもらったこと</button>
+    <button type="button" class="check-row"><span class="box">✓</span>困ったこと</button>
+    <button type="button" class="check-row"><span class="box">✓</span>明日に回すこと</button>
+    <button type="button" class="check-row"><span class="box">✓</span>明日の予定</button>
+  </div>
+  <button type="button" class="btn-save" id="review-finish">確認おわり!</button>
+  <div class="done-msg">
+    <div class="sparkle">✦ ✧ ✦</div>
+    ママに「確認完了」が届いたよ 🎀
+  </div>
+</div>
+
+<script>
+  const scrim = document.getElementById("scrim");
+  let openSheet = null;
+
+  function open(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add("open");
+    document.body.classList.add("sheet-open");
+    openSheet = el;
+  }
+  function closeSheet() {
+    if (openSheet) openSheet.classList.remove("open");
+    document.body.classList.remove("sheet-open");
+    openSheet = null;
+  }
+  document.querySelectorAll("[data-sheet]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const id = btn.getAttribute("data-sheet");
+      if (id) open(id);
+    });
+  });
+  scrim.addEventListener("click", closeSheet);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
+
+  // chips
+  document.querySelectorAll(".chips").forEach(function (group) {
+    const multi = group.getAttribute("data-multi") === "true";
+    group.querySelectorAll(".chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        if (!multi) group.querySelectorAll(".chip").forEach(function (c) { c.classList.remove("on"); });
+        chip.classList.toggle("on");
+      });
+    });
+  });
+
+  // save selected chips to card
+  document.querySelectorAll(".btn-save[data-ans]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const sheet = btn.closest(".sheet");
+      const picked = Array.prototype.map.call(
+        sheet.querySelectorAll(".chips:not([hidden]) .chip.on"),
+        function (c) { return c.textContent; }
+      );
+      const ans = document.getElementById(btn.getAttribute("data-ans"));
+      if (picked.length) { ans.textContent = picked.join("・"); ans.classList.add("decided"); }
+      closeSheet();
+    });
+  });
+
+  // ママと決める / 今は決めない
+  document.querySelectorAll(".btn-mama").forEach(function (b) {
+    b.addEventListener("click", function () {
+      const sheet = b.closest(".sheet");
+      const saveBtn = sheet.querySelector(".btn-save[data-ans]");
+      if (saveBtn) {
+        const ans = document.getElementById(saveBtn.getAttribute("data-ans"));
+        ans.textContent = "🎀 ママと決める"; ans.classList.add("decided");
+      }
+      closeSheet();
+    });
+  });
+  document.querySelectorAll(".btn-later").forEach(function (b) {
+    b.addEventListener("click", closeSheet);
+  });
+
+  // 振り返り
+  document.querySelectorAll(".check-row").forEach(function (row) {
+    row.addEventListener("click", function () { row.classList.toggle("on"); });
+  });
+  document.getElementById("review-finish").addEventListener("click", function () {
+    const sheet = document.getElementById("sheet-review");
+    sheet.classList.add("finished");
+    document.getElementById("review-badge").hidden = false;
+    setTimeout(closeSheet, 1600);
+  });
+
+  // モード切替
+  const btnSummer = document.getElementById("mode-summer");
+  const btnSchool = document.getElementById("mode-school");
+  function setMode(summer) {
+    btnSummer.classList.toggle("on", summer);
+    btnSchool.classList.toggle("on", !summer);
+    document.getElementById("mode-note").textContent = summer ? "夏休み 1日目!" : "";
+    document.getElementById("when-icon").textContent = summer ? "⏰" : "🕒";
+    document.getElementById("when-q").textContent = summer ? "明日 何時に起きる?" : "明日 何時間目から登校?";
+    document.getElementById("sheet-when-title").textContent = summer ? "⏰ 明日 何時に起きる?" : "🕒 明日 何時間目から登校?";
+    document.getElementById("when-chips-summer").hidden = !summer;
+    document.getElementById("when-chips-school").hidden = summer;
+    document.getElementById("review-summer").hidden = !summer;
+    document.getElementById("review-school").hidden = summer;
+    document.getElementById("review-hint").textContent = summer ? "夏休みモード:明日のことを5つだけ。" : "今日のことをいっしょに確認しよう。";
+    document.querySelector("#sheet-review h2").textContent = summer ? "🔄 明日の予定を いっしょに確認しよう" : "🔄 今日のことを いっしょに確認しよう";
+    const ans = document.getElementById("ans-when");
+    ans.textContent = "タップして決めよう"; ans.classList.remove("decided");
+  }
+  btnSummer.addEventListener("click", function () { setMode(true); });
+  btnSchool.addEventListener("click", function () { setMode(false); });
+</script>
