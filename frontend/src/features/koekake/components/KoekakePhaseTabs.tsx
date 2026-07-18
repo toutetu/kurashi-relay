@@ -34,7 +34,8 @@ export function KoekakePhaseTabs({
     <div
       role="tablist"
       aria-label={label}
-      className="mb-4 grid grid-cols-3 gap-1 rounded-2xl border border-[var(--border)] bg-white/85 p-1"
+      className="mb-4 grid gap-1 rounded-2xl border border-[var(--border)] bg-white/85 p-1"
+      style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
     >
       {tabs.map((tab, index) => {
         const selected = tab.value === value;
