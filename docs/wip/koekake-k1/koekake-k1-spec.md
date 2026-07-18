@@ -497,7 +497,14 @@ php artisan db:seed --class=KoekakeSeeder --force
   モックは作らずスペック直行(計画§5-4)。
 - 娘側画面(既存 `/oshigoto` 等)には声かけ回数を一切出さない(基本設計§15。K1は画面分離で担保)。
 
-## 8. フロントエンドの完了条件(DR-017: vitest+MSW で契約検証)
+## 8. フロントエンドの完了条件(DR-017: vitest で契約検証)
+
+> **テスト方式の確定(2026-07-18・Fable判断)**: DR-017 と当初スペックは「vitest+MSW」と記したが、
+> **本プロジェクトの既存テストは MSW を導入しておらず、`vi.fn<typeof fetch>()` による fetch モック方式**
+> で契約検証している(`features/oshigoto/OshigotoPersistence.test.tsx`)。koekake も**既存慣習に合わせ
+> fetch モック方式**を採用する(バックエンドで Pest→PHPUnit に合わせたのと同じ「既存の枠組みに従う」判断)。
+> MSW の新規導入はしない。これは承認済みの逸脱であり、以後 DR-017/AGENTS.md の「vitest+MSW」表記は
+> 「vitest(fetch モック)」と読み替える。
 
 `src/features/koekake/` にテストを作成し全緑(参考: `features/oshigoto/OshigotoPersistence.test.tsx`)。最低限:
 
@@ -512,6 +519,22 @@ php artisan db:seed --class=KoekakeSeeder --force
 
 品質確認(実装者がローカルで実行): `npm run lint` / `npm run typecheck` / `npm run test` / `npm run build`
 実機確認はリリース前にユーザーが1回(Fableはブラウザを駆動しない)。
+
+### 8-1. K1マージ時点の残課題(バックログ・ユーザー判断 2026-07-18 = 今マージ+後日対応)
+
+Codexフロントレビュー3周で大半の指摘は解消。以下2点のみ低実害のためバックログ化して先にマージ(DR-016)。
+実機テストで実害が出たら着手する。
+
+1. **取消後の再取得失敗+即再押下で古い推奨文を1件送る(3次エッジ)**: cancel成功後の一覧invalidateは
+   await済みだが、その**再取得GET自体が失敗**すると TanStack Query 既定で失敗を握りつぶして解決するため、
+   古いキャッシュの `suggested_prompt` が残り、直後に再押下すると古い level の文を送りうる。
+   回数はサーバ正・記録は詳細画面から削除可。**堅牢化案**: cancel の invalidate を `throwOnError: true` に
+   するか、再取得失敗時は対象タスクの声かけ操作をブロック継続。GET失敗の回帰テストも追加。
+   より根本的には**バックエンドの DELETE 応答に `suggested_prompt` を含める**(POSTと対称化。要BE小改修+再デプロイ)。
+2. **Undoタイマー競合テストの穴**: 実装(押下時タイマー停止・DELETE解決まで表示継続・失敗時再試行)は
+   正しく解消済みだが、テストが `vi.useFakeTimers()` を**トーストの実タイマー生成後**に開始しているため、
+   停止処理が無くても通り得る(テスト品質のみ・コードのバグではない)。fake timers をトースト生成前から
+   有効にして検証を厳密化する。
 
 ---
 
