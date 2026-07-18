@@ -59,6 +59,23 @@ class KoekakeTaskTest extends TestCase
         $this->assertSame($activeCount, DailyTask::query()->where('task_date', '2026-07-18')->count());
     }
 
+    public function test_scheduled_at_keeps_the_seeded_jst_clock_time(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
+
+        $this->getJson('/api/koekake/tasks?date=2026-07-18&phase=morning')
+            ->assertOk()
+            ->assertJsonPath('tasks.0.name', '起床')
+            ->assertJsonPath('tasks.0.scheduled_at', '2026-07-18T07:00:00+09:00');
+
+        $wakeUpTask = DailyTask::query()
+            ->where('task_date', '2026-07-18')
+            ->where('name', '起床')
+            ->firstOrFail();
+
+        $this->assertSame('2026-07-17T22:00:00+00:00', $wakeUpTask->scheduled_at->toIso8601String());
+    }
+
     public function test_inactive_routine_template_is_not_generated(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));

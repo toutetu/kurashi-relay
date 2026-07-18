@@ -210,6 +210,6 @@ final class KoekakeTaskService
 
         $time = substr($defaultTime, 0, 5);
 
-        return CarbonImmutable::parse($taskDate.' '.$time, JstDate::TIMEZONE);
+        return CarbonImmutable::parse($taskDate.' '.$time, JstDate::TIMEZONE)->utc();
     }
 }
