@@ -1,11 +1,11 @@
 # くらしリレー
 ## データモデル設計（現在の正）
 
-更新日: 2026-07-18
+更新日: 2026-07-19
 
 この文書は、現在のDBと今後の統合先を示す恒久ドキュメントである。
 実装手順は `docs/wip/database-unification/implementation-plan.md`、設計判断は
-`docs/design-decisions.md` の DR-023 / DR-024 を参照する。
+`docs/design-decisions.md` の DR-023 / DR-024 / DR-027 を参照する。
 
 ## 1. 前提
 
@@ -52,47 +52,79 @@
 ## 3. 統合後の全体像
 
 ```mermaid
-flowchart LR
-    FM["family_members<br/>人物"]
-    AD["activity_definitions<br/>活動マスタ"]
+flowchart TB
+    subgraph INPUT["1タップ入力"]
+        MQ["母の画面<br/>声かけ・支援・家事・送迎"]
+        DQ["娘の画面<br/>おしごと・活動完了"]
+    end
+
+    subgraph MASTER["マスタ"]
+        FM["family_members<br/>私・娘"]
+        AD["activity_definitions<br/>活動マスタ"]
+    end
+
+    subgraph CORE["出来事の中心"]
+        AE["activity_events<br/>いつ・何が起きたか"]
+        AEP["activity_event_participants<br/>誰がどう関わったか"]
+    end
+
+    subgraph DETAILS["該当するときだけ存在する従属行"]
+        AO["activity_event_outcomes<br/>完了・一部・延期等の結果"]
+        PE["prompt_events<br/>声かけ回数・文面"]
+        AEC["activity_event_cancellations<br/>取消履歴"]
+        PAL["plan_actual_links<br/>予定との対応"]
+        RTx["reward_transactions<br/>ポイント台帳"]
+    end
+
     RT["routine_templates<br/>日常ルーチン"]
     PA["planned_activities<br/>予定"]
-    AE["activity_events<br/>実績・完了イベント"]
-    PE["prompt_events<br/>声かけ履歴"]
     RS["reminder_schedules<br/>再通知履歴"]
-    RTx["reward_transactions<br/>ポイント台帳"]
     DP["daily_plans<br/>娘の日次見通し"]
     PAV["plan_answer_versions<br/>回答履歴"]
     CE["calendar_events / versions<br/>Google Calendar取込"]
-    PAL["plan_actual_links<br/>予定と実績の対応"]
     SI["schedule_impacts<br/>遅延・中断・回復等の影響"]
+    MT["私のタイムライン"]
+    DT["娘のタイムライン"]
+
+    MQ -->|"1タップで1件"| AE
+    DQ -->|"1タップで1件"| AE
+    AD --> AE
+    FM -->|"入力者"| AE
+    AE -->|"1件以上"| AEP
+    FM --> AEP
+    AE -->|"活動結果がある場合"| AO
+    AE -->|"声かけの場合"| PE
+    AE -->|"取消した場合"| AEC
+    AE -->|"報酬がある場合"| RTx
+    AEP -->|"member=私"| MT
+    AEP -->|"member=娘"| DT
 
     FM --> RT
     FM --> PA
-    FM --> AE
     AD --> RT
     RT --> PA
-    PA --> PE
     PA --> RS
-    PA --> AE
-    AE --> RTx
     FM --> DP
     DP --> PAV
     PAV -. "必要な回答だけ予定化" .-> PA
     CE --> PA
     PA --> PAL
     AE --> PAL
-    PAL --> SI
+    PA --> SI
+    AE -. "原因となった出来事" .-> SI
 ```
 
 統合の中心は次の3層とする。
 
 1. `activity_definitions`: 何の活動か
-2. `planned_activities`: いつ・誰が・何をする予定か
-3. `activity_events`: 実際に何が起きたか
+2. `activity_events`: いつ、何が起きたか
+3. `activity_event_participants`: 誰が、どの役割で関わったか
 
-声かけは活動実績と混ぜず、`prompt_events` として予定へ関連付ける。
-ポイントは活動実績そのものへ持たせず、`reward_transactions` から導出する。
+`planned_activities` は予定の正本だが、実際の出来事に対する任意の文脈であり、
+`plan_actual_links` が存在するときだけ関連付ける。
+声かけは `activity_events` に共通ヘッダーを記録し、回数・文面等の固有情報だけを
+`prompt_events` に1対1で記録する。活動結果・取消も該当時だけ従属行を作る。
+ポイントは出来事そのものへ持たせず、`reward_transactions` から導出する。
 
 ## 4. 人物
 
@@ -207,57 +239,137 @@ flowchart LR
 - `phase`、`name`、`icon`、`scheduled_at` は当時表示された内容のスナップショットとして残してよい。
 - `status`、`prompt_count`、`latest_prompt_at` は正本にしない。
 
-## 7. 実績・完了履歴
+## 7. 出来事・人物参加・活動結果
 
-### 7.1 `activity_events`（新規・正本）
+### 7.1 `activity_events`（新規・出来事の正本）
 
-おしごとのタップ記録と声かけ側の完了結果を統合する。声かけ履歴自体は統合しない。
+母のクイック記録、娘のおしごと、声かけ、支援、家事など、実際に起きたことを
+「いつ・何が起きたか」という共通ヘッダーで記録する。人物の役割、活動結果、予定との対応、
+取消は本体へnullable列を追加せず、該当するときだけ従属行を作る。
 
 - id
-- planned_activity_id FK nullable
-- activity_definition_id FK
-- subject_member_id FK
-- performed_by_member_id FK nullable
-- recorded_by_member_id FK nullable
-- result: `completed | partial | together | parent_done | deferred | unknown`
-- started_at nullable
-- ended_at nullable
+- activity_definition_id FK -> activity_definitions
+- event_type: `activity | prompt | support`
 - occurred_at
-- source: `oshigoto | koekake | manual | calendar_match | import`
+- recorded_by_member_id FK -> family_members
+- source: `mother_quick | daughter_task | oshigoto | koekake | manual | import`
 - idempotency_key
-- note nullable
-- supersedes_event_id FK nullable
-- cancelled_at nullable
 - created_at
 - updated_at
 
 制約:
 
+- 上記の業務列は全て NOT NULL
+- `event_type` CHECK
 - `idempotency_key` UNIQUE
-- `ended_at IS NULL OR started_at IS NULL OR ended_at >= started_at`
-- `cancelled_at IS NULL OR cancelled_at >= occurred_at`
-- 訂正は既存行の上書きではなく、新しい行を追加して `supersedes_event_id` で結ぶ。
-- 取消は物理削除せず `cancelled_at` を記録する。
+- 1イベントの作成時に、少なくとも1件の `activity_event_participants` を同一トランザクションで追加する。
+- 1タップは1イベントとし、連打した回数だけ別イベントを追記する。
+- 記録済みイベントを物理削除・業務内容の上書きで訂正しない。
 
-### 7.2 既存完了テーブルの移行
+### 7.2 `activity_event_participants`（新規・人物参加の正本）
 
-- `task_records` は `activity_events` へバックフィルする。
-- `completion_events` も `activity_events` へバックフィルする。
-- 新規書き込みを `activity_events` へ切り替えた後、旧APIは互換アダプターとして残す。
+1つの出来事に誰がどの役割で関わったかを記録する。同じ出来事を母用・娘用に複製せず、
+参加行を基準に両方のタイムラインへ表示する。
+
+- id
+- activity_event_id FK -> activity_events
+- family_member_id FK -> family_members
+- role: `actor | supporter | target`
+- created_at
+
+制約:
+
+- 全列 NOT NULL
+- `role` CHECK
+- UNIQUE (`activity_event_id`, `family_member_id`, `role`)
+- 各イベントに `actor` を1件以上持つことをアプリ層とテストで保証する。
+- `recorded_by_member_id` はアプリへ入力した人、参加行は生活上で関わった人として区別する。
+
+代表例:
+
+| 出来事 | `event_type` | 参加者 |
+|---|---|---|
+| 母が娘へ起床の声かけ | `prompt` | 母=`actor`、娘=`target` |
+| 母が娘の持ち物準備を支援 | `support` | 母=`actor`、娘=`target` |
+| 娘が持ち物を確認 | `activity` | 娘=`actor` |
+| 娘が準備し、母が同時に支援 | `activity` | 娘=`actor`、母=`supporter` |
+| 母が家事を実施 | `activity` | 母=`actor` |
+
+### 7.3 `activity_event_outcomes`（新規・活動結果）
+
+完了・一部・延期等の結果があるイベントにだけ1行作る。声かけや支援を記録しただけの場合は
+結果行を作らず、`activity_events.result=NULL` のような表現はしない。
+
+- activity_event_id PK / FK -> activity_events
+- result: `completed | partial | deferred | unknown`
+- created_at
+
+制約:
+
+- 全列 NOT NULL
+- `result` CHECK
+- `activity_events.event_type='activity'` との整合をアプリ層とテストで保証する。
+- 「一緒にした」「母が代行した」は結果値にせず、参加者の役割から表現する。
+
+### 7.4 `activity_event_cancellations`（新規・取消履歴）
+
+取消時だけ1行を追加し、元イベントと参加行・固有情報を削除しない。
+
+- activity_event_id PK / FK -> activity_events
+- cancelled_at
+- cancelled_by_member_id FK -> family_members
+- created_at
+
+制約:
+
+- 全列 NOT NULL
+- `cancelled_at >= activity_events.occurred_at`
+- 取消済みイベントは通常集計から除外するが、履歴画面では復元可能にする。
+
+### 7.5 訂正と任意メモ
+
+- 訂正は元イベントを取り消して新しいイベントを追記し、両方を履歴に残す。
+- 任意メモが必要になった場合は `activity_event_notes` の従属行として追加し、
+  出来事ヘッダーへnullable `note` 列を置かない。
+
+### 7.6 既存記録テーブルの移行
+
+- `task_records` は `activity_events`、`activity_event_participants`、必要な結果・報酬行へバックフィルする。
+- `completion_events` は `activity_events`、参加行、`activity_event_outcomes` へバックフィルする。
+- 既存 `prompt_events` は次節の固有情報を残し、各行に対応する `activity_events` と参加行を作る。
+- 過去データで入力者・実行者を直接保持していないものは、既存画面の利用者と状態値から移行規則を明示して補完し、
+  `source='import'` で推定移行であることを識別できるようにする。
+- 新規書き込みを共通イベントへ切り替えた後、旧APIは互換アダプターとして残す。
 - 比較期間を設け、件数・日時・ポイント集計が一致してから旧テーブルへの書き込みを停止する。
 - 旧テーブルの削除は別フェーズとし、同じリリースで行わない。
 
 ## 8. 声かけとリマインダー
 
-### 8.1 `prompt_events`（既存・継続）
+### 8.1 `prompt_events`（既存・声かけ固有情報へ変更）
 
-声かけは支援行為の履歴であり、活動完了とは分離する。
+声かけも実際に起きた出来事なので、共通情報と人物参加は `activity_events` /
+`activity_event_participants` を正本とする。`prompt_events` は声かけにだけ必要な情報を1対1で保持する。
 
-- `daily_task_id` に加え `planned_activity_id` を追加する。
-- `performed_by_member_id` と `recorded_by_member_id` を追加し、声をかけた人と入力した人を区別できるようにする。
-- 既存の `prompted_at`、`prompt_text`、`source`、`idempotency_key`、`cancelled_at` を維持する。
-- `prompt_count` は非取消イベントの件数から導出する。
-- `latest_prompt_at` は非取消イベントの最大日時から導出する。
+- activity_event_id PK / FK -> activity_events
+- prompt_order
+- prompt_text
+- prompt_level
+- created_at
+
+制約:
+
+- 全列 NOT NULL
+- `prompt_order > 0`
+- `prompt_level BETWEEN 1 AND 3`
+- `activity_events.event_type='prompt'` との整合をアプリ層とテストで保証する。
+- 1回目・2回目・3回目はそれぞれ別の `activity_events` / `prompt_events` として追記する。
+- `prompt_order` は予定または対象活動ごとに数える。起床5回・着替え3回なら合計8イベントとなる。
+- 日時・入力者・冪等キーは `activity_events`、声をかけた人・対象者は参加行、取消は
+  `activity_event_cancellations` を正本とする。
+- `prompt_count` は非取消の `event_type='prompt'` イベント件数から導出する。
+- `latest_prompt_at` は同イベントの `occurred_at` 最大値から導出する。
+
+移行期間中は既存列と `daily_task_id` を互換用に残してよいが、新しい正本への書き込み・比較完了後に廃止する。
 
 ### 8.2 `prompt_templates`（既存・強化）
 
@@ -444,24 +556,27 @@ flowchart LR
 最新のCalendar版から `planned_activities` を作成・更新する。Calendarの内容を直接
 `activity_events` へ保存しない。
 
-## 12. 予定と実績の突き合わせ
+## 12. 予定と出来事の突き合わせ
 
 ### 12.1 `plan_actual_links`（新規）
 
-予定と実績は1対1とは限らないため、中間テーブルで関連付ける。
+予定と出来事は1対1とは限らないため、中間テーブルで関連付ける。
+同じ持ち物準備予定に、7時の母の支援と7時30分の娘の実施を別イベントとして接続できる。
+予定と無関係な出来事ではリンク行を作らず、出来事本体にnullable予定FKを持たせない。
 
 - id
 - planned_activity_id FK
 - activity_event_id FK
-- link_type: `primary | partial | interruption | cause`
+- link_type: `primary | prompt | support | partial | interruption | cause`
 - matched_by: `automatic | manual`
-- confidence nullable
+- confidence
 - created_at
 
 制約:
 
 - UNIQUE (`planned_activity_id`, `activity_event_id`, `link_type`)
-- `confidence IS NULL OR confidence BETWEEN 0 AND 100`
+- `confidence BETWEEN 0 AND 100`
+- 手動対応は `confidence=100` とする。
 
 ### 12.2 `schedule_impacts`（新規）
 
@@ -486,9 +601,9 @@ flowchart LR
 
 | 現在の列 | 正本 | 方針 |
 |---|---|---|
-| `daily_tasks.prompt_count` | 非取消 `prompt_events` の件数 | APIで集計。移行後に列削除 |
-| `daily_tasks.latest_prompt_at` | 非取消 `prompt_events.prompted_at` の最大値 | APIで集計。移行後に列削除 |
-| `daily_tasks.status` | 最新の有効な `activity_events.result` | APIで導出。移行後に列削除 |
+| `daily_tasks.prompt_count` | 非取消の `event_type='prompt'` イベント件数 | APIで集計。移行後に列削除 |
+| `daily_tasks.latest_prompt_at` | 同イベントの `activity_events.occurred_at` 最大値 | APIで集計。移行後に列削除 |
+| `daily_tasks.status` | 予定に対応する最新の有効な `activity_event_outcomes.result` | APIで導出。移行後に列削除 |
 | `daily_plans.review_completed_at` | 最新の完了 `reflection_sessions.completed_at` | APIで導出。移行後に列削除 |
 
 次は履歴スナップショットなので残す。
@@ -504,6 +619,8 @@ flowchart LR
 
 - 変更しやすさを優先し、PostgreSQLのネイティブENUMではなく `string + CHECK` を使う。
 - 必須値は `NOT NULL`。
+- 常に存在しない役割・結果・予定対応・取消はnullable列で表さず、必要な場合だけ従属行を追加する。
+- `activity_events` は必須の出来事ヘッダーだけを持ち、人物参加・結果・声かけ・取消・予定対応の正本を重複させない。
 - 数値範囲・日時順序・状態値をCHECK制約で守る。
 - 外部キー削除動作を全て明示する。
   - マスタ・履歴: `RESTRICT`
@@ -529,4 +646,5 @@ flowchart LR
 ## 16. 実装順
 
 実際の移行順、バックフィル、互換期間、検証条件は
-`docs/wip/database-unification/implementation-plan.md` を正とする。
+`docs/wip/database-unification/implementation-plan.md` をDR-027に合わせて改訂してから実装する。
+改訂までの間、同計画と本書が矛盾する箇所は本書とDR-027を優先する。
