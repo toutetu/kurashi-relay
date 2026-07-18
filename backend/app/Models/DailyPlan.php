@@ -16,9 +16,7 @@ class DailyPlan extends Model
         'mode',
         'school_start_period',
         'wake_up_time',
-        'today_state',
-        'tomorrow_items_state',
-        'start_state',
+        'start_decided_with',
         'review_completed_at',
     ];
 

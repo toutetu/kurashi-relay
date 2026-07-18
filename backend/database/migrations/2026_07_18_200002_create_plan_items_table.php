@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('category', 20);
             $table->string('title', 100);
             $table->string('status', 20)->default('planned');
+            $table->string('decided_with', 10)->nullable();
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestampsTz();
 

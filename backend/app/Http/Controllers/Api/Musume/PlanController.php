@@ -36,6 +36,7 @@ final class PlanController extends Controller
             $id,
             $request->validated('category'),
             $request->validated('titles'),
+            $request->validated('decided_with'),
         ));
     }
 

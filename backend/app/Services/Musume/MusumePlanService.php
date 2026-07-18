@@ -39,21 +39,20 @@ final class MusumePlanService
                 'mode',
                 'school_start_period',
                 'wake_up_time',
-                'today_state',
-                'tomorrow_items_state',
-                'start_state',
+                'start_decided_with',
             ]));
-
-            if (array_key_exists('school_start_period', $updates) && $updates['school_start_period'] !== null) {
-                $updates['start_state'] = 'decided';
-            }
-
-            if (array_key_exists('wake_up_time', $updates) && $updates['wake_up_time'] !== null) {
-                $updates['start_state'] = 'decided';
-            }
 
             if ($updates !== []) {
                 $plan->update($updates);
+                $plan->refresh();
+            }
+
+            $baseline = $plan->mode === 'summer'
+                ? $plan->wake_up_time
+                : $plan->school_start_period;
+
+            if ($baseline === null && $plan->start_decided_with !== null) {
+                $plan->update(['start_decided_with' => null]);
             }
 
             return $this->formatPlanResponse($this->reloadPlan($plan));
@@ -64,9 +63,9 @@ final class MusumePlanService
      * @param  list<string>  $titles
      * @return array{plan: array<string, mixed>}
      */
-    public function replaceItems(int $planId, string $category, array $titles): array
+    public function replaceItems(int $planId, string $category, array $titles, ?string $decidedWith = null): array
     {
-        return DB::transaction(function () use ($planId, $category, $titles): array {
+        return DB::transaction(function () use ($planId, $category, $titles, $decidedWith): array {
             $plan = DailyPlan::query()->lockForUpdate()->findOrFail($planId);
 
             PlanItem::query()
@@ -80,17 +79,8 @@ final class MusumePlanService
                     'category' => $category,
                     'title' => $title,
                     'status' => 'planned',
+                    'decided_with' => $decidedWith,
                     'sort_order' => $sortOrder,
-                ]);
-            }
-
-            if ($category === 'today_task') {
-                $plan->update([
-                    'today_state' => $titles === [] ? 'undecided' : 'decided',
-                ]);
-            } elseif ($category === 'tomorrow_item') {
-                $plan->update([
-                    'tomorrow_items_state' => $titles === [] ? 'undecided' : 'decided',
                 ]);
             }
 
@@ -148,12 +138,16 @@ final class MusumePlanService
             'summary' => [
                 'mode' => $plan->mode,
                 'today_tasks' => $this->titlesForCategory($itemsByCategory, 'today_task'),
+                'tomorrow_plans' => $this->titlesForCategory($itemsByCategory, 'tomorrow_plan'),
                 'tomorrow_items' => $this->titlesForCategory($itemsByCategory, 'tomorrow_item'),
                 'wake_up_time' => $this->formatWakeUpTime($plan->wake_up_time),
                 'school_start_period' => $plan->school_start_period,
-                'today_state' => $plan->today_state,
-                'tomorrow_items_state' => $plan->tomorrow_items_state,
-                'start_state' => $plan->start_state,
+                'decided_with' => [
+                    'today' => $this->decidedWithForCategory($itemsByCategory, 'today_task'),
+                    'tomorrow_plan' => $this->decidedWithForCategory($itemsByCategory, 'tomorrow_plan'),
+                    'tomorrow_item' => $this->decidedWithForCategory($itemsByCategory, 'tomorrow_item'),
+                    'start' => $plan->start_decided_with,
+                ],
                 'review_completed_at' => $plan->review_completed_at !== null
                   ? $this->formatDateTime($plan->review_completed_at)
                   : null,
@@ -177,9 +171,6 @@ final class MusumePlanService
         DailyPlan::query()->insertOrIgnore([
             'plan_date' => $planDate,
             'mode' => $mode,
-            'today_state' => 'undecided',
-            'tomorrow_items_state' => 'undecided',
-            'start_state' => 'undecided',
             'created_at' => now('UTC'),
             'updated_at' => now('UTC'),
         ]);
@@ -218,12 +209,11 @@ final class MusumePlanService
                 'mode' => $plan->mode,
                 'school_start_period' => $plan->school_start_period,
                 'wake_up_time' => $this->formatWakeUpTime($plan->wake_up_time),
-                'today_state' => $plan->today_state,
-                'tomorrow_items_state' => $plan->tomorrow_items_state,
-                'start_state' => $plan->start_state,
+                'start_decided_with' => $plan->start_decided_with,
                 'review' => $this->formatReview($plan),
                 'items' => [
                     'today_task' => $this->formatItems($itemsByCategory, 'today_task'),
+                    'tomorrow_plan' => $this->formatItems($itemsByCategory, 'tomorrow_plan'),
                     'tomorrow_item' => $this->formatItems($itemsByCategory, 'tomorrow_item'),
                     'memo' => $this->formatItems($itemsByCategory, 'memo'),
                 ],
@@ -262,7 +252,7 @@ final class MusumePlanService
 
     /**
      * @param  Collection<string, Collection<int, PlanItem>>  $itemsByCategory
-     * @return list<array{id: int, title: string, sort_order: int}>
+     * @return list<array{id: int, title: string, sort_order: int, decided_with: string|null}>
      */
     private function formatItems(Collection $itemsByCategory, string $category): array
     {
@@ -271,6 +261,7 @@ final class MusumePlanService
                 'id' => $item->id,
                 'title' => $item->title,
                 'sort_order' => $item->sort_order,
+                'decided_with' => $item->decided_with,
             ])
             ->values()
             ->all();
@@ -285,6 +276,16 @@ final class MusumePlanService
         return ($itemsByCategory->get($category) ?? collect())
             ->pluck('title')
             ->all();
+    }
+
+    /**
+     * @param  Collection<string, Collection<int, PlanItem>>  $itemsByCategory
+     */
+    private function decidedWithForCategory(Collection $itemsByCategory, string $category): ?string
+    {
+        $first = ($itemsByCategory->get($category) ?? collect())->first();
+
+        return $first instanceof PlanItem ? $first->decided_with : null;
     }
 
     private function formatWakeUpTime(mixed $wakeUpTime): ?string
