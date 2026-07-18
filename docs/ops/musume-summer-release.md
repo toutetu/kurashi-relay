@@ -1,15 +1,11 @@
 # 手順書: 夏休み対応リリース(2026-07-18)
 
-対象リリース: PR #27(バックエンド)+ PR #28(フロント)+ スキーマ差分修正PR(後述)。
-DR-021(決定状態カラム廃止)と **DR-022(差分ALTERへの方針転換)** を反映したもの。
-
-> **この手順書は 2026-07-18 に全面改訂した。**
-> 旧版は `php artisan migrate:fresh --force` を指示していたが、これは**実行してはいけない**。
-> 理由は次節。旧版を見て作業しないこと(ファイル名も `musume-summer-migrate-fresh.md` から改名済み)。
+対象リリース: PR #27(バックエンド)+ PR #28(フロント)。
+DR-021(決定状態カラム廃止)と **DR-022(なぜ本番に反映されていなかったか)** を反映したもの。
 
 ## 現状(2026-07-18 実測)
 
-本番の `php artisan migrate:status` の結果:
+**PR #27/#28 をマージしただけでは本番に反映されていない。** 本番の `migrate:status`:
 
 ```
 2026_07_18_200001_create_daily_plans_table ......................... [2] Ran
@@ -28,95 +24,113 @@ DR-021(決定状態カラム廃止)と **DR-022(差分ALTERへの方針転換)**
 
 **夏休み機能は本番で動いていないが、エラーとして見えない。**
 APIリソースは存在しないカラムを `null` で返すため、curl では「まだ誰も使っていない正常な状態」と
-区別がつかない。実際に落ちるのは「🎀 ママと決めた」を押したときの**書き込みだけ**。
+区別がつかない。旧列は `NOT NULL DEFAULT 'undecided'` なので INSERT も通ってしまう。
+実際に落ちるのは「🎀 ママと決めた」を押したときの**書き込みだけ**。
 
-`/api/musume/plan` が `start_decided_with: null`・`decided_with: null` を返していても
-**正常の証拠にならない**。判定は `migrate:status` のバッチ番号で行うこと。
+> `/api/musume/plan` が `start_decided_with: null`・`decided_with: null` を返していても
+> **正常の証拠にならない**。判定は `migrate:status` の**バッチ番号**で行うこと。
+> fresh 済みなら全マイグレーションがバッチ[1]に揃う。分かれていれば fresh は走っていない。
 
-### なぜ `migrate:fresh` を使わないか
+## 消えるデータの確認(実施済み)
 
-1. **本番に実データがある。** 2026-07-18 時点で娘さんの見通し(入浴 / 英語の宿題 / 夏休みの宿題)と
-   持ち物(水筒)が入っている。fresh は全部消す。
-2. **DR-013 は「実運用開始をもって終了する」と自ら定めていた。** 運用は始まっている。
+`migrate:fresh` は**同じDBの全テーブル**を作り直す。2026-07-18 に実測した中身:
 
-→ 差分ALTERマイグレーションを1本追加し、**通常の `migrate --force`** で当てる(DR-022)。
+| 対象 | 実データ | 判定 |
+|---|---|---|
+| おしごと(child) | `lifetime_count` 0 / コレクション0 / コイン0 | 失うものなし |
+| おしごと(mother) | `lifetime_count` 0 / コレクション0 / ポイント0 | 失うものなし |
+| 声かけ | タスク22件はすべてシード由来・`prompt_events` 0件 | 再シードで復元 |
+| 娘の見通し | **今日の4件**(入浴 / 英語の宿題 / 夏休みの宿題 / 水筒) | **消える(ユーザー承認済み)** |
 
-## 手順
+**ゾンビ図鑑の蓄積はゼロ**。ここに蓄積があれば fresh は選べなかった(DR-012 で娘のモチベーションの核と
+位置づけたもの)。次回以降のリリースでは**同じ確認を必ず先にやること**。確認コマンドは末尾に記載。
 
-### 1. スキーマ差分PRをマージする
+## 手順(Laravel Cloud ダッシュボード)
 
-`fix/musume-summer-migration` ブランチ(実装指示書:
-`docs/wip/musume-summer/cursor-request-migration-fix.md`)。
-追加されるのは `2026_07_18_210001_align_musume_plan_decided_with_columns` 1本。
+1. Laravel Cloud にログインし、対象アプリ(Singapore リージョンの API)を開く
+2. 最新デプロイが **`c1863b2` 以降**のコミットで完了していることを確認する
+   (PR #27・#28 がマージ済みであること)
+3. **Commands** から次を実行する
 
-Codex レビュー合格 → マージ → Laravel Cloud のデプロイ完了を待つ。
+   ```
+   php artisan migrate:fresh --force
+   ```
 
-### 2. マイグレーションを当てる(Laravel Cloud Commands)
+   `--force` は本番で確認プロンプトを飛ばすために必要。
 
-```
-php artisan migrate --force
-```
+4. **続けてシードを流す(必須)**
 
-**`migrate:fresh` ではない。** `--force` は本番で確認プロンプトを飛ばすために必要。
+   ```
+   php artisan db:seed --force
+   ```
 
-期待される出力: `2026_07_18_210001_align_musume_plan_decided_with_columns` が
-バッチ[3]で `DONE` になる。
+   fresh は**シード投入済みのデータも消す**。これを飛ばすと:
+   - `/koekake` が空になる(`routine_templates` / `prompt_templates` が消えるため)
+   - おしごとのタスク一覧が空になる(`task_definitions`)
+   - メンバー(`mother` / `child`)が居なくなり、報酬APIがエラーになる
 
-### 3. `db:seed` は実行しない
+5. `php artisan migrate:status` で**全マイグレーションがバッチ[1]に揃っている**ことを確認する
+6. Render(フロント)側のデプロイが PR #28 を含んで完了していることを確認する
 
-`routine_templates` / `prompt_templates` はバッチ[1]で投入済みで、`/koekake` は現に動いている。
-再シードは重複投入の恐れがあるため**実行しない**。
-
-### 4. 確認
-
-```bash
-API="https://kurashi-relay-production-olnfy0.laravel.cloud"
-php artisan migrate:status   # 210001 が Ran になっていること
-```
-
-`migrate:status` で確認するのが確実。curlは補助:
-
-```bash
-curl -s "$API/api/musume/plan" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('items keys:',Object.keys(j.plan.items))})"
-```
-
-期待: `today_task` / `tomorrow_plan` / `tomorrow_item` / `memo` の4キー。
-
-> 繰り返しになるが、**この応答は移行前でも同じ形で返る**。合否判定には使えない。
-> 移行が効いたことの確認は `migrate:status` と、下の実機確認(書き込み)で行う。
+## 確認(curlスモーク)
 
 デプロイ直後はコールドスタートで数十秒かかることがある。1回目がタイムアウトしたら待って再実行。
 JSON検証に PowerShell を使うと文字化けすることがあるため `node` を使う。
 
+```bash
+API="https://kurashi-relay-production-olnfy0.laravel.cloud"
+
+# 1. 声かけのテンプレートが復元されていること(シード確認・ここが0なら手順4が抜けている)
+curl -s "$API/api/koekake/tasks" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);const a=j.data??j.tasks??j;const arr=Array.isArray(a)?a:(a.tasks||[]);console.log('タスク件数:',arr.length)})"
+
+# 2. メンバーが復元されていること(0や error ならシードが抜けている)
+curl -s "$API/api/rewards/summary?member=child" | head -c 300
+```
+
+期待:
+
+- タスク件数が **22件**(fresh 前と同じ)
+- `rewards/summary` が `"status":"success"` を返す(エラーならシード漏れ)
+
+> **`/api/musume/plan` の応答はスキーマ移行の合否判定に使えない**(移行前でも同じ形で返るため)。
+> 移行が効いたことの確認は `migrate:status` と、下の実機確認(**書き込み**)で行う。
+
 ## 実機確認(娘さんと)
 
-**書き込みが通ることの確認が本番。** ここが今回の修正の核心。
+**書き込みが通ることの確認が本番。** ここが今回の核心。
 
-1. `/musume` を夏休みモードで開く
-2. 既存の見通し(入浴 / 英語の宿題 / 夏休みの宿題 / 水筒)が**消えずに残っている**か
-   → 消えていたら migrate:fresh が誤って走った可能性。**すぐ報告してください**
-3. 「🔮 明日 なにする?」が「🎒 明日 何がいる?」の**上**に出ているか
-4. 選択肢6つ(友達と遊ぶ / ゆっくりする / ママとお出かけ / 塾に行く / 宿題・勉強をする / その他)が
+1. `/musume` を夏休みモードで開く(見通しは空から始まる。今日の4件は消えている)
+2. 「🔮 明日 なにする?」が「🎒 明日 何がいる?」の**上**に出ているか
+3. 選択肢6つ(友達と遊ぶ / ゆっくりする / ママとお出かけ / 塾に行く / 宿題・勉強をする / その他)が
    読みやすいか。**アイコン 🔮 はFableのデザイン判断**なので、娘さんの反応を見て変更してよい
-5. チップを選んで「🎀 ママと決めた」で保存 → **エラーにならず**カードに内容と 🎀 が出るか
-   → **これが今回直したところ。** 移行前はここで落ちていた
-6. 学校モードに切り替えると「明日 なにする?」が消えるか(保存済みデータは残る。表示されないだけ)
-7. `/koekake` を開き、母側のむすめサマリーに**内容が表示され** 🎀 が添えられているか
+4. チップを選んで「🎀 ママと決めた」で保存 → **エラーにならず**カードに内容と 🎀 が出るか
+   → **これが今回の目的。** 移行前はここで落ちていた
+5. 学校モードに切り替えると「明日 なにする?」が消えるか(保存済みデータは残る。表示されないだけ)
+6. `/koekake` を開き、母側のむすめサマリーに**内容が表示され** 🎀 が添えられているか
    (内容が隠れて「ママと決めた」だけ出ていたら不具合。報告してください)
 
 ## トラブル時
 
-- `migrate` が「column already exists」で落ちる → 冪等ガード(`Schema::hasColumn`)の漏れ。
-  マイグレーションを修正して再デプロイ(本番DBは変更されていないので安全)
-- `migrate` が権限エラーで落ちる → Laravel Cloud のDB接続設定を確認
-- 「ママと決めた」が保存できない → `migrate:status` で 210001 が Ran か確認
+- `/koekake` が空 / 報酬APIがエラー → **手順4のシードが流れていない。** `php artisan db:seed --force` を実行
+- 「ママと決めた」が保存できない → `migrate:status` でバッチが[1]に揃っているか確認
+- `migrate:fresh` が権限エラーで落ちる → Laravel Cloud のDB接続設定を確認
 - フロントで型エラー/画面が真っ白 → Render のデプロイが PR #28 を含んでいない可能性。
   デプロイ対象コミットを確認する
-- **データが消えた** → `migrate:fresh` を打ってしまった可能性。Laravel Cloud のDBバックアップから
-  復元できるか確認する
 
-## 得られた教訓(DR-022)
+## 次回以降のリリースで必ずやること(DR-022)
 
-CREATE書き換え方式は**全環境を fresh できる間だけ**成立する。適用済み環境が1つでも残ると、
-マイグレーション履歴とファイル内容が**エラーを出さずに**乖離する。
-検知に効くのは `migrate:status` のバッチ番号。API応答の目視は当てにならない。
+1. **CREATEマイグレーションをもう書き換えない。** 適用済み環境があるテーブルの変更は必ず差分ALTERで積む。
+   今回の fresh が**最後**(DR-013 の方針はここで終了)。
+2. **リリース前に `migrate:status` のバッチ番号を見る。** ファイル内容と適用状態の乖離は
+   **例外を投げずに**起きる。API応答の目視では検知できない。
+3. **破壊的操作の前に実データ量を実測する。** 今回使ったコマンド:
+
+   ```bash
+   API="https://kurashi-relay-production-olnfy0.laravel.cloud"
+   for M in child mother; do
+     curl -s "$API/api/rewards/summary?member=$M"        # lifetime_count / coins / points
+     curl -s "$API/api/rewards/collections?member=$M"    # ゾンビ図鑑の蓄積
+   done
+   curl -s "$API/api/musume/plan"                        # 娘の見通し
+   curl -s "$API/api/koekake/tasks"                      # 声かけの使用記録
+   ```
