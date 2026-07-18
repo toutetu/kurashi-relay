@@ -229,7 +229,7 @@ class PhaseBConstraintsTest extends TestCase
         $childId = FamilyMember::query()->where('role', 'child')->firstOrFail()->id;
         $template = RoutineTemplate::query()->firstOrFail();
 
-        Artisan::call('migrate:rollback', ['--step' => 1]);
+        Artisan::call('migrate:rollback', ['--step' => 2]);
 
         $this->assertFalse(Schema::hasColumn('daily_plans', 'subject_member_id'));
 
@@ -267,7 +267,7 @@ class PhaseBConstraintsTest extends TestCase
 
     public function test_phase_b_migrations_can_roll_back_and_reapply_with_slug_backfill(): void
     {
-        Artisan::call('migrate:rollback', ['--step' => 3]);
+        Artisan::call('migrate:rollback', ['--step' => 4]);
 
         $this->assertFalse(Schema::hasColumn('routine_templates', 'slug'));
         $this->assertFalse(Schema::hasColumn('daily_plans', 'subject_member_id'));
