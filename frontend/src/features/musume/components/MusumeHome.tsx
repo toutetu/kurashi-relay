@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError } from "../../../api/client";
+import type { DecidedWith } from "../api/schemas/musumeSchema";
 import type { MusumePlan } from "../api/schemas/musumeSchema";
 import {
   useCompleteMusumeReflection,
@@ -13,6 +14,7 @@ import {
   getStartAnswer,
   getTodayAnswer,
   getTomorrowItemsAnswer,
+  getTomorrowPlanAnswer,
   isReviewCompleted,
   isSummerMode,
   type OutlookSheetKind,
@@ -24,6 +26,8 @@ type MusumeHomeProps = {
   plan: MusumePlan;
   date: string;
 };
+
+type ItemCategory = "today_task" | "tomorrow_plan" | "tomorrow_item";
 
 export function MusumeHome({ plan, date }: MusumeHomeProps) {
   const [openSheet, setOpenSheet] = useState<OutlookSheetKind | "review" | null>(
@@ -45,6 +49,7 @@ export function MusumeHome({ plan, date }: MusumeHomeProps) {
     updatePlan.isPending || replaceItems.isPending || completeReflection.isPending;
 
   const todayAnswer = getTodayAnswer(plan);
+  const tomorrowPlanAnswer = getTomorrowPlanAnswer(plan);
   const tomorrowAnswer = getTomorrowItemsAnswer(plan);
   const startAnswer = getStartAnswer(plan);
   const summer = isSummerMode(plan.mode);
@@ -62,32 +67,20 @@ export function MusumeHome({ plan, date }: MusumeHomeProps) {
     }
   };
 
-  const handleWithMama = async (
-    stateKey: "today_state" | "tomorrow_items_state" | "start_state",
-  ) => {
-    setActionError(null);
-    try {
-      await updatePlan.mutateAsync({
-        planId: plan.id,
-        body: { [stateKey]: "with_mama" },
-      });
-      setOpenSheet(null);
-    } catch (error) {
-      setActionError(
-        error instanceof ApiError ? error.message : "保存に失敗しました。",
-      );
-    }
-  };
-
   const handleSaveItems = async (
-    category: "today_task" | "tomorrow_item",
+    category: ItemCategory,
     titles: string[],
+    decidedWith: DecidedWith | null,
   ) => {
     setActionError(null);
     try {
       await replaceItems.mutateAsync({
         planId: plan.id,
-        body: { category, titles },
+        body: {
+          category,
+          titles,
+          ...(decidedWith ? { decided_with: decidedWith } : {}),
+        },
       });
       setOpenSheet(null);
     } catch (error) {
@@ -97,19 +90,26 @@ export function MusumeHome({ plan, date }: MusumeHomeProps) {
     }
   };
 
-  const handleSaveStart = async (value: string) => {
+  const handleSaveStart = async (
+    value: string | null,
+    decidedWith: DecidedWith | null,
+  ) => {
     setActionError(null);
     try {
       if (summer) {
         await updatePlan.mutateAsync({
           planId: plan.id,
-          body: { wake_up_time: value },
+          body: {
+            wake_up_time: value,
+            start_decided_with: value ? decidedWith : null,
+          },
         });
       } else {
         await updatePlan.mutateAsync({
           planId: plan.id,
           body: {
             school_start_period: value as MusumePlan["school_start_period"],
+            start_decided_with: value ? decidedWith : null,
           },
         });
       }
@@ -188,7 +188,7 @@ export function MusumeHome({ plan, date }: MusumeHomeProps) {
       )}
 
       <p className="msm-eyebrow msm-ribbon-line">あしたの じゅんび 🎀</p>
-      <section className="msm-stack" aria-label="見通し3項目">
+      <section className="msm-stack" aria-label="見通し">
         <button
           type="button"
           className="msm-outlook"
@@ -209,6 +209,29 @@ export function MusumeHome({ plan, date }: MusumeHomeProps) {
             ›
           </span>
         </button>
+
+        {summer && (
+          <button
+            type="button"
+            className="msm-outlook"
+            onClick={() => openSheetWithReset("tomorrow_plan")}
+          >
+            <span className="msm-icon" aria-hidden="true">
+              🔮
+            </span>
+            <span className="msm-txt">
+              <span className="msm-q">明日 なにする?</span>
+              <span
+                className={`msm-ans ${tomorrowPlanAnswer.decided ? "decided" : ""}`}
+              >
+                {tomorrowPlanAnswer.text}
+              </span>
+            </span>
+            <span className="msm-arrow" aria-hidden="true">
+              ›
+            </span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -320,7 +343,6 @@ export function MusumeHome({ plan, date }: MusumeHomeProps) {
         onClose={() => setOpenSheet(null)}
         onSaveItems={handleSaveItems}
         onSaveStart={handleSaveStart}
-        onWithMama={handleWithMama}
         isSaving={isSaving}
       />
 

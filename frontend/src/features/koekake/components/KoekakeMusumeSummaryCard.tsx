@@ -1,7 +1,7 @@
 import type { MusumeSummary } from "../../musume/api/schemas/musumeSchema";
 import {
-  WITH_MAMA_LABEL,
   formatSchoolStartPeriod,
+  formatSummaryItemLine,
   formatWakeUpTime,
   isSummerMode,
 } from "../../musume/utils";
@@ -10,16 +10,6 @@ type KoekakeMusumeSummaryCardProps = {
   summary: MusumeSummary | null;
   isLoading: boolean;
 };
-
-function renderItemLine(
-  label: string,
-  titles: string[],
-  state: MusumeSummary["today_state"],
-): string {
-  if (state === "with_mama") return `${label}: ${WITH_MAMA_LABEL}`;
-  if (titles.length > 0) return `${label}: ${titles.join("・")}`;
-  return `${label}: まだ決めてないよ`;
-}
 
 export function KoekakeMusumeSummaryCard({
   summary,
@@ -43,26 +33,45 @@ export function KoekakeMusumeSummaryCard({
 
       {!isLoading && summary && (
         <div className="mt-3 space-y-2 text-sm text-[var(--text)]">
-          <p>{renderItemLine("いまから何する?", summary.today_tasks, summary.today_state)}</p>
           <p>
-            {renderItemLine(
+            {formatSummaryItemLine(
+              "いまから何する?",
+              summary.today_tasks,
+              summary.decided_with.today,
+            )}
+          </p>
+          {isSummerMode(summary.mode) && (
+            <p>
+              {formatSummaryItemLine(
+                "明日 なにする?",
+                summary.tomorrow_plans,
+                summary.decided_with.tomorrow_plan,
+              )}
+            </p>
+          )}
+          <p>
+            {formatSummaryItemLine(
               "明日 何がいる?",
               summary.tomorrow_items,
-              summary.tomorrow_items_state,
+              summary.decided_with.tomorrow_item,
             )}
           </p>
           <p>
             {isSummerMode(summary.mode)
-              ? summary.start_state === "with_mama"
-                ? `明日 何時に起きる?: ${WITH_MAMA_LABEL}`
-                : summary.wake_up_time
-                  ? `明日 何時に起きる?: ${formatWakeUpTime(summary.wake_up_time)}`
-                  : "明日 何時に起きる?: まだ決めてないよ"
-              : summary.start_state === "with_mama"
-                ? `何時間目から登校?: ${WITH_MAMA_LABEL}`
-                : summary.school_start_period
-                  ? `何時間目から登校?: ${formatSchoolStartPeriod(summary.school_start_period)}`
-                  : "何時間目から登校?: まだ決めてないよ"}
+              ? formatSummaryItemLine(
+                  "明日 何時に起きる?",
+                  summary.wake_up_time
+                    ? [formatWakeUpTime(summary.wake_up_time)]
+                    : [],
+                  summary.decided_with.start,
+                )
+              : formatSummaryItemLine(
+                  "何時間目から登校?",
+                  summary.school_start_period
+                    ? [formatSchoolStartPeriod(summary.school_start_period)]
+                    : [],
+                  summary.decided_with.start,
+                )}
           </p>
           {summary.review_completed_at && (
             <span className="inline-flex rounded-full bg-[var(--mother-blue-soft)] px-3 py-1 text-xs font-bold text-[var(--mother-blue-strong)]">

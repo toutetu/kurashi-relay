@@ -2,9 +2,9 @@ import { ApiError, API_BASE_URL, apiGet, apiSend } from "../../../api/client";
 import {
   musumePlanResponseSchema,
   musumeSummaryResponseSchema,
+  type DecidedWith,
   type MusumeMode,
   type PlanItemCategory,
-  type PlanState,
   type SchoolStartPeriod,
 } from "./schemas/musumeSchema";
 
@@ -61,14 +61,13 @@ export type UpdateMusumePlanInput = {
   mode?: MusumeMode;
   school_start_period?: SchoolStartPeriod | null;
   wake_up_time?: string | null;
-  today_state?: PlanState;
-  tomorrow_items_state?: PlanState;
-  start_state?: PlanState;
+  start_decided_with?: DecidedWith | null;
 };
 
 export type ReplaceMusumeItemsInput = {
   category: PlanItemCategory;
   titles: string[];
+  decided_with?: DecidedWith | null;
 };
 
 export type CompleteReflectionInput = {
