@@ -188,7 +188,7 @@ export function MusumeHome({ plan, date }: MusumeHomeProps) {
       )}
 
       <p className="msm-eyebrow msm-ribbon-line">あしたの じゅんび 🎀</p>
-      <section className="msm-stack" aria-label="見通し3項目">
+      <section className="msm-stack" aria-label="見通し">
         <button
           type="button"
           className="msm-outlook"
