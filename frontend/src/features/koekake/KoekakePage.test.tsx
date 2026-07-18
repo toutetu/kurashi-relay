@@ -96,6 +96,29 @@ function matchUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+function withKoekakePageExtras(
+  handler: (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => ReturnType<typeof jsonResponse> | Promise<Response>,
+) {
+  return (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = matchUrl(input);
+    const method = init?.method ?? "GET";
+    if (url.includes("/api/koekake/musume-summary?") && method === "GET") {
+      return jsonResponse({ summary: null });
+    }
+    if (
+      url.includes("/api/koekake/tasks?") &&
+      url.includes("phase=anytime") &&
+      method === "GET"
+    ) {
+      return jsonResponse(tasksListResponse([]));
+    }
+    return handler(input, init);
+  };
+}
+
 describe("声かけリマインダー", () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -137,7 +160,8 @@ describe("声かけリマインダー", () => {
 
   it("声かけ済み: POST body とサーバ応答値で表示を更新する", async () => {
     let listCount = 0;
-    fetchMock.mockImplementation((input, init) => {
+    fetchMock.mockImplementation(
+      withKoekakePageExtras((input, init) => {
       const url = matchUrl(input);
       const method = init?.method ?? "GET";
       if (url.includes("/api/koekake/tasks?") && method === "GET") {
@@ -172,7 +196,8 @@ describe("声かけリマインダー", () => {
         });
       }
       return jsonResponse({}, 404);
-    });
+    }),
+    );
 
     renderApp("/koekake");
     await screen.findByText("歯磨き");

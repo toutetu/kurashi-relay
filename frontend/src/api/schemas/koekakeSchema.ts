@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const koekakePhaseSchema = z.enum(["morning", "evening", "night"]);
+export const koekakePhaseSchema = z.enum(["morning", "evening", "night", "anytime"]);
 
 export const promptSourceSchema = z.enum(["template", "edited", "custom"]);
 

@@ -1,5 +1,5 @@
 import { MessageCircleHeart } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "../api/client";
 import type {
@@ -11,6 +11,7 @@ import type {
 import { DashboardError } from "../components/ui/AsyncStates";
 import { formatDate, getTokyoToday } from "../utils/date";
 import { KoekakeDetailSheet } from "../features/koekake/components/KoekakeDetailSheet";
+import { KoekakeMusumeSummaryCard } from "../features/koekake/components/KoekakeMusumeSummaryCard";
 import { KoekakePhaseTabs } from "../features/koekake/components/KoekakePhaseTabs";
 import { KoekakeTaskCard } from "../features/koekake/components/KoekakeTaskCard";
 import { KoekakeUndoToast } from "../features/koekake/components/KoekakeUndoToast";
@@ -23,6 +24,7 @@ import {
   useSnooze,
   useUpdateCompletion,
 } from "../features/koekake/queries";
+import { useMusumeSummaryQuery } from "../features/musume/queries";
 import {
   buildDefaultPromptPayload,
   getInitialKoekakePhase,
@@ -48,12 +50,29 @@ export function KoekakePage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const tasksQuery = useKoekakeTasksQuery(today, phase);
+  const anytimeQuery = useKoekakeTasksQuery(today, "anytime");
+  const musumeSummaryQuery = useMusumeSummaryQuery(today);
+
+  const phaseTabs = useMemo((): Array<{ value: KoekakePhase; label: string }> => {
+    const tabs: Array<{ value: KoekakePhase; label: string }> = [
+      ...KOEKAKE_PHASE_TABS,
+    ];
+    if (anytimeQuery.data && anytimeQuery.data.tasks.length > 0) {
+      tabs.push({ value: "anytime", label: "いつでも" });
+    }
+    return tabs;
+  }, [anytimeQuery.data]);
+
+  const showAnytimeTab = phaseTabs.some((tab) => tab.value === "anytime");
+  const activePhase =
+    phase === "anytime" && !showAnytimeTab ? getInitialKoekakePhase() : phase;
+
+  const tasksQuery = useKoekakeTasksQuery(today, activePhase);
   const detailQuery = useKoekakeTaskQuery(detailTask?.id ?? null);
-  const createPrompt = useCreatePromptEvent(today, phase);
-  const cancelPrompt = useCancelPromptEvent(today, phase);
-  const snoozeMutation = useSnooze(today, phase);
-  const completionMutation = useUpdateCompletion(today, phase);
+  const createPrompt = useCreatePromptEvent(today, activePhase);
+  const cancelPrompt = useCancelPromptEvent(today, activePhase);
+  const snoozeMutation = useSnooze(today, activePhase);
+  const completionMutation = useUpdateCompletion(today, activePhase);
 
   useEffect(
     () => () => {
@@ -107,7 +126,7 @@ export function KoekakePage() {
     const list = queryClient.getQueryData<{
       date: string;
       tasks: KoekakeTaskSummary[];
-    }>(koekakeTasksQueryKey(today, phase));
+    }>(koekakeTasksQueryKey(today, activePhase));
     const latestTask = list?.tasks.find((item) => item.id === task.id) ?? task;
     const payload = buildDefaultPromptPayload(latestTask);
     void submitPrompt(latestTask, payload.prompt_text, payload.source);
@@ -200,9 +219,14 @@ export function KoekakePage() {
         </p>
       )}
 
+      <KoekakeMusumeSummaryCard
+        summary={musumeSummaryQuery.data?.summary ?? null}
+        isLoading={musumeSummaryQuery.isPending}
+      />
+
       <KoekakePhaseTabs
-        tabs={KOEKAKE_PHASE_TABS}
-        value={phase}
+        tabs={phaseTabs}
+        value={activePhase}
         onChange={(value) => setPhase(value as KoekakePhase)}
         label="時間帯"
         panelId="koekake-task-list"
@@ -230,7 +254,7 @@ export function KoekakePage() {
         <div
           id="koekake-task-list"
           role="tabpanel"
-          aria-labelledby={`koekake-tab-${phase}`}
+          aria-labelledby={`koekake-tab-${activePhase}`}
           className="space-y-4"
         >
           {tasksQuery.data.tasks.length === 0 ? (
