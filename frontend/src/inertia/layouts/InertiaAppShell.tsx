@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAppPath } from "@/navigation/AppPathContext";
+import { resolveInertiaUrlPrefix } from "@/navigation/inertiaPath";
 import type { SharedPageProps } from "@/inertia/types";
 
 const navigation = [
@@ -86,8 +87,12 @@ function resolvePageTitle(pathname: string, pathPrefix: string): string {
   return pageTitles[spaPath] ?? "くらしリレー";
 }
 
-function isPathActive(currentPath: string, targetPath: string): boolean {
-  if (targetPath === "/" || targetPath.endsWith("/app")) {
+function isPathActive(currentPath: string, targetPath: string, pathPrefix: string): boolean {
+  if (
+    targetPath === "/" ||
+    targetPath === pathPrefix ||
+    targetPath === `${pathPrefix}/`
+  ) {
     return currentPath === targetPath || currentPath === `${targetPath}/`;
   }
 
@@ -134,9 +139,7 @@ type InertiaAppShellProps = {
 
 export function InertiaAppShell({ children }: InertiaAppShellProps) {
   const { url, props } = usePage<SharedPageProps>();
-  const pathPrefix = props.app.inertiaPrefix === "app"
-    ? "/app"
-    : `/${props.app.inertiaPrefix}`;
+  const pathPrefix = resolveInertiaUrlPrefix(props.app.inertiaPrefix);
   const pathname = new URL(url, "http://localhost").pathname;
   const resolvePath = useAppPath;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -305,7 +308,7 @@ export function InertiaAppShell({ children }: InertiaAppShellProps) {
                 key={item.spaPath}
                 {...item}
                 href={href}
-                isActive={isPathActive(pathname, href)}
+                isActive={isPathActive(pathname, href, pathPrefix)}
                 onClick={() => setMenuOpen(false)}
               />
             );
@@ -330,7 +333,7 @@ export function InertiaAppShell({ children }: InertiaAppShellProps) {
                   key={item.spaPath}
                   {...item}
                   href={href}
-                  isActive={isPathActive(pathname, href)}
+                  isActive={isPathActive(pathname, href, pathPrefix)}
                   collapsed={!sidebarOpen}
                 />
               );
@@ -361,7 +364,7 @@ export function InertiaAppShell({ children }: InertiaAppShellProps) {
         {mobileNavigation.map(({ spaPath, label, icon: Icon }) => {
           const href = resolvePath(spaPath);
           const isFab = spaPath === "/records";
-          const isActive = isPathActive(pathname, href);
+          const isActive = isPathActive(pathname, href, pathPrefix);
 
           return (
             <Link

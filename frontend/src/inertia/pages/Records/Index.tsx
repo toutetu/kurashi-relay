@@ -4,6 +4,7 @@ import { InertiaMemberRecordsSection } from "@/inertia/components/InertiaMemberR
 import { InertiaRecordsDateNav } from "@/inertia/components/InertiaRecordsDateNav";
 import { InertiaAppShell } from "@/inertia/layouts/InertiaAppShell";
 import type { RecordsPageProps } from "@/inertia/types";
+import { buildInertiaPath } from "@/navigation/inertiaPath";
 
 export default function RecordsIndex({
   date,
@@ -12,7 +13,7 @@ export default function RecordsIndex({
   mother,
   app,
 }: RecordsPageProps) {
-  const recordsPath = `/${app.inertiaPrefix}/records`;
+  const recordsPath = buildInertiaPath(app.inertiaPrefix, "/records");
 
   return (
     <InertiaAppShell>

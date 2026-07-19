@@ -6,6 +6,7 @@ import { setInertiaSessionAuth, setInertiaPathPrefix } from "@/api/inertiaAuth";
 import { MoodProvider } from "@/features/mood/mood";
 import type { SharedPageProps } from "@/inertia/types";
 import { AppPathProvider } from "@/navigation/AppPathContext";
+import { resolveInertiaUrlPrefix } from "@/navigation/inertiaPath";
 import "@/index.css";
 
 const queryClient = new QueryClient({
@@ -33,7 +34,7 @@ createInertiaApp({
   },
   setup({ el, App, props }) {
     const pageProps = props.initialPage.props as unknown as SharedPageProps;
-    const pathPrefix = `/${pageProps.app.inertiaPrefix}`;
+    const pathPrefix = resolveInertiaUrlPrefix(pageProps.app.inertiaPrefix);
     setInertiaSessionAuth(pageProps.auth?.verified === true);
     setInertiaPathPrefix(pathPrefix);
 
