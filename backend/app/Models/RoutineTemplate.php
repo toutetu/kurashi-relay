@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RoutineTemplate extends Model
@@ -12,6 +13,8 @@ class RoutineTemplate extends Model
      */
     protected $fillable = [
         'slug',
+        'activity_definition_id',
+        'subject_member_id',
         'activity_key',
         'phase',
         'name',
@@ -39,9 +42,24 @@ class RoutineTemplate extends Model
         ];
     }
 
+    public function activityDefinition(): BelongsTo
+    {
+        return $this->belongsTo(ActivityDefinition::class);
+    }
+
+    public function subjectMember(): BelongsTo
+    {
+        return $this->belongsTo(FamilyMember::class, 'subject_member_id');
+    }
+
     public function promptTemplates(): HasMany
     {
         return $this->hasMany(PromptTemplate::class);
+    }
+
+    public function plannedActivities(): HasMany
+    {
+        return $this->hasMany(PlannedActivity::class);
     }
 
     public function dailyTasks(): HasMany

@@ -5,6 +5,7 @@ namespace App\Services\Musume;
 use App\Models\DailyPlan;
 use App\Models\PlanItem;
 use App\Models\ReflectionSession;
+use App\Support\FamilyMemberResolver;
 use App\Support\JstDate;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -97,10 +98,15 @@ final class MusumePlanService
             $plan = DailyPlan::query()->lockForUpdate()->findOrFail($planId);
             $now = now('UTC');
 
-            $session = ReflectionSession::query()->firstOrNew(['daily_plan_id' => $plan->id]);
+            $session = ReflectionSession::query()->firstOrNew([
+                'daily_plan_id' => $plan->id,
+                'revision_no' => 1,
+            ]);
             if (! $session->exists) {
                 $session->started_at = $now;
                 $session->completed_at = $now;
+                $session->revision_no = 1;
+                $session->recorded_by_member_id = FamilyMemberResolver::childId();
             }
             $session->mode = $mode;
             $session->note = $note;
@@ -169,6 +175,7 @@ final class MusumePlanService
             ->value('mode') ?? 'summer';
 
         DailyPlan::query()->insertOrIgnore([
+            'subject_member_id' => FamilyMemberResolver::childId(),
             'plan_date' => $planDate,
             'mode' => $mode,
             'created_at' => now('UTC'),

@@ -10,8 +10,11 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             FamilyMemberSeeder::class,
+            ActivityDefinitionSeeder::class,
             TaskDefinitionSeeder::class,
             KoekakeSeeder::class,
+            PlanQuestionSeeder::class,
+            RewardRuleSeeder::class,
         ]);
     }
 }

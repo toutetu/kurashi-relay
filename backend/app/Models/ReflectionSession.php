@@ -12,10 +12,12 @@ class ReflectionSession extends Model
      */
     protected $fillable = [
         'daily_plan_id',
+        'revision_no',
         'mode',
         'started_at',
         'completed_at',
         'note',
+        'recorded_by_member_id',
     ];
 
     /**
@@ -24,6 +26,7 @@ class ReflectionSession extends Model
     protected function casts(): array
     {
         return [
+            'revision_no' => 'integer',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
         ];

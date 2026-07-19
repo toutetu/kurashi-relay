@@ -74,7 +74,7 @@ class PhaseBConstraintsTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_routine_templates_keep_nullable_slug_until_contract_phase(): void
+    public function test_routine_templates_have_stable_slug_after_seed(): void
     {
         $templates = RoutineTemplate::query()->orderBy('id')->get();
 
@@ -82,7 +82,11 @@ class PhaseBConstraintsTest extends TestCase
         $this->assertTrue(Schema::hasColumn('routine_templates', 'slug'));
 
         foreach ($templates as $template) {
-            $this->assertNull($template->slug);
+            $this->assertNotNull($template->slug);
+            $this->assertSame(
+                self::EXPECTED_SLUGS_BY_PHASE_AND_SORT_ORDER[$template->phase][$template->sort_order],
+                $template->slug,
+            );
         }
     }
 
@@ -210,9 +214,11 @@ class PhaseBConstraintsTest extends TestCase
         ]);
     }
 
-    public function test_api_creates_daily_plans_and_tasks_with_null_subject_member_id(): void
+    public function test_api_creates_daily_plans_and_tasks_with_child_subject_member_id(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-19 08:00:00', 'Asia/Tokyo'));
+
+        $childId = FamilyMember::query()->where('role', 'child')->firstOrFail()->id;
 
         $this->getJson('/api/musume/plan?date=2026-07-19')->assertOk();
         $this->getJson('/api/koekake/tasks?date=2026-07-19')->assertOk();
@@ -220,8 +226,8 @@ class PhaseBConstraintsTest extends TestCase
         $plan = DailyPlan::query()->where('plan_date', '2026-07-19')->firstOrFail();
         $task = DailyTask::query()->where('task_date', '2026-07-19')->firstOrFail();
 
-        $this->assertNull($plan->subject_member_id);
-        $this->assertNull($task->subject_member_id);
+        $this->assertSame($childId, $plan->subject_member_id);
+        $this->assertSame($childId, $task->subject_member_id);
     }
 
     public function test_existing_daily_plans_and_tasks_are_backfilled_with_child_member(): void
@@ -229,13 +235,14 @@ class PhaseBConstraintsTest extends TestCase
         $childId = FamilyMember::query()->where('role', 'child')->firstOrFail()->id;
         $template = RoutineTemplate::query()->firstOrFail();
 
-        Artisan::call('migrate:rollback', ['--step' => 2]);
-
-        $this->assertFalse(Schema::hasColumn('daily_plans', 'subject_member_id'));
+        Artisan::call('migrate:rollback', [
+            '--path' => 'database/migrations/2026_07_19_120003_finalize_phase_b_contract_constraints.php',
+        ]);
 
         DB::table('daily_plans')->insert([
             'plan_date' => '2026-07-20',
             'mode' => 'school',
+            'subject_member_id' => null,
             'created_at' => now('UTC'),
             'updated_at' => now('UTC'),
         ]);
@@ -248,11 +255,14 @@ class PhaseBConstraintsTest extends TestCase
             'icon' => $template->icon,
             'status' => 'scheduled',
             'prompt_count' => 0,
+            'subject_member_id' => null,
             'created_at' => now('UTC'),
             'updated_at' => now('UTC'),
         ]);
 
-        Artisan::call('migrate');
+        Artisan::call('migrate', [
+            '--path' => 'database/migrations/2026_07_19_120003_finalize_phase_b_contract_constraints.php',
+        ]);
 
         $this->assertDatabaseHas('daily_plans', [
             'plan_date' => '2026-07-20',
@@ -267,15 +277,25 @@ class PhaseBConstraintsTest extends TestCase
 
     public function test_phase_b_migrations_can_roll_back_and_reapply_with_slug_backfill(): void
     {
-        Artisan::call('migrate:rollback', ['--step' => 4]);
+        Artisan::call('migrate:rollback', [
+            '--path' => 'database/migrations/2026_07_19_120003_finalize_phase_b_contract_constraints.php',
+        ]);
+
+        Artisan::call('migrate:rollback', [
+            '--path' => 'database/migrations/2026_07_18_210001_add_slug_to_routine_templates_table.php',
+        ]);
 
         $this->assertFalse(Schema::hasColumn('routine_templates', 'slug'));
-        $this->assertFalse(Schema::hasColumn('daily_plans', 'subject_member_id'));
 
-        Artisan::call('migrate');
+        Artisan::call('migrate', [
+            '--path' => 'database/migrations/2026_07_18_210001_add_slug_to_routine_templates_table.php',
+        ]);
+
+        Artisan::call('migrate', [
+            '--path' => 'database/migrations/2026_07_19_120003_finalize_phase_b_contract_constraints.php',
+        ]);
 
         $this->assertTrue(Schema::hasColumn('routine_templates', 'slug'));
-        $this->assertTrue(Schema::hasColumn('daily_plans', 'subject_member_id'));
 
         $templates = RoutineTemplate::query()->orderBy('id')->get();
 

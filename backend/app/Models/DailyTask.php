@@ -16,6 +16,7 @@ class DailyTask extends Model
         'subject_member_id',
         'task_date',
         'routine_template_id',
+        'planned_activity_id',
         'phase',
         'name',
         'icon',
@@ -46,6 +47,11 @@ class DailyTask extends Model
     public function routineTemplate(): BelongsTo
     {
         return $this->belongsTo(RoutineTemplate::class);
+    }
+
+    public function plannedActivity(): BelongsTo
+    {
+        return $this->belongsTo(PlannedActivity::class);
     }
 
     public function promptEvents(): HasMany

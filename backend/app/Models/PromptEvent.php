@@ -11,9 +11,11 @@ class PromptEvent extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'activity_event_id',
         'daily_task_id',
         'prompted_at',
         'prompt_order',
+        'prompt_level',
         'prompt_text',
         'source',
         'idempotency_key',
@@ -28,8 +30,14 @@ class PromptEvent extends Model
         return [
             'prompted_at' => 'datetime',
             'prompt_order' => 'integer',
+            'prompt_level' => 'integer',
             'cancelled_at' => 'datetime',
         ];
+    }
+
+    public function activityEvent(): BelongsTo
+    {
+        return $this->belongsTo(ActivityEvent::class);
     }
 
     public function dailyTask(): BelongsTo

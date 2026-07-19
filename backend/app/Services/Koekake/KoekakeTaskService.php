@@ -5,6 +5,7 @@ namespace App\Services\Koekake;
 use App\Models\DailyTask;
 use App\Models\PromptTemplate;
 use App\Models\RoutineTemplate;
+use App\Support\FamilyMemberResolver;
 use App\Support\JstDate;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -84,6 +85,7 @@ final class KoekakeTaskService
 
         $rows = $templates->map(function (RoutineTemplate $template) use ($taskDate): array {
             return [
+                'subject_member_id' => FamilyMemberResolver::childId(),
                 'task_date' => $taskDate,
                 'routine_template_id' => $template->id,
                 'phase' => $template->phase,

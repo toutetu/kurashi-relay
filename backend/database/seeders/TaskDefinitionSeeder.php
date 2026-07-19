@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\ActivityDefinition;
 use App\Models\TaskDefinition;
+use Database\Support\ActivityDefinitionCatalog;
 use Illuminate\Database\Seeder;
 
 class TaskDefinitionSeeder extends Seeder
@@ -32,12 +34,18 @@ class TaskDefinitionSeeder extends Seeder
     public function run(): void
     {
         foreach (self::CHILD_TASKS as $index => $task) {
+            $activityKey = ActivityDefinitionCatalog::taskDefinitionActivityKey('child', $task['slug']);
+            $activityDefinitionId = $activityKey !== null
+                ? ActivityDefinition::query()->where('activity_key', $activityKey)->value('id')
+                : null;
+
             TaskDefinition::query()->updateOrCreate(
                 [
                     'owner_role' => 'child',
                     'slug' => $task['slug'],
                 ],
                 [
+                    'activity_definition_id' => $activityDefinitionId,
                     'category' => null,
                     'title' => $task['title'],
                     'point_value' => $task['point_value'],
@@ -48,12 +56,18 @@ class TaskDefinitionSeeder extends Seeder
         }
 
         foreach (self::MOTHER_TASKS as $index => $task) {
+            $activityKey = ActivityDefinitionCatalog::taskDefinitionActivityKey('mother', $task['slug']);
+            $activityDefinitionId = $activityKey !== null
+                ? ActivityDefinition::query()->where('activity_key', $activityKey)->value('id')
+                : null;
+
             TaskDefinition::query()->updateOrCreate(
                 [
                     'owner_role' => 'mother',
                     'slug' => $task['slug'],
                 ],
                 [
+                    'activity_definition_id' => $activityDefinitionId,
                     'category' => null,
                     'title' => $task['title'],
                     'point_value' => $task['point_value'],
