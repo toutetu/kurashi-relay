@@ -97,7 +97,7 @@ export function KoekakeTaskCard({
         </div>
       </div>
 
-      <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-6">
+      <div className="relative mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
         <Button
           type="button"
           variant="outline"
