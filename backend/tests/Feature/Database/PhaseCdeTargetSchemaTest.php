@@ -97,7 +97,7 @@ class PhaseCdeTargetSchemaTest extends TestCase
 
         $templates = RoutineTemplate::query()->orderBy('id')->get();
 
-        $this->assertCount(22, $templates);
+        $this->assertCount(24, $templates);
 
         foreach ($templates as $template) {
             $this->assertNotNull($template->slug);

@@ -228,7 +228,7 @@ final class Gate2SchemaVerifier
     {
         $expected = [
             'activity_definitions' => count(ActivityDefinitionCatalog::definitions()),
-            'routine_templates' => 22,
+            'routine_templates' => 24,
             'task_definitions' => 10,
             'plan_questions' => 6,
             'reward_rules' => 5,

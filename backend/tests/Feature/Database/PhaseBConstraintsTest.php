@@ -43,17 +43,19 @@ class PhaseBConstraintsTest extends TestCase
             3 => 'evening-homework',
             4 => 'evening-dinner',
             5 => 'evening-bath',
-            6 => 'evening-tomorrow-belongings',
+            6 => 'evening-dish-clearing',
+            7 => 'evening-tomorrow-belongings',
         ],
         'night' => [
             1 => 'night-reflection',
             2 => 'night-tomorrow-schedule',
             3 => 'night-tomorrow-preparation',
-            4 => 'night-teeth-brushing',
-            5 => 'night-medication',
-            6 => 'night-screen-cutoff',
-            7 => 'night-bedtime',
-            8 => 'night-goodnight',
+            4 => 'night-bath',
+            5 => 'night-teeth-brushing',
+            6 => 'night-medication',
+            7 => 'night-screen-cutoff',
+            8 => 'night-bedtime',
+            9 => 'night-goodnight',
         ],
     ];
 
@@ -75,7 +77,7 @@ class PhaseBConstraintsTest extends TestCase
     {
         $templates = RoutineTemplate::query()->orderBy('id')->get();
 
-        $this->assertCount(22, $templates);
+        $this->assertCount(24, $templates);
         $this->assertTrue(Schema::hasColumn('routine_templates', 'slug'));
 
         foreach ($templates as $template) {
