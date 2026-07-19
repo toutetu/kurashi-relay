@@ -56,6 +56,7 @@ final class ActivityDefinitionCatalog
     public static function taskDefinitionActivityKeys(): array
     {
         return [
+            'child:okita' => 'ACT-037',
             'child:kigae' => 'ACT-003',
             'child:fuku' => 'ACT-002',
             'child:shokki' => 'ACT-006',
