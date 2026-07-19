@@ -330,6 +330,33 @@
   top: 58px;
 }
 
+.musume-page .msm-preview-note {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--msm-peri);
+  color: var(--msm-ink-soft);
+  font-size: 0.8rem;
+}
+
+.musume-page .msm-memo-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.musume-page .msm-memo-list li {
+  border: 1px solid var(--msm-lace);
+  border-radius: 12px;
+  color: var(--msm-ink-soft);
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .musume-page .msm-memo-look {
   border: 1.5px dashed var(--msm-peri);
   border-radius: 14px;
