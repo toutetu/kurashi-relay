@@ -97,7 +97,30 @@ export function KoekakeTaskCard({
         </div>
       </div>
 
-      <div className="relative mt-4 flex flex-wrap gap-2">
+      <div className="relative mt-4 flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5">
+        <Button
+          type="button"
+          variant="outline"
+          tone="blue"
+          size="compact"
+          className="relative shrink-0 [--fly-color:var(--mother-blue-strong)]"
+          aria-label={`${task.name}に声かけ`}
+          loading={isPromptBlocked}
+          disabled={isPromptBlocked}
+          aria-busy={isPromptPending || isPromptBlocked || undefined}
+          onClick={handlePrompt}
+        >
+          {isPromptBlocked && !isPromptPending ? "更新中…" : "声かけ"}
+          {flyKey > 0 && (
+            <span
+              key={flyKey}
+              className="fly pointer-events-none absolute right-1 top-0 [--fly-color:var(--mother-blue-strong)]"
+              aria-hidden="true"
+            >
+              +1
+            </span>
+          )}
+        </Button>
         {QUICK_COMPLETION_OPTIONS.map((status) => {
           const selected = task.completion?.status === status;
           const disabled =
@@ -108,7 +131,7 @@ export function KoekakeTaskCard({
             <Button
               key={status}
               type="button"
-              className="min-w-[5.5rem] flex-1"
+              className="shrink-0"
               size="compact"
               variant={selected ? "solid" : "outline"}
               tone="blue"
@@ -122,37 +145,12 @@ export function KoekakeTaskCard({
             </Button>
           );
         })}
-      </div>
-
-      <div className="relative mt-2 flex flex-wrap gap-2">
         <Button
           type="button"
           variant="outline"
           tone="blue"
           size="compact"
-          className="min-w-[7.5rem] flex-1 [--fly-color:var(--mother-blue-strong)]"
-          aria-label={`${task.name}に声かけ済み`}
-          loading={isPromptBlocked}
-          disabled={isPromptBlocked}
-          aria-busy={isPromptPending || isPromptBlocked || undefined}
-          onClick={handlePrompt}
-        >
-          {isPromptBlocked && !isPromptPending ? "更新中…" : "声かけ済み"}
-          {flyKey > 0 && (
-            <span
-              key={flyKey}
-              className="fly pointer-events-none absolute right-4 top-1 [--fly-color:var(--mother-blue-strong)]"
-              aria-hidden="true"
-            >
-              +1
-            </span>
-          )}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          tone="blue"
-          size="compact"
+          className="shrink-0"
           aria-label={`${task.name}を5分後に再通知`}
           loading={isSnoozePending}
           onClick={() => onSnooze(task)}
@@ -164,6 +162,7 @@ export function KoekakeTaskCard({
           variant="ghost"
           tone="neutral"
           size="compact"
+          className="shrink-0"
           aria-label={`${task.name}の詳細`}
           onClick={() => onOpenDetail(task)}
         >
