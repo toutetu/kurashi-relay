@@ -23,7 +23,7 @@ return [
         'ensure_pages_exist' => false,
 
         'paths' => [
-            base_path('../frontend/src/inertia/pages'),
+            resource_path('js/inertia/pages'),
         ],
 
         'extensions' => [
