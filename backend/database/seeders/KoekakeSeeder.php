@@ -96,15 +96,17 @@ class KoekakeSeeder extends Seeder
             ['phase' => 'evening', 'sort_order' => 3, 'name' => '宿題', 'icon' => '✏️', 'activity_key' => 'ACT-015', 'daily_limit' => 1, 'default_time' => '16:30', 'parent_prompt_label' => '宿題をするように声をかけた', 'child_label' => '宿題をした', 'quick_label' => '宿題実施の声かけ'],
             ['phase' => 'evening', 'sort_order' => 4, 'name' => '夕食', 'icon' => '🍚', 'activity_key' => 'ACT-004', 'daily_limit' => 3, 'default_time' => '18:00', 'parent_prompt_label' => 'ご飯を食べるように声をかけた', 'child_label' => 'ご飯を食べた', 'quick_label' => '食事の声かけ'],
             ['phase' => 'evening', 'sort_order' => 5, 'name' => '入浴', 'icon' => '🛁', 'activity_key' => 'ACT-019', 'daily_limit' => 1, 'default_time' => '18:30', 'parent_prompt_label' => 'お風呂に入るように声をかけた', 'child_label' => 'お風呂に入った', 'quick_label' => '入浴の声かけ'],
-            ['phase' => 'evening', 'sort_order' => 6, 'name' => '明日の持ち物', 'icon' => '🎒', 'activity_key' => 'ACT-044', 'daily_limit' => 1, 'default_time' => null, 'parent_prompt_label' => '明日の持ち物を確認するように声をかけた', 'child_label' => '明日の持ち物を確認した', 'quick_label' => '明日の持ち物確認の声かけ'],
+            ['phase' => 'evening', 'sort_order' => 6, 'name' => '食器片づけ', 'icon' => '🍽️', 'activity_key' => 'ACT-006', 'daily_limit' => 1, 'default_time' => '19:00', 'parent_prompt_label' => '食器を流しに運んだ', 'child_label' => '食器を流しに運んだ', 'quick_label' => '食器を運んだ'],
+            ['phase' => 'evening', 'sort_order' => 7, 'name' => '明日の持ち物', 'icon' => '🎒', 'activity_key' => 'ACT-044', 'daily_limit' => 1, 'default_time' => null, 'parent_prompt_label' => '明日の持ち物を確認するように声をかけた', 'child_label' => '明日の持ち物を確認した', 'quick_label' => '明日の持ち物確認の声かけ'],
             ['phase' => 'night', 'sort_order' => 1, 'name' => '19時の振り返り', 'icon' => '🌟', 'activity_key' => 'ACT-027', 'daily_limit' => 1, 'default_time' => '19:00', 'parent_prompt_label' => '1日の振り返りに誘った', 'child_label' => 'ママと1日を振り返った', 'quick_label' => '振り返りの声かけ'],
             ['phase' => 'night', 'sort_order' => 2, 'name' => '明日の予定', 'icon' => '🗓️', 'activity_key' => 'ACT-035', 'daily_limit' => 1, 'default_time' => '19:15', 'parent_prompt_label' => '明日の時間割を確認するように声をかけた', 'child_label' => '明日の時間割を確認した', 'quick_label' => '時間割確認の声かけ'],
             ['phase' => 'night', 'sort_order' => 3, 'name' => '明日の準備', 'icon' => '🎒', 'activity_key' => 'ACT-022', 'daily_limit' => 1, 'default_time' => '19:30', 'parent_prompt_label' => '明日の持ち物を用意するように声をかけた', 'child_label' => '明日の持ち物を用意した', 'quick_label' => '持ち物準備の声かけ'],
-            ['phase' => 'night', 'sort_order' => 4, 'name' => '歯磨き', 'icon' => '🪥', 'activity_key' => 'ACT-005', 'daily_limit' => 2, 'default_time' => '20:30', 'parent_prompt_label' => '歯をみがくように声をかけた', 'child_label' => '歯をみがいた', 'quick_label' => '歯みがきの声かけ'],
-            ['phase' => 'night', 'sort_order' => 5, 'name' => '服薬', 'icon' => '💊', 'activity_key' => 'ACT-038', 'daily_limit' => 2, 'default_time' => '20:40', 'parent_prompt_label' => '夜の薬を飲むように声をかけた', 'child_label' => '薬を飲んだ', 'quick_label' => '服薬の声かけ'],
-            ['phase' => 'night', 'sort_order' => 6, 'name' => 'スマホの区切り', 'icon' => '📱', 'activity_key' => 'ACT-020', 'daily_limit' => 1, 'default_time' => '20:45', 'parent_prompt_label' => '21時までにスマホ・ゲームを終えるように声をかけた', 'child_label' => '21時までにスマホ・ゲームを終えた', 'quick_label' => 'ゲーム終了の声かけ'],
-            ['phase' => 'night', 'sort_order' => 7, 'name' => '就寝', 'icon' => '🛏️', 'activity_key' => 'ACT-025', 'daily_limit' => 1, 'default_time' => '21:30', 'parent_prompt_label' => '決めた時間に布団に入るように声をかけた', 'child_label' => '決めた時間に布団に入った', 'quick_label' => '就寝の声かけ'],
-            ['phase' => 'night', 'sort_order' => 8, 'name' => 'おやすみ', 'icon' => '🌙', 'activity_key' => 'ACT-045', 'daily_limit' => 1, 'default_time' => '21:45', 'parent_prompt_label' => 'おやすみの挨拶をした', 'child_label' => 'おやすみを言った', 'quick_label' => 'おやすみの声かけ'],
+            ['phase' => 'night', 'sort_order' => 4, 'name' => '入浴', 'icon' => '🛁', 'activity_key' => 'ACT-019', 'daily_limit' => 1, 'default_time' => '20:00', 'parent_prompt_label' => 'お風呂に入るように声をかけた', 'child_label' => 'お風呂に入った', 'quick_label' => '入浴の声かけ'],
+            ['phase' => 'night', 'sort_order' => 5, 'name' => '歯磨き', 'icon' => '🪥', 'activity_key' => 'ACT-005', 'daily_limit' => 2, 'default_time' => '20:30', 'parent_prompt_label' => '歯をみがくように声をかけた', 'child_label' => '歯をみがいた', 'quick_label' => '歯みがきの声かけ'],
+            ['phase' => 'night', 'sort_order' => 6, 'name' => '服薬', 'icon' => '💊', 'activity_key' => 'ACT-038', 'daily_limit' => 2, 'default_time' => '20:40', 'parent_prompt_label' => '夜の薬を飲むように声をかけた', 'child_label' => '薬を飲んだ', 'quick_label' => '服薬の声かけ'],
+            ['phase' => 'night', 'sort_order' => 7, 'name' => 'スマホの区切り', 'icon' => '📱', 'activity_key' => 'ACT-020', 'daily_limit' => 1, 'default_time' => '20:45', 'parent_prompt_label' => '21時までにスマホ・ゲームを終えるように声をかけた', 'child_label' => '21時までにスマホ・ゲームを終えた', 'quick_label' => 'ゲーム終了の声かけ'],
+            ['phase' => 'night', 'sort_order' => 8, 'name' => '就寝', 'icon' => '🛏️', 'activity_key' => 'ACT-025', 'daily_limit' => 1, 'default_time' => '21:30', 'parent_prompt_label' => '決めた時間に布団に入るように声をかけた', 'child_label' => '決めた時間に布団に入った', 'quick_label' => '就寝の声かけ'],
+            ['phase' => 'night', 'sort_order' => 9, 'name' => 'おやすみ', 'icon' => '🌙', 'activity_key' => 'ACT-045', 'daily_limit' => 1, 'default_time' => '21:45', 'parent_prompt_label' => 'おやすみの挨拶をした', 'child_label' => 'おやすみを言った', 'quick_label' => 'おやすみの声かけ'],
         ];
     }
 
@@ -188,6 +190,11 @@ class KoekakeSeeder extends Seeder
                 1 => 'お風呂、今にする？ あとにする？',
                 2 => '今入ると、寝る前にゆっくりできるよ',
                 3 => '今日は短めでもいいから入っておこうか',
+            ],
+            '食器片づけ' => [
+                1 => '食器、流しに運ぼうか',
+                2 => '食べ終わったお皿から、流しに運んでみよう',
+                3 => '今日は自分の分だけ運ぶのでOKだよ',
             ],
             '明日の持ち物' => [
                 1 => '明日いる物を確認しようか',
