@@ -2,7 +2,7 @@ import { Head } from "@inertiajs/react";
 import { ClipboardPenLine } from "lucide-react";
 import { InertiaMemberRecordsSection } from "@/inertia/components/InertiaMemberRecordsSection";
 import { InertiaRecordsDateNav } from "@/inertia/components/InertiaRecordsDateNav";
-import { InertiaAppLayout } from "@/inertia/layouts/InertiaAppLayout";
+import { InertiaAppShell } from "@/inertia/layouts/InertiaAppShell";
 import type { RecordsPageProps } from "@/inertia/types";
 
 export default function RecordsIndex({
@@ -15,7 +15,7 @@ export default function RecordsIndex({
   const recordsPath = `/${app.inertiaPrefix}/records`;
 
   return (
-    <InertiaAppLayout>
+    <InertiaAppShell>
       <Head title="この日のきろく" />
 
       <div className="mx-auto max-w-2xl">
@@ -39,6 +39,6 @@ export default function RecordsIndex({
           <InertiaMemberRecordsSection title="ママ の きろく" payload={mother} />
         </div>
       </div>
-    </InertiaAppLayout>
+    </InertiaAppShell>
   );
 }

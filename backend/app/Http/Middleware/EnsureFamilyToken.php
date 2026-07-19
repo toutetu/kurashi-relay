@@ -33,6 +33,13 @@ final class EnsureFamilyToken
             return $next($request);
         }
 
+        if (
+            $request->hasSession()
+            && $request->session()->get('family_token_verified') === true
+        ) {
+            return $next($request);
+        }
+
         $maxAttempts = max(1, (int) config('kurashi.family_token_max_attempts', 5));
         $decaySeconds = max(1, (int) config('kurashi.family_token_decay_seconds', 60));
 

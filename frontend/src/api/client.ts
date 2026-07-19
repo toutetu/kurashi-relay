@@ -1,4 +1,5 @@
 import type { ApiErrorPayload } from "../types/dashboard";
+import { isInertiaSessionAuth, getInertiaPathPrefix } from "./inertiaAuth";
 import {
   captureFamilyTokenAuth,
   createFamilyTokenHeaders,
@@ -13,6 +14,25 @@ const defaultApiBaseUrl =
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL ?? defaultApiBaseUrl;
 
 export const API_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
+
+function resolveApiUrl(path: string): string {
+  if (isInertiaSessionAuth()) {
+    return path.startsWith("/") ? path : `/${path}`;
+  }
+
+  return `${API_BASE_URL}${path}`;
+}
+
+function resolveFetchInit(init: RequestInit = {}): RequestInit {
+  if (!isInertiaSessionAuth()) {
+    return init;
+  }
+
+  return {
+    ...init,
+    credentials: "same-origin",
+  };
+}
 
 export class ApiError extends Error {
   readonly status: number;
@@ -49,11 +69,11 @@ export async function apiGet<T>(
   const authSnapshot = captureFamilyTokenAuth();
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(resolveApiUrl(path), resolveFetchInit({
       method: "GET",
       headers: createFamilyTokenHeaders({ Accept: "application/json" }),
       signal,
-    });
+    }));
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") throw error;
     throw new ApiError(
@@ -62,7 +82,13 @@ export async function apiGet<T>(
     );
   }
   const payload = await parseJson(response);
-  if (response.status === 401) requireFamilyToken(authSnapshot);
+  if (response.status === 401) {
+    if (isInertiaSessionAuth()) {
+      window.location.assign(`${getInertiaPathPrefix()}/family-token`);
+    } else {
+      requireFamilyToken(authSnapshot);
+    }
+  }
 
   if (!response.ok) {
     const errorPayload = isErrorPayload(payload) ? payload : null;
@@ -92,7 +118,7 @@ export async function apiSend<T>(
   const authSnapshot = captureFamilyTokenAuth();
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(resolveApiUrl(path), resolveFetchInit({
       method,
       headers: createFamilyTokenHeaders({
         Accept: "application/json",
@@ -100,7 +126,7 @@ export async function apiSend<T>(
       }),
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal,
-    });
+    }));
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") throw error;
     throw new ApiError(
@@ -110,7 +136,13 @@ export async function apiSend<T>(
   }
 
   const payload = await parseJson(response);
-  if (response.status === 401) requireFamilyToken(authSnapshot);
+  if (response.status === 401) {
+    if (isInertiaSessionAuth()) {
+      window.location.assign(`${getInertiaPathPrefix()}/family-token`);
+    } else {
+      requireFamilyToken(authSnapshot);
+    }
+  }
   if (!response.ok) {
     const errorPayload = isErrorPayload(payload) ? payload : null;
     throw new ApiError(

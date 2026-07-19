@@ -1,3 +1,4 @@
+import { Link as InertiaLink } from "@inertiajs/react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
@@ -7,7 +8,8 @@ import {
   Settings,
   Users,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
+import { useAppPathContext, useHomePath } from "@/navigation/AppPathContext";
 
 const placeholderContent: Record<
   string,
@@ -40,12 +42,20 @@ const placeholderContent: Record<
   },
 };
 
-export function PlaceholderPage({
-  page,
-}: {
+type PlaceholderPageProps = {
   page: keyof typeof placeholderContent;
-}) {
+  homeHref?: string;
+};
+
+export function PlaceholderPage({ page, homeHref }: PlaceholderPageProps) {
   const { title, description, icon: Icon } = placeholderContent[page];
+  const { mode } = useAppPathContext();
+  const defaultHomePath = useHomePath();
+  const targetHome = homeHref ?? defaultHomePath;
+
+  const linkClassName =
+    "mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#236da8] px-5 py-2.5 font-bold text-white focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#ef767a]";
+
   return (
     <div className="mx-auto grid min-h-[60vh] max-w-2xl place-items-center">
       <div className="w-full rounded-[1.75rem] border border-[#dce5ef] bg-white p-7 text-center shadow-[0_12px_36px_rgba(40,51,74,0.08)] sm:p-10">
@@ -57,19 +67,29 @@ export function PlaceholderPage({
         <div className="mt-5 rounded-2xl bg-[#fff8db] px-4 py-3 font-bold text-[#77550b]">
           今後実装予定
         </div>
-        <Link
-          to="/"
-          className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#236da8] px-5 py-2.5 font-bold text-white focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#ef767a]"
-        >
-          <ArrowLeft aria-hidden="true" size={18} />
-          ホームへ戻る
-        </Link>
+        {mode === "inertia" ? (
+          <InertiaLink href={targetHome} className={linkClassName}>
+            <ArrowLeft aria-hidden="true" size={18} />
+            ホームへ戻る
+          </InertiaLink>
+        ) : (
+          <RouterLink to={targetHome} className={linkClassName}>
+            <ArrowLeft aria-hidden="true" size={18} />
+            ホームへ戻る
+          </RouterLink>
+        )}
       </div>
     </div>
   );
 }
 
 export function NotFoundPage() {
+  const { mode } = useAppPathContext();
+  const homePath = useHomePath();
+
+  const linkClassName =
+    "mt-5 inline-flex min-h-11 items-center rounded-xl bg-[#236da8] px-5 py-2.5 font-bold text-white";
+
   return (
     <div className="mx-auto max-w-xl rounded-[1.75rem] border border-[#f2b6b8] bg-white p-8 text-center shadow-sm">
       <p className="text-sm font-black text-[#b84047]">404</p>
@@ -79,12 +99,15 @@ export function NotFoundPage() {
       <p className="mt-3 text-[#667085]">
         URLを確認するか、ホームへ戻ってください。
       </p>
-      <Link
-        to="/"
-        className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-[#236da8] px-5 py-2.5 font-bold text-white"
-      >
-        ホームへ戻る
-      </Link>
+      {mode === "inertia" ? (
+        <InertiaLink href={homePath} className={linkClassName}>
+          ホームへ戻る
+        </InertiaLink>
+      ) : (
+        <RouterLink to={homePath} className={linkClassName}>
+          ホームへ戻る
+        </RouterLink>
+      )}
     </div>
   );
 }

@@ -32,6 +32,10 @@ final class HandleInertiaRequests extends Middleware
             'flash' => [
                 'status' => fn () => $request->session()->get('status'),
             ],
+            'auth' => [
+                'mode' => 'session',
+                'verified' => $request->session()->get('family_token_verified') === true,
+            ],
         ];
     }
 }
