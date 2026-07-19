@@ -364,7 +364,7 @@ export function InertiaAppShell({ children }: InertiaAppShellProps) {
 
       {menuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-[var(--text)]/25 xl:hidden"
+          className="fixed inset-x-0 bottom-0 top-14 z-40 bg-[var(--text)]/25 xl:hidden"
           onClick={() => setMenuOpen(false)}
           aria-hidden="true"
         />
@@ -375,7 +375,7 @@ export function InertiaAppShell({ children }: InertiaAppShellProps) {
         aria-label="メニュー"
         aria-hidden={!menuOpen}
         inert={!menuOpen}
-        className={`fixed bottom-0 left-0 top-14 z-40 w-68 border-r border-[var(--border)] bg-[var(--page-background)] p-4 shadow-xl transition-transform xl:hidden ${
+        className={`fixed bottom-0 left-0 top-14 z-50 w-68 overflow-y-auto overscroll-contain border-r border-[var(--border)] bg-[var(--page-background)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl transition-transform xl:hidden ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
