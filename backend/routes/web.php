@@ -3,8 +3,26 @@
 use App\Http\Controllers\Web\InertiaPageController;
 use App\Http\Controllers\Web\LegacyInertiaRedirectController;
 use App\Http\Controllers\Web\RecordsController;
+use App\Http\Controllers\Web\SpaController;
+use App\Http\Controllers\Web\SpaLegacyRedirectController;
+use App\Support\FrontendMode;
 use App\Support\InertiaPath;
 use Illuminate\Support\Facades\Route;
+
+$frontendMode = FrontendMode::current();
+
+if ($frontendMode === FrontendMode::SPA) {
+    // /app/* bookmarks keep working and land on SPA root URLs with query string preserved.
+    Route::get(InertiaPath::legacyUrlPrefix().'/{path?}', SpaLegacyRedirectController::class)
+        ->where('path', '.*')
+        ->name('spa.legacy');
+
+    Route::match(['get', 'head'], '/{path?}', SpaController::class)
+        ->where('path', '(?!api(?:/|$)|build(?:/|$)|storage(?:/|$)|sanctum(?:/|$)).*')
+        ->name('spa');
+
+    return;
+}
 
 if (InertiaPath::cutover()) {
     Route::middleware(['inertia.enabled'])
