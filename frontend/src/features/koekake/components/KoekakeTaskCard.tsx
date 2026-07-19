@@ -97,13 +97,13 @@ export function KoekakeTaskCard({
         </div>
       </div>
 
-      <div className="relative mt-4 flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5">
+      <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-6">
         <Button
           type="button"
           variant="outline"
           tone="blue"
           size="compact"
-          className="relative shrink-0 [--fly-color:var(--mother-blue-strong)]"
+          className="relative w-full [--fly-color:var(--mother-blue-strong)]"
           aria-label={`${task.name}に声かけ`}
           loading={isPromptBlocked}
           disabled={isPromptBlocked}
@@ -131,7 +131,7 @@ export function KoekakeTaskCard({
             <Button
               key={status}
               type="button"
-              className="shrink-0"
+              className="w-full"
               size="compact"
               variant={selected ? "solid" : "outline"}
               tone="blue"
@@ -150,7 +150,7 @@ export function KoekakeTaskCard({
           variant="outline"
           tone="blue"
           size="compact"
-          className="shrink-0"
+          className="w-full"
           aria-label={`${task.name}を5分後に再通知`}
           loading={isSnoozePending}
           onClick={() => onSnooze(task)}
@@ -162,7 +162,7 @@ export function KoekakeTaskCard({
           variant="ghost"
           tone="neutral"
           size="compact"
-          className="shrink-0"
+          className="w-full"
           aria-label={`${task.name}の詳細`}
           onClick={() => onOpenDetail(task)}
         >
