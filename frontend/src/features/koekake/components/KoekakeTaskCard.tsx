@@ -1,35 +1,47 @@
 import { useState } from "react";
 import { Button } from "../../../components/ui/Button";
-import type { KoekakeTaskSummary } from "../../../api/schemas/koekakeSchema";
+import type {
+  CompletionStatus,
+  KoekakeTaskSummary,
+} from "../../../api/schemas/koekakeSchema";
 import { formatTime } from "../../../utils/date";
 import {
   buildDefaultPromptPayload,
   COMPLETION_STATUS_LABELS,
   isKoekakeTaskDue,
+  QUICK_COMPLETION_OPTIONS,
 } from "../utils";
 
 type KoekakeTaskCardProps = {
   task: KoekakeTaskSummary;
   onPrompt: (task: KoekakeTaskSummary) => void;
   onSnooze: (task: KoekakeTaskSummary) => void;
+  onCompletion: (task: KoekakeTaskSummary, status: CompletionStatus) => void;
   onOpenDetail: (task: KoekakeTaskSummary) => void;
   isPromptPending?: boolean;
   isSnoozePending?: boolean;
+  isCompletionPending?: boolean;
   isPromptBlocked?: boolean;
 };
+
+const SELF_ONLY_ACTIVITY_KEYS = new Set(["ACT-037"]);
 
 export function KoekakeTaskCard({
   task,
   onPrompt,
   onSnooze,
+  onCompletion,
   onOpenDetail,
   isPromptPending = false,
   isSnoozePending = false,
+  isCompletionPending = false,
   isPromptBlocked = false,
 }: KoekakeTaskCardProps) {
   const [flyKey, setFlyKey] = useState(0);
   const due = isKoekakeTaskDue(task);
   const promptPreview = buildDefaultPromptPayload(task);
+  const parentDoneDisabled =
+    task.activity_key !== null && SELF_ONLY_ACTIVITY_KEYS.has(task.activity_key);
 
   const handlePrompt = () => {
     setFlyKey((key) => key + 1);
@@ -86,9 +98,38 @@ export function KoekakeTaskCard({
       </div>
 
       <div className="relative mt-4 flex flex-wrap gap-2">
+        {QUICK_COMPLETION_OPTIONS.map((status) => {
+          const selected = task.completion?.status === status;
+          const disabled =
+            isCompletionPending ||
+            (status === "parent_done" && parentDoneDisabled);
+
+          return (
+            <Button
+              key={status}
+              type="button"
+              className="min-w-[5.5rem] flex-1"
+              size="compact"
+              variant={selected ? "solid" : "outline"}
+              tone="blue"
+              loading={isCompletionPending && selected}
+              disabled={disabled}
+              aria-pressed={selected}
+              aria-label={`${task.name}を${COMPLETION_STATUS_LABELS[status]}にする`}
+              onClick={() => onCompletion(task, status)}
+            >
+              {COMPLETION_STATUS_LABELS[status]}
+            </Button>
+          );
+        })}
+      </div>
+
+      <div className="relative mt-2 flex flex-wrap gap-2">
         <Button
           type="button"
+          variant="outline"
           tone="blue"
+          size="compact"
           className="min-w-[7.5rem] flex-1 [--fly-color:var(--mother-blue-strong)]"
           aria-label={`${task.name}に声かけ済み`}
           loading={isPromptBlocked}
