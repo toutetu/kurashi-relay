@@ -212,7 +212,7 @@ export function MamaKajiPage() {
           ))}
         </div>
 
-        <KajiChallengeCard />
+        <KajiChallengeCard tasks={tasks} />
 
         <p className="mt-3.5">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--mkj-line2)] bg-[var(--mkj-rasp-soft)] px-3 py-1.5 text-xs font-extrabold text-[var(--mkj-rasp-deep)]">
