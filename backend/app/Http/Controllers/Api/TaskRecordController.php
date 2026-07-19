@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTaskRecordRequest;
+use App\Http\Requests\TaskIndexRequest;
 use App\Http\Resources\CancelTaskRecordResource;
 use App\Http\Resources\StoreTaskRecordResource;
+use App\Http\Resources\TaskRecordListResource;
 use App\Models\FamilyMember;
 use App\Models\TaskDefinition;
 use App\Services\TaskRecordService;
@@ -13,6 +15,17 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final class TaskRecordController extends Controller
 {
+    public function index(
+        TaskIndexRequest $request,
+        TaskRecordService $service,
+    ): TaskRecordListResource {
+        $member = $this->findMember($request->validated('member'));
+
+        return new TaskRecordListResource(
+            $service->listForMember($member, $request->resolvedDate())
+        );
+    }
+
     public function store(
         StoreTaskRecordRequest $request,
         TaskRecordService $service,

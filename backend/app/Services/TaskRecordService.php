@@ -19,6 +19,32 @@ final class TaskRecordService
 
     /**
      * @return array{
+     *     date: string,
+     *     member: string,
+     *     records: list<TaskRecord>
+     * }
+     */
+    public function listForMember(FamilyMember $member, string $recordDate): array
+    {
+        $records = TaskRecord::query()
+            ->with(['familyMember', 'taskDefinition'])
+            ->where('family_member_id', $member->id)
+            ->whereDate('record_date', $recordDate)
+            ->whereNull('cancelled_at')
+            ->orderBy('completed_at')
+            ->orderBy('id')
+            ->get()
+            ->all();
+
+        return [
+            'date' => $recordDate,
+            'member' => $member->role,
+            'records' => $records,
+        ];
+    }
+
+    /**
+     * @return array{
      *     record: TaskRecord,
      *     summary: array<string, mixed>,
      *     revealed_reward: RewardCollection|null,
