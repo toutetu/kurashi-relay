@@ -113,3 +113,4 @@ export type ApiTask = z.infer<typeof taskSchema>;
 export type TasksData = z.infer<typeof tasksDataSchema>;
 export type RevealedReward = z.infer<typeof revealedRewardSchema>;
 export type TaskRecord = z.infer<typeof taskRecordSchema>;
+export type TaskRecordsData = z.infer<typeof taskRecordsDataSchema>;
