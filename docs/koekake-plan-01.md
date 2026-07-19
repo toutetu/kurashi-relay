@@ -118,7 +118,7 @@ php artisan migrate:fresh --seed --force
 
 # 5. K1: 母用声かけリマインダー
 
-> 実装指示書(確定版): `docs/wip/koekake-k1/koekake-k1-spec.md`(2026-07-18作成)。
+> 実装指示書(完了・保管): `docs/archive/specs/koekake-k1/koekake-k1-spec.md`(2026-07-18作成)。
 > docx設計書「娘の自主活動記録 v0.1」との整合は DR-019 で確定(データの箱とラベルのみ取り込み)。
 > 本章と食い違う場合は実装指示書が正。
 

@@ -1,26 +1,22 @@
 # DB統合 4日間 共通実行ブリーフ
 
 作成日: 2026-07-18
-更新日: 2026-07-19（DR-027同期）
+更新日: 2026-07-19（DR-027・DR-029・DR-031・DR-032同期、Gate 1完了）
 
-対象: Cursorによる実装、Codexによるレビュー・品質ゲート
+対象: そのセッションの担当AIによる実装、DB変更の独立レビュー1周
 
 親計画: `docs/wip/database-unification/implementation-plan.md`
 
+> **運用更新(DR-033)**: 本文中の旧テスト・全品質ゲート・反復レビュー条件より `AGENTS.md` を優先する。
+> 各機能は動作確認1回で完了し、DBスキーマ・データ変更だけ独立レビューを1周行う。
+
 ## 1. 実装前に読むもの
 
-作業者は着手前に次を読む。
+着手前に全文通読はしない。次の必要箇所だけ読む。
 
-1. `AGENTS.md`
-2. `docs/product-plan.md`
-3. `docs/development-plan.md`
-4. `docs/architecture.md`
-5. `docs/design-principles.md`
-6. `docs/data-model.md`
-7. `docs/api-contract.md`
-8. `docs/design-decisions.md` の DR-022〜DR-027
-9. `docs/wip/database-unification/implementation-plan.md`
-10. 対象Phaseの実装指示書とレビュー依頼書
+1. `AGENTS.md` の最小検証・セッション方針
+2. 親計画と `docs/data-model.md` の対象Phaseに直接関係する箇所
+3. 変更するmigration・Model・Serviceと、その復旧手順
 
 Claudeのproject memoryに保存されていた運用ルールも本ブリーフへ反映済みである。
 古いmemoryと現在の恒久文書が食い違う場合は、最新のユーザー指示、DR、恒久文書の順で判断する。
@@ -28,26 +24,28 @@ Claudeのproject memoryに保存されていた運用ルールも本ブリーフ
 ## 2. 現在の事実
 
 - PR #27 / #28 はマージ済み。
-- 夏休み対応の本番 `migrate:fresh` はユーザー操作で実施済み。**二度と再実行しない**。
-- 夏休み対応で残る作業は、シード復元確認、`migrate:status`、実際の書き込み確認である。
-- 2026-07-19の本番読取スモークで、health、声かけ22件、メンバー、夏休みplan生成は確認できた。
-- 同スモークで声かけ `scheduled_at` がJSTの想定より9時間後ろへずれる問題を検出した。
-  修正の本番反映と再確認が終わるまで、Gate 0は未完了とする。
+- 夏休み対応で使った本番 `migrate:fresh` はユーザー操作で実施済みであり、その旧手順を通常作業として再実行しない。
+  将来の例外はDR-031・DR-032の管理下refreshだけとする。
+- 2026-07-19の本番スモークで主要APIの読取・書込、JST時刻、夏休みplanの母画面反映を確認し、
+  Gate 0は完了した。`migrate:status` の出力保存と実端末観測は非ブロッキングで継続する。
 - Phase B拡張マイグレーションはPR #31、DR-027の恒久モデルはPR #32でmainへマージ済み。
+- 本番APIへ未成年の生活記録が保存されたため、DR-029によりPhase AをPhase Cより前へ移した。
+- Gate 1は2026-07-19に完了した。既存少量データは全量backup後の管理下refreshを標準経路とし、
+  画面操作別の人物役割とmigration/seed/backup/rollbackゲートは親計画8.1で確定済みである。
 - これ以降、既存CREATEマイグレーションを書き換えない。
-- 本番スキーマ変更は差分ALTER、事前監査、バックフィル、制約追加の順で行う。
+- 本番スキーマ変更は原則として差分ALTER、事前監査、バックフィル、制約追加の順で行う。
+  Gate 2で管理下refreshを選ぶ場合だけ、親計画8.1の専用ゲートを適用する。
 - 旧Render APIはロールバック先なので、明示的な削除指示があるまで残す。
 - `.claude/settings.local.json` はユーザー環境のローカル設定であり、変更・ステージ・コミットしない。
 
 ## 3. 役割分担
 
-- Cursor: 実装、実装中のテスト、最初の完了報告。
-- Codex: 独立コードレビュー、仕様適合確認、品質ゲートの再実行、合否判定。
+- そのセッションの担当AI: 実装、動作確認1回、完了報告。
+- 実装者以外のAI: DBスキーマ・データ変更の復旧リスクだけを1周レビュー。
 - ユーザー: Laravel Cloud / Renderなど管理画面で必要な本番操作と実機確認。
-- 同じ作業ツリーをCursorとCodexが同時に変更しない。Cursor完了後にCodexへ渡す。
+- 同じ作業ツリーを複数セッションで同時に変更しない。
 
-レビューで修正が必要な場合は、Codexが指摘を具体化し、Cursorが修正し、Codexが再確認する。
-小差分は原則1周、大きなDB移行は重大指摘がなくなるまで確認する。
+レビューで修正が必要な場合は該当箇所だけ直す。ユーザーが明示しない限り再レビューしない。
 
 ## 4. Git・PRルール
 
@@ -62,68 +60,61 @@ Claudeのproject memoryに保存されていた運用ルールも本ブリーフ
 
 ## 5. DB安全ルール
 
-- `migrate:fresh`、`db:wipe`、既存データの一括削除は禁止。
+- 通常作業での `migrate:fresh`、`db:wipe`、既存データの一括削除は禁止。
+- DR-031・DR-032の管理下refreshだけを例外とする。対象環境の特定、全量backup、行数、restore手順、
+  書込停止、ユーザーの実行直前確認が1つでも欠ける場合は実行しない。
 - 既存CREATEマイグレーションの変更は禁止。
-- 追加 → 監査 → バックフィル → 比較 → 制約 → 読取切替 → 書込切替の順を守る。
+- データ保持経路では、追加 → 監査 → バックフィル → 比較 → 制約 → 読取切替 → 書込切替の順を守る。
+- 標準のrefresh経路では、追加migrationの空DB検証 → master seedの冪等確認 → 全量backup → 明示確認 →
+  refresh+seed → schema/最小スモーク確認の順を守る。
 - 一意制約の前に重複、NULL、不正status、負数、日時逆転を監査する。
 - バックフィルは再実行可能か、少なくとも二重実行で増殖しないようにする。
 - 履歴・実績・回答・ポイント・取込データを物理削除しない。
 - 訂正は追記、出来事の取消は `activity_event_cancellations`、報酬取消は反対取引で表す。
 - 共通イベント、参加者、結果、声かけ固有情報は同一トランザクションで作る。
 - `activity_events` に人物役割・結果・予定FK・取消日時のnullable列を増やさない。
-- 旧API互換を保ち、新旧集計が一致してから旧読取・旧書込を止める。
+- D2〜D5のデータ保持経路を選んだ場合だけ、旧API互換を保ち、新旧集計が一致してから旧読取・旧書込を止める。
 - 外部キーの削除動作、CHECK、UNIQUE、部分インデックスを明示する。
 - SQLiteだけで部分UNIQUEやCHECKが通ったと判断せず、PostgreSQL 17との差をレビューする。
 
-## 6. 4日間の実行順
+## 6. 実行順（DR-030で2026-07-19改訂）
 
-1. 夏休み対応の残確認。破壊的操作はしない。
-2. Phase B: `routine_templates.slug`、低リスク制約、人物FK。
-3. Phase C: `activity_definitions` と既存活動マッピング。
-4. Phase D: 共通イベント、人物参加、結果、取消、予定接続の最小縦断接続。
-5. Phase E: 娘の見通しのうち活動になる回答を予定へ接続。
-6. Phase A: 家族共有トークン。
-7. 支援者向けレポートMVP。
+1. 夏休み対応の本番確認（完了）。破壊的操作はしない。
+2. Phase B: `routine_templates.slug`、低リスク制約、人物FK（マージ済み。本番監査は継続）。
+3. Phase A: 家族共有トークン。フロント互換を先に公開し、環境変数設定後にAPI保護を有効化する。
+4. Phase C: `activity_definitions` と既存活動マッピング。
+5. Phase D1: 共通イベント、人物参加、結果、取消、予定接続のtarget schema。
+6. Phase E: 娘の回答履歴と予定接続のtarget schema。
+7. Gate 2: migration/seed確認と、Gate 1で決めた管理下refreshの実行可否確認。
+8. Inertia I0〜I7。
+9. 支援者向けレポートMVP。
 
-DB中核が品質ゲートを通らなければ、追加画面へ進まない。
+アクセス保護後もDB schema統合を最優先する。統合後の箱ができたら本番安定観測を待たずInertia I0へ進み、
+Inertia移行とDB統合のコードを同じPhase・同じPRで実装しない。
 
 ## 7. 今回のDB統合完了条件
 
+- `/api/health` 以外の個人データAPIが家族共有トークンで保護される。
 - 同じ活動名・ラベルの正本が `activity_definitions` に集約される。
 - 全有効 `task_definitions` / `routine_templates` が活動マスタへ接続される。
-- おしごと、声かけ、完了が共通 `activity_events` へ接続される。
+- 新しい書込経路で、おしごと、声かけ、完了を共通 `activity_events` へ記録できるtarget schemaが成立する。
 - 全イベントに1件以上の `actor` があり、母・娘のタイムラインを参加行から生成できる。
 - 必要な娘の見通しが `planned_activities` へ接続される。
-- 既存APIと画面が壊れず、移行前後の件数・ポイント・完了状態が一致する。
+- refresh前の旧DBを全量backupし、テーブル別行数とrestore手順を記録している。
+- 空または検証用PostgreSQL 17でmigration、master seedの二重実行、安全なrollbackを確認している。
 - 取消・訂正後も元イベント、人物参加、結果、声かけ固有情報が残る。
-- マイグレーションのup / 安全な範囲のrollback、冪等再送、並行リクエスト、JST境界を確認する。
+- target schemaのup / 安全な範囲のrollback、必須FK・CHECK・UNIQUE・indexを確認する。
+- refresh後のschema・seed・最小スモークが通れば、長期の本番安定観測を待たずInertia I0へ進める。
 
-## 8. 品質ゲート
+## 8. 最小確認
 
-バックエンド:
-
-```bash
-cd backend
-php artisan test
-./vendor/bin/pint --test
-```
-
-フロントを変更した場合:
-
-```bash
-cd frontend
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-```
-
-API新機能はPestのfeatureテスト、フロントは既存慣習のVitest + fetchモックで契約を検証する。
-本番curlスモークはデプロイ後の設定・コールドスタート確認に限定する。
+- 対象Phaseを、画面操作1回または代表的な `curl` 1本で確認する。
+- DBスキーマ変更では、対象環境、バックアップ、復旧方法をレビュー1周で確認する。
+- 全テスト、Pint、lint、typecheck、buildは標準では実行せず、新しい自動テストも完了条件にしない。
 
 ## 9. 禁止する完了報告
 
-- テストを実行せず「たぶん動く」と報告しない。
+- 動作確認1回をせず「たぶん動く」と報告しない。
 - SQLiteだけの結果でPostgreSQL固有制約を保証しない。
 - grepを動的な文字列組み立てで回避しない。検索条件の意図を満たす。
 - JSONの値がnullであることだけでキー存在を保証しない。契約テストではキー自体を確認する。

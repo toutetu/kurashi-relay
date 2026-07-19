@@ -123,14 +123,16 @@
 
 # 8. 技術方針
 
-- Laravel REST API
-- React SPA
+- 現在: Laravel REST API + Render上の独立React SPA
+- DB target schema完成後の目標: Laravel + Inertia.js + Reactを中心とする同一オリジン・単一デプロイ
+- 残すAPI: offline再送、冪等記録、Service Worker、通知、native/外部clientに必要なJSON endpoint
+- Google Calendar API: Laravelが外部APIを利用する処理としてInertiaと独立して継続
+- React
 - TypeScript
 - Vite
-- TanStack Query
 - Tailwind CSS
 - モノレポ
-- Inertiaは使用しない
+- TanStack Query、Zod、API Resourceは一括削除せず、用途がなくなった対象だけ整理する
 
 # 9. デザイン
 
