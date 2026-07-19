@@ -13,7 +13,7 @@
 - 複数家庭・SaaS化は対象外。全テーブルへの `household_id` 追加は行わない。
 - 人物の区別には既存の `family_members` を使用する。
 - 母・娘以外の家族を追加できる余地は残すが、複数家庭テナント分離は設計しない。
-- 通常のスキーマ変更は差分マイグレーションで行う。Inertia移行前はデータが少量なため、DR-031により
+- 通常のスキーマ変更は差分マイグレーションで行う。画面通信方式の切替前はデータが少量なため、DR-031により
   backup/exportとユーザーの実行時明示確認を条件に、管理下のDB refreshを選べる。
 - 記録は監視・評価ではなく、支援・待機・回復・役割分担の把握に使う。
 - Google Calendarは予定の入力源の1つとして扱い、Calendar側を実績の正本にはしない。
@@ -342,7 +342,7 @@ flowchart TB
 
 ### 7.6 既存記録テーブルの移行
 
-DR-031により、Inertia開始前の標準経路はtarget schemaを作成してrefreshする経路とする。
+DR-031により、画面通信方式の切替前の標準経路はtarget schemaを作成してrefreshする経路とする。
 次のbackfill・互換処理は、既存データを保持する判断をした場合の代替経路として残す。
 
 - `task_records` は `activity_events`、`activity_event_participants`、必要な結果・報酬行へバックフィルする。
@@ -652,12 +652,13 @@ DR-031により、Inertia開始前の標準経路はtarget schemaを作成して
 - 比較は `hash_equals`、失敗は401、連続失敗にはRate Limitを適用する。
 - トークンは環境変数差し替えでローテーション可能にする。
 - 本番で `FAMILY_TOKEN` が未設定の場合は保護を無効化せず、起動失敗または保護APIを503にする（fail closed）。
-- Inertia I5では通常Web画面をLaravel session認証へ移す。残存APIは利用clientに応じて
-  session+CSRFまたは専用tokenを選び、家族共有トークンは利用0件確認後の別releaseで整理する。
+- API-first SPA移行後も通常画面は `/api/*` を利用する。認証方式の見直しは
+  `docs/wip/api-first-spa-migration/implementation-plan.md` のPhase A3で決定する。
 
 ## 16. 実装順
 
 実際の移行順、バックフィル、互換期間、検証条件は
 `docs/wip/database-unification/implementation-plan.md` を正とする。同計画は2026-07-19にDR-027〜DR-032へ同期済みである。
 今後同計画と本書が矛盾した場合は、最新のDRと本書を先に更新してから実装する。
-現在はPhase C/D1/Eのtarget schemaとmigration/seed確認を完了後、本番安定観測を待たずInertia I0へ進む。
+現在はPhase C/D1/Eのtarget schemaとmigration/seed確認を完了後、本番安定観測を待たず
+API-first SPA移行(A0〜A7)へ進む(DR-034)。

@@ -95,7 +95,7 @@ planned_activities=
 -
 -
 
-## Inertia 開始可否
+## 画面移行(API-first SPA)開始可否
 
 | 判定 | `GO` / `NO-GO` |
 |---|---|

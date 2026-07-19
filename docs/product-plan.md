@@ -124,15 +124,17 @@
 # 8. 技術方針
 
 - 現在: Laravel REST API + Render上の独立React SPA
-- DB target schema完成後の目標: Laravel + Inertia.js + Reactを中心とする同一オリジン・単一デプロイ
-- 残すAPI: offline再送、冪等記録、Service Worker、通知、native/外部clientに必要なJSON endpoint
-- Google Calendar API: Laravelが外部APIを利用する処理としてInertiaと独立して継続
+- DB target schema完成後の目標: React Router + TanStack Query + Laravel JSON API を
+  Laravel同一オリジン・単一デプロイで配信する(DR-034)。Inertia props/formへ寄せない
+- 維持するAPI: 通常画面・offline再送・冪等記録・Service Worker・通知・native/外部client向けJSON endpoint
+- Google Calendar API: Laravelが外部APIを利用する処理として、画面配信方式と独立して継続
 - React
 - TypeScript
 - Vite
 - Tailwind CSS
 - モノレポ
 - TanStack Query、Zod、API Resourceは一括削除せず、用途がなくなった対象だけ整理する
+- 移行手順の正本: `docs/wip/api-first-spa-migration/implementation-plan.md`
 
 # 9. デザイン
 
