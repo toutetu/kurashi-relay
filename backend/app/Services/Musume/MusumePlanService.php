@@ -175,16 +175,22 @@ final class MusumePlanService
 
         $latestByKey = $this->latestAnswersByQuestionKey($plan);
 
+        $bedtimeTitles = $this->titlesFromAnswer($latestByKey->get('bedtime'));
+
         return [
             'summary' => [
                 'mode' => $plan->mode,
                 'today_tasks' => $this->titlesFromAnswer($latestByKey->get('today_task')),
+                'today_items' => $this->titlesFromAnswer($latestByKey->get('today_item')),
+                'bedtime' => $bedtimeTitles === [] ? null : $bedtimeTitles[0],
                 'tomorrow_plans' => $this->titlesFromAnswer($latestByKey->get('tomorrow_plan')),
                 'tomorrow_items' => $this->titlesFromAnswer($latestByKey->get('tomorrow_item')),
                 'wake_up_time' => $this->timeFromAnswer($latestByKey->get('wake_up_time')),
                 'school_start_period' => $this->choiceFromAnswer($latestByKey->get('school_start_period')),
                 'decided_with' => [
                     'today' => $this->decidedWithLabel($latestByKey->get('today_task')),
+                    'today_item' => $this->decidedWithLabel($latestByKey->get('today_item')),
+                    'bedtime' => $this->decidedWithLabel($latestByKey->get('bedtime')),
                     'tomorrow_plan' => $this->decidedWithLabel($latestByKey->get('tomorrow_plan')),
                     'tomorrow_item' => $this->decidedWithLabel($latestByKey->get('tomorrow_item')),
                     'start' => $this->startDecidedWithLabel($plan, $latestByKey),
