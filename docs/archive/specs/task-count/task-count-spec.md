@@ -129,7 +129,7 @@
   カウントの整合は **サーバ summary を唯一の真実とする方針(DR-008)** で、
   確定応答・refetch で収束させる。
 - オフライン中の +/− 連打などの複雑な境界は、既知の並行系バックログ
-  (`docs/wip/phase5-followup-fixes.md`)と同様「後続で根治」でよい。
+  (`docs/archive/phases/phase5-followup-fixes.md`)と同様「後続で根治」でよい。
   このPRでは「オンラインで普通に押す・取り消す」が正しく動くことを優先する。
 
 ### 4-4. テスト
@@ -158,5 +158,5 @@ lint / typecheck / test / build すべて緑。
 1. `feat/task-count-api` → PR → main マージ(Laravel Cloud 自動デプロイ)
 2. ユーザーが Laravel Cloud Commands で `php artisan migrate:fresh --seed --force`(1回だけ)
 3. `feat/task-count-web` → PR → main マージ(Render 自動デプロイ)
-4. スモーク(Codex 委譲): `docs/wip/codex-smoke-request-phase8.md` は**トグル前提のため
+4. スモーク(Codex 委譲): `docs/archive/reviews/codex-smoke-request-phase8.md` は**トグル前提のため
    カウント方式に改訂してから**実行する(改訂は Fable が行う)

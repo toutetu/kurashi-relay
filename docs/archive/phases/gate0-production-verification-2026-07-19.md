@@ -21,5 +21,5 @@
 - H1〜H3/M1〜M3の根治
 - ロールバック先として残す旧Render APIの停止判断
 
-未解消項目の再現条件とテスト案は `docs/wip/phase5-followup-fixes.md`、Phase 8の運用判断は
-`docs/wip/phase8-stability-and-render-stop.md` を参照する。
+未解消項目の再現条件とテスト案は `docs/archive/phases/phase5-followup-fixes.md`、Phase 8の運用判断は
+`docs/archive/phases/phase8-stability-and-render-stop.md` を参照する。

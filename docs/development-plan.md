@@ -107,7 +107,7 @@ Gate 0後も観測を続けるが、機能実装を止めない項目:
 
 1. Laravel Cloud画面での `migrate:status` 出力保存。既存行の時刻補正から差分migrationの効果は確認済み。
 2. 娘さんとの実端末、機内モード、日跨ぎ、朝・昼・夜、10回報酬の観測。
-3. H1〜H3/M1〜M3の根治。再現条件とテスト案は `docs/wip/phase5-followup-fixes.md` に保存済み。
+3. H1〜H3/M1〜M3の根治。再現条件とテスト案は `docs/archive/phases/phase5-followup-fixes.md` に保存済み。
 4. 旧Render APIはロールバック先として残し、削除・停止は機能実装と分けて判断する。
 
 ### Gate 1: 最新DB設計と実装計画を一致させる

@@ -2,7 +2,7 @@
 
 - 作成日: 2026-07-18
 - 作成: Fable(計画担当)
-- 参照: `docs/koekake-plan-01.md` §6 / 基本設計v0.2 §4(D-01〜D-05)/ DR-019 §9 / **DR-020**
+- 参照: `docs/archive/phases/koekake-plan-01.md` §6 / 基本設計v0.2 §4(D-01〜D-05)/ DR-019 §9 / **DR-020**
 - **デザインの正 = `docs/mockups/kurashi-musume-home.html`**(2026-07-18 ユーザー+娘 承認済み)。
   本書と食い違う場合、見た目・文言はモックが正、データ・APIは本書が正。
 

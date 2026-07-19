@@ -41,7 +41,7 @@
 ## 1-4. 進行中の別ワークストリーム(本計画と並走)
 
 - Phase 8a: 本番安定確認の curl スモーク(Codex委譲・未実施)→ **K0 のDBリセット後に実行する**(観測データが一貫する)
-- Phase 5 フォローアップ修正(並行系 H1〜3/M1〜3・`docs/deploy_change/phase5-followup-fixes.md`)→ 未着手のまま有効
+- Phase 5 フォローアップ修正(並行系 H1〜3/M1〜3・`docs/archive/phases/phase5-followup-fixes.md`)→ 未着手のまま有効
 
 ---
 
@@ -112,7 +112,7 @@ php artisan migrate:fresh --seed --force
 
 ## 4-3. リセット後
 
-- Phase 8a の curl スモーク(`docs/deploy_change/codex-smoke-request-phase8.md`)を実行する(Codex委譲)。
+- Phase 8a の curl スモーク(`docs/archive/reviews/codex-smoke-request-phase8.md`)を実行する(Codex委譲)。
 
 ---
 

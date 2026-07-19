@@ -1,0 +1,6 @@
+# AI/CLI 実行の一時ファイル（docs に保管しない）
+*.log
+*.log.err
+*.err
+*.pid
+*.out

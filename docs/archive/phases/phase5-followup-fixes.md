@@ -15,7 +15,7 @@
 **並行操作・通信断まわり**に穴がある。家族少人数のため当面の実害は限定的だが、
 **Phase 7 の本番フロント切替の前後で潰しておくのが望ましい**(子どもの連打・モバイルの電波不安定で顕在化しうる)。
 
-- 全文レポート: `docs/deploy_change/codex-review-report-03.md`
+- 全文レポート: `docs/archive/reviews/codex-review-report-03.md`
 - 対象コード: `frontend/src/features/taskRecords/*`, `frontend/src/api/oshigotoStorage.ts` ほか
 - 変更しない前提: backend / 見た目・演出 / 図鑑・USJ・グッズ(Phase 5b)
 
