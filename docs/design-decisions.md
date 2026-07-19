@@ -32,6 +32,21 @@
 
 ---
 
+## DR-035: SPA移行中は現行APIアクセス動作を維持し、保護再設計は別課題とする(2026-07-20)
+
+- **課題感**: DR-024/DR-029は家族共有トークンで個人データAPIを保護する方針だったが、
+  `7a8391b` 以降の最新mainではAPI routeへfamily-token middlewareが付いていない。
+  SPA移行中にstale testや旧middlewareを根拠に保護を独断再有効化すると、認証再設計と画面配信切替が混線する。
+- **選択肢**: (a) A3/A4でfamily-tokenやSanctumを同時に戻す / (b) SPA移行を止めて先に保護だけ直す /
+  (c) 現行の未認証動作を事実として固定し、保護再設計は専用DR・専用PRの別課題にする。
+- **決定**: (c)。SPA移行中はSanctum、session/CSRF追加、`EnsureFamilyToken`のAPI再接続、
+  `X-Family-Token`必須化の復活を行わない。公開範囲とリスクは記録するが、このPhaseで解決したと扱わない。
+  詳細な現状snapshotは `docs/wip/api-first-spa-migration/access-contract-a3.md` を正とする。
+- **理由**: 画面配信方式の切替と認証境界の再設計を同時に変えると、障害原因とロールバック対象を分離できない。
+  ユーザーがA4前の保護完了を必須と判断した場合は、本移行を停止して別課題を先に完了する。
+
+---
+
 ## DR-034: Inertia中心方針をやめ、API-first React SPAをLaravel同一オリジンで配信する(2026-07-20)
 
 - **課題感**: DR-030では通常画面をInertia props/formへ移すハイブリッド構成を将来方針としたが、実装が進むと
@@ -242,6 +257,10 @@
 - **理由**: 単一家庭で必要なのはテナント分離ではなく、公開URLから家庭データを守る最小のアクセス制御である。
   本格アカウントより実装・運用が軽く、将来端末単位の失効が必要になった場合だけSanctum等へ移行できる。
   実装順は `docs/wip/database-unification/implementation-plan.md` Phase A。
+
+> **更新(DR-035)**: `7a8391b` 以降、現行runtimeのAPI routeにはfamily-token middlewareが付いていない。
+> SPA移行中はこの動作を維持し、保護の再設計は別課題とする。現状記録は
+> `docs/wip/api-first-spa-migration/access-contract-a3.md` を参照する。
 
 ## DR-023: 3系統を活動マスタ・予定・実績の共通軸で接続し、変更履歴を追記保存する(2026-07-18)
 
