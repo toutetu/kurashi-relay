@@ -50,7 +50,23 @@ export const INITIAL_KAJI: KajiTask[] = [
   },
 ];
 
-export const KAJI_CHALLENGE = { emoji: "🫧", label: "換気扇をさっと拭く" };
+export type KajiChallenge = {
+  emoji: string;
+  label: string;
+};
+
+/** 日付（YYYY-MM-DD）から安定したインデックスを決め、同じ日は同じチャレンジにする */
+export function pickDailyKajiChallenge(
+  tasks: ReadonlyArray<KajiChallenge>,
+  date: string,
+): KajiChallenge | null {
+  if (tasks.length === 0) return null;
+  let seed = 0;
+  for (let i = 0; i < date.length; i += 1) {
+    seed = (seed * 31 + date.charCodeAt(i)) >>> 0;
+  }
+  return tasks[seed % tasks.length] ?? null;
+}
 
 export const STAMP_SIZE = 10;
 export const INITIAL_JAR = 6;
