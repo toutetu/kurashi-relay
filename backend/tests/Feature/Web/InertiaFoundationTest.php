@@ -30,14 +30,15 @@ class InertiaFoundationTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_inertia_home_renders_welcome_page(): void
+    public function test_inertia_home_renders_home_page(): void
     {
+        $this->seed();
+
         $this->withFamilyToken()
             ->get('/app')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Welcome')
-                ->has('recordsPath')
+                ->component('Home/Index')
             );
     }
 
@@ -83,5 +84,33 @@ class InertiaFoundationTest extends TestCase
         ])->assertRedirect('/app');
 
         $this->assertTrue(session('family_token_verified'));
+    }
+
+    public function test_api_accepts_verified_web_session_without_header(): void
+    {
+        $this->seed();
+
+        $this->withSession(['family_token_verified' => true])
+            ->withoutFamilyToken()
+            ->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('status', 'success');
+    }
+
+    public function test_representative_inertia_routes_render_for_authenticated_session(): void
+    {
+        $this->seed();
+
+        $routes = [
+            ['/app/oshigoto', 'Oshigoto/Index'],
+            ['/app/koekake', 'Koekake/Index'],
+        ];
+
+        foreach ($routes as [$path, $component]) {
+            $this->withFamilyToken()
+                ->get($path)
+                ->assertOk()
+                ->assertInertia(fn ($page) => $page->component($component));
+        }
     }
 }

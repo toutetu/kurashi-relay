@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Web\FamilyTokenController;
-use App\Http\Controllers\Web\InertiaHomeController;
+use App\Http\Controllers\Web\InertiaPageController;
 use App\Http\Controllers\Web\RecordsController;
 use Illuminate\Support\Facades\Route;
 
@@ -9,8 +9,23 @@ Route::middleware(['inertia.enabled', 'web.family-token'])
     ->prefix(config('kurashi.inertia.path_prefix', 'app'))
     ->name('inertia.')
     ->group(function () {
-        Route::get('/', InertiaHomeController::class)->name('home');
+        Route::get('/', [InertiaPageController::class, 'home'])->name('home');
+        Route::get('/schedule-comparison', [InertiaPageController::class, 'scheduleComparison'])->name('schedule-comparison');
+        Route::get('/schedule', [InertiaPageController::class, 'schedule'])->name('schedule');
         Route::get('/records', [RecordsController::class, 'index'])->name('records.index');
+        Route::get('/mama-kaji', [InertiaPageController::class, 'mamaKaji'])->name('mama-kaji');
+        Route::get('/mama-kaji/zukan', [InertiaPageController::class, 'mamaKajiZukan'])->name('mama-kaji.zukan');
+        Route::get('/child-plan', [InertiaPageController::class, 'childPlan'])->name('child-plan');
+        Route::get('/musume', [InertiaPageController::class, 'musume'])->name('musume');
+        Route::get('/koekake', [InertiaPageController::class, 'koekake'])->name('koekake');
+        Route::get('/oshigoto', [InertiaPageController::class, 'oshigoto'])->name('oshigoto');
+        Route::get('/oshigoto/zukan', [InertiaPageController::class, 'oshigotoZukan'])->name('oshigoto.zukan');
+        Route::get('/oshigoto/usj', [InertiaPageController::class, 'oshigotoUsj'])->name('oshigoto.usj');
+        Route::get('/summary', [InertiaPageController::class, 'summary'])->name('summary');
+        Route::get('/last-war', [InertiaPageController::class, 'lastWar'])->name('last-war');
+        Route::get('/support', [InertiaPageController::class, 'support'])->name('support');
+        Route::get('/reports', [InertiaPageController::class, 'reports'])->name('reports');
+        Route::get('/settings', [InertiaPageController::class, 'settings'])->name('settings');
     });
 
 Route::middleware(['inertia.enabled'])

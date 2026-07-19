@@ -1,8 +1,21 @@
 import { createInertiaApp } from "@inertiajs/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentType } from "react";
 import { createRoot } from "react-dom/client";
+import { setInertiaSessionAuth, setInertiaPathPrefix } from "@/api/inertiaAuth";
 import { MoodProvider } from "@/features/mood/mood";
+import type { SharedPageProps } from "@/inertia/types";
+import { AppPathProvider } from "@/navigation/AppPathContext";
 import "@/index.css";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 createInertiaApp({
   resolve: (name) => {
@@ -19,10 +32,19 @@ createInertiaApp({
     return page.default;
   },
   setup({ el, App, props }) {
+    const pageProps = props.initialPage.props as unknown as SharedPageProps;
+    const pathPrefix = `/${pageProps.app.inertiaPrefix}`;
+    setInertiaSessionAuth(pageProps.auth?.verified === true);
+    setInertiaPathPrefix(pathPrefix);
+
     createRoot(el).render(
-      <MoodProvider>
-        <App {...props} />
-      </MoodProvider>,
+      <QueryClientProvider client={queryClient}>
+        <AppPathProvider value={{ mode: "inertia", pathPrefix }}>
+          <MoodProvider>
+            <App {...props} />
+          </MoodProvider>
+        </AppPathProvider>
+      </QueryClientProvider>,
     );
   },
   progress: {

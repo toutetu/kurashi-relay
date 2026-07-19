@@ -5,10 +5,13 @@ use App\Http\Middleware\EnsureFamilyToken;
 use App\Http\Middleware\EnsureInertiaEnabled;
 use App\Http\Middleware\EnsureWebFamilyToken;
 use App\Http\Middleware\HandleInertiaRequests;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -21,6 +24,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             HandleInertiaRequests::class,
+        ]);
+
+        $middleware->api(prepend: [
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
         ]);
 
         $middleware->alias([

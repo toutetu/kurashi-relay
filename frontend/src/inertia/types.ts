@@ -11,6 +11,10 @@ export type SharedPageProps = {
   flash: {
     status?: string | null;
   };
+  auth?: {
+    mode: "session";
+    verified: boolean;
+  };
 };
 
 export type MemberRecordsPayload = {

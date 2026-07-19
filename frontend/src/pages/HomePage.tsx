@@ -1,6 +1,5 @@
 import { CalendarDays, RefreshCcw } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import { SegmentedTabs } from "../components/ui/SegmentedTabs";
 import { Button } from "../components/ui/Button";
 import { DashboardError, DashboardLoading } from "../components/ui/AsyncStates";
@@ -12,47 +11,33 @@ import {
   QuickStartCard,
   TimeBalanceCard,
 } from "../features/dashboard/components/DashboardCards";
+import {
+  dashboardTabs,
+  type DashboardTab,
+} from "../features/dashboard/hooks/dashboardTab";
+import { useInertiaDashboardTab } from "../features/dashboard/hooks/useInertiaDashboardTab";
+import { useSpaDashboardTab } from "../features/dashboard/hooks/useSpaDashboardTab";
 import { useDashboardQuery } from "../features/dashboard/queries/useDashboardQuery";
 import { MoodPicker } from "../features/mood/mood";
+import { useAppPathContext } from "../navigation/AppPathContext";
 import type { DashboardData } from "../types/dashboard";
 import { createLocalActivity, type LocalActivity } from "../types/local";
 import { formatDate, getTokyoToday } from "../utils/date";
 
-const dashboardTabs = [
-  { value: "record", label: "記録" },
-  { value: "today", label: "今日" },
-] as const;
-
-type DashboardTab = (typeof dashboardTabs)[number]["value"];
-
-function getDashboardTab(value: string | null): DashboardTab {
-  return dashboardTabs.some((tab) => tab.value === value)
-    ? (value as DashboardTab)
-    : "record";
-}
-
-function HomeDashboard({ data }: { data: DashboardData }) {
+function HomeDashboard({
+  data,
+  activeTab,
+  selectTab,
+}: {
+  data: DashboardData;
+  activeTab: DashboardTab;
+  selectTab: (tab: DashboardTab) => void;
+}) {
   const [currentActivity, setCurrentActivity] = useState<LocalActivity | null>(
     data.currentActivity ? createLocalActivity(data.currentActivity) : null,
   );
-  const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get("tab");
-  const activeTab = getDashboardTab(rawTab);
   const runningCategory =
     currentActivity?.status === "running" ? currentActivity.category : null;
-
-  useEffect(() => {
-    if (rawTab === activeTab) return;
-    const next = new URLSearchParams(searchParams);
-    next.set("tab", activeTab);
-    setSearchParams(next, { replace: true });
-  }, [activeTab, rawTab, searchParams, setSearchParams]);
-
-  const selectTab = (tab: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("tab", tab);
-    setSearchParams(next);
-  };
 
   return (
     <div>
@@ -63,7 +48,7 @@ function HomeDashboard({ data }: { data: DashboardData }) {
       <SegmentedTabs
         tabs={dashboardTabs}
         value={activeTab}
-        onChange={selectTab}
+        onChange={(tab) => selectTab(tab as DashboardTab)}
         panelId="dashboard-panel"
         label="ホームの表示内容"
       />
@@ -106,6 +91,40 @@ function HomeDashboard({ data }: { data: DashboardData }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function HomeDashboardSpa({ data }: { data: DashboardData }) {
+  const [activeTab, selectTab] = useSpaDashboardTab();
+
+  return (
+    <HomeDashboard
+      data={data}
+      activeTab={activeTab}
+      selectTab={selectTab}
+    />
+  );
+}
+
+function HomeDashboardInertia({ data }: { data: DashboardData }) {
+  const [activeTab, selectTab] = useInertiaDashboardTab();
+
+  return (
+    <HomeDashboard
+      data={data}
+      activeTab={activeTab}
+      selectTab={selectTab}
+    />
+  );
+}
+
+function HomeDashboardRouter({ data }: { data: DashboardData }) {
+  const { mode } = useAppPathContext();
+
+  return mode === "inertia" ? (
+    <HomeDashboardInertia data={data} />
+  ) : (
+    <HomeDashboardSpa data={data} />
   );
 }
 
@@ -156,7 +175,7 @@ export function HomePage() {
         />
       )}
       {query.isSuccess && (
-        <HomeDashboard key={query.data.date} data={query.data} />
+        <HomeDashboardRouter key={query.data.date} data={query.data} />
       )}
     </div>
   );
