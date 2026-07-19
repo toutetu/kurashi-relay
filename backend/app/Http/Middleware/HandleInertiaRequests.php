@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\InertiaPath;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -27,7 +28,7 @@ final class HandleInertiaRequests extends Middleware
             'app' => [
                 'name' => config('app.name', 'くらしリレー'),
                 'timezone' => config('kurashi.timezone', 'Asia/Tokyo'),
-                'inertiaPrefix' => config('kurashi.inertia.path_prefix', 'app'),
+                'inertiaPrefix' => InertiaPath::sharedPrefix(),
             ],
             'flash' => [
                 'status' => fn () => $request->session()->get('status'),

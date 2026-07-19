@@ -10,7 +10,9 @@ return [
 
     'inertia' => [
         'enabled' => filter_var(env('INERTIA_ENABLED', false), FILTER_VALIDATE_BOOL),
+        'cutover' => filter_var(env('INERTIA_CUTOVER', false), FILTER_VALIDATE_BOOL),
         'path_prefix' => env('INERTIA_PATH_PREFIX', 'app'),
+        'legacy_path_prefix' => env('INERTIA_LEGACY_PATH_PREFIX', 'app'),
     ],
 
     'timezone' => 'Asia/Tokyo',

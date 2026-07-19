@@ -2,13 +2,14 @@ import { Head, useForm, usePage } from "@inertiajs/react";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import { InertiaAppLayout } from "@/inertia/layouts/InertiaAppLayout";
 import type { SharedPageProps } from "@/inertia/types";
+import { buildInertiaPath } from "@/navigation/inertiaPath";
 
 export default function FamilyToken() {
   const { app } = usePage<SharedPageProps>().props;
   const form = useForm({
     token: "",
   });
-  const familyTokenPath = `/${app.inertiaPrefix}/family-token`;
+  const familyTokenPath = buildInertiaPath(app.inertiaPrefix, "/family-token");
 
   return (
     <InertiaAppLayout>
