@@ -35,7 +35,7 @@ final class HandleInertiaRequests extends Middleware
             ],
             'auth' => [
                 'mode' => 'session',
-                'verified' => $request->session()->get('family_token_verified') === true,
+                'verified' => true,
             ],
         ];
     }
