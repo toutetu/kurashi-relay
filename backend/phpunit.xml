@@ -30,5 +30,6 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="FAMILY_TOKEN" value="test-family-token"/>
+        <env name="INERTIA_ENABLED" value="false"/>
     </php>
 </phpunit>

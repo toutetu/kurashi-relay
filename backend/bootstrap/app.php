@@ -2,6 +2,9 @@
 
 use App\Exceptions\IdempotencyConflictException;
 use App\Http\Middleware\EnsureFamilyToken;
+use App\Http\Middleware\EnsureInertiaEnabled;
+use App\Http\Middleware\EnsureWebFamilyToken;
+use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -11,12 +14,19 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
+        web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(append: [
+            HandleInertiaRequests::class,
+        ]);
+
         $middleware->alias([
             'family-token' => EnsureFamilyToken::class,
+            'inertia.enabled' => EnsureInertiaEnabled::class,
+            'web.family-token' => EnsureWebFamilyToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
