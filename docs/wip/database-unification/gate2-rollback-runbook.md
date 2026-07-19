@@ -45,7 +45,7 @@ refresh 中・直後の失敗時に、**アプリケーションと DB の両方
 ### 5. 記録
 
 - 失敗原因、実施した rollback 手順、復旧時刻を Gate 記録へ追記する。
-- Inertia I0 は開始しない。
+- 画面移行(API-first SPA)は開始しない。
 
 ## ローカル検証での rollback
 

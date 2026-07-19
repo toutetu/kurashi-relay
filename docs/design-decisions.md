@@ -32,6 +32,28 @@
 
 ---
 
+## DR-034: Inertia中心方針をやめ、API-first React SPAをLaravel同一オリジンで配信する(2026-07-20)
+
+- **課題感**: DR-030では通常画面をInertia props/formへ移すハイブリッド構成を将来方針としたが、実装が進むと
+  Inertiaはrouteとasset配信の器に留まり、実データの取得・更新はTanStack Queryと既存JSON APIのままだった。
+  その一方で `frontend/src` と `backend/resources/js` の二重ソース、Inertia専用wrapper、文書上の
+  「Gate 2未通過・Inertia未着手」記述が残り、保守負担と方針の食い違いが大きくなった。
+- **選択肢**: (a) DR-030どおりInertia props/formへ寄せ続ける / (b) 独立SPA+別デプロイへ戻す /
+  (c) React Router + TanStack Query + Laravel JSON APIのまま、SPAをLaravel Cloudから同一オリジン配信し、
+  React正本を `backend/resources/js` へ一本化する。
+- **決定**: (c)。Inertiaを廃止し、通常画面のデータ取得・更新は既存 `/api/*` に統一する。
+  独立React SPAとLaravel APIの2デプロイへ恒久的に戻さず、SPAをLaravelから配信する。
+  DR-030は当時の判断として残すが、将来方針は本DRが置き換える。移行手順の正本は
+  `docs/wip/api-first-spa-migration/implementation-plan.md` とする。
+- **理由**:
+  - テスト過重はDR-033とCursor中心実装で解消済みであり、Inertiaへ寄せてJSON契約テストを減らす主因は薄れた。
+  - 現Inertiaはprops/formをほぼ使わず、APIを全件維持しているため、Inertia固有の利点が小さい。
+  - React source二重化の方が保守負担になった。
+  - client主導のoffline再送・冪等処理(`idempotency_key`、localStorage退避)を維持するには、
+    API-firstのまま同一オリジン化する方が自然である。
+
+---
+
 ## DR-033: 個人利用の機能追加は動作確認1回で完了し、作業文書と古いDRをアーカイブする(2026-07-19)
 
 - **課題感**: 機能が増えるたびに、自動テストの追加、全テスト・lint・build、別AIレビュー、修正後の再レビュー、
@@ -95,7 +117,10 @@
   この決定はDR-017の「Inertiaへ戻さない」を将来方針について置き換えるが、移行開始ゲートまでは現行の
   SPA+REST、別ブランチ・別PR、Render+Laravel Cloudの運用を維持する。DB refreshの扱いはDR-031に従う。
 
-詳細は `docs/wip/inertia-migration/implementation-plan.md` を参照する。
+> **更新(DR-034)**: 将来の画面通信方針はInertia中心からAPI-first React SPA(同一オリジン配信)へ置き換えた。
+> DR-030は当時の判断として残す。旧Inertia移行計画は
+> `docs/archive/phases/inertia-migration/implementation-plan.md` に保管し、進行中の正本は
+> `docs/wip/api-first-spa-migration/implementation-plan.md` とする。
 
 ---
 
@@ -113,6 +138,9 @@
 - **理由**: データが少ない現在は、互換移行の安全装置をすべて実装する費用が、保護対象の実データ量と
   釣り合わない。DB構造と業務ルールを先に正しくし、画面と書込経路をInertia側で新正本へ接続する方が速い。
   一方、無断削除を許す決定ではないため、refresh実行はバックアップと個別確認を条件とする。
+
+> **更新(DR-034)**: DB refreshを待たずスキーマ完成後に進む判断は維持する。到達先の画面通信方針だけを
+> Inertia中心からAPI-first React SPA(同一オリジン配信)へ置き換える。書込経路の正本は既存 `/api/*` とする。
 
 ---
 

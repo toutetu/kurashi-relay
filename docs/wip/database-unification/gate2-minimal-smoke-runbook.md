@@ -71,7 +71,7 @@ php artisan test --filter=Gate2MinimalSmokeTest
 
 1. `gate2-rollback-runbook.md` を参照する。
 2. `gate2:verify` の出力を Gate 記録へ添付する。
-3. Inertia 開始を止める。
+3. 画面移行(API-first SPA)の開始を止める。
 
 ## 関連
 
