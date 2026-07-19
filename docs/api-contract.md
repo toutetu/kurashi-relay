@@ -190,3 +190,13 @@ TanStack Query、Zod schema、API Resourceは一括削除しない。利用clien
 この移行とは別に継続する。
 
 移行手順の正本: `docs/wip/api-first-spa-migration/implementation-plan.md`
+
+# 11. 現行アクセス契約(A3時点の事実)
+
+DR-035により、SPA移行中は最新mainのアクセス動作を変えない。
+
+- API routeは19本。`routes/api.php` にfamily-token middlewareは付いていない。
+- `7a8391b` 以降、未認証のGET/writeが通るruntimeである（staleな401期待テストで上書きしない）。
+- Sanctum、session/CSRF追加、`EnsureFamilyToken`のAPI再接続は本移行では行わない。
+- アクセス保護の再設計は別課題とする。詳細は
+  `docs/wip/api-first-spa-migration/access-contract-a3.md` を参照する。
