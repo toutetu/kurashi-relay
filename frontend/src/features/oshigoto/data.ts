@@ -16,6 +16,14 @@ export type Zombie = {
 
 export const INITIAL_TASKS: Task[] = [
   {
+    id: "okita",
+    emoji: "⏰",
+    label: "自分で起きた",
+    praise: "自分で起きられたね！",
+    count: 0,
+    tone: "lav",
+  },
+  {
     id: "kigae",
     emoji: "👚",
     label: "自分で着替えた",
