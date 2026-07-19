@@ -10,6 +10,10 @@ return new class extends Migration
     {
         Schema::create('task_definitions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('activity_definition_id')
+                ->nullable()
+                ->constrained('activity_definitions')
+                ->restrictOnDelete();
             $table->string('owner_role', 20)->index();
             $table->string('slug', 50);
             $table->string('category', 30)->nullable();

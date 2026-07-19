@@ -26,7 +26,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use RuntimeException;
 use Tests\TestCase;
 
 class PhaseCdeTargetSchemaTest extends TestCase
@@ -462,73 +461,26 @@ class PhaseCdeTargetSchemaTest extends TestCase
         );
     }
 
-    public function test_reflection_history_migration_down_succeeds_on_empty_schema(): void
+    public function test_reflection_sessions_support_revision_history_in_create_schema(): void
     {
-        $this->assertSame(0, ReflectionSession::query()->count());
-
-        Artisan::call('migrate:rollback', [
-            '--path' => 'database/migrations/2026_07_19_120017_revise_reflection_sessions_for_history.php',
-        ]);
-
-        $this->assertFalse(Schema::hasColumn('reflection_sessions', 'revision_no'));
-
-        Artisan::call('migrate', [
-            '--path' => 'database/migrations/2026_07_19_120017_revise_reflection_sessions_for_history.php',
-        ]);
-
         $this->assertTrue(Schema::hasColumn('reflection_sessions', 'revision_no'));
+        $this->assertTrue(Schema::hasColumn('reflection_sessions', 'recorded_by_member_id'));
     }
 
-    public function test_reflection_history_migration_down_rejects_multiple_revisions(): void
-    {
-        Carbon::setTestNow(Carbon::parse('2026-07-21 19:00:00', 'Asia/Tokyo'));
-
-        $this->getJson('/api/musume/plan?date=2026-07-21')->assertOk();
-        $plan = DailyPlan::query()->where('plan_date', '2026-07-21')->firstOrFail();
-        $childId = FamilyMember::query()->where('role', 'child')->valueOrFail('id');
-        $now = now('UTC');
-
-        ReflectionSession::query()->create([
-            'daily_plan_id' => $plan->id,
-            'revision_no' => 1,
-            'mode' => 'summer',
-            'started_at' => $now,
-            'completed_at' => $now,
-            'recorded_by_member_id' => $childId,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        ReflectionSession::query()->create([
-            'daily_plan_id' => $plan->id,
-            'revision_no' => 2,
-            'mode' => 'summer',
-            'started_at' => $now,
-            'completed_at' => $now,
-            'recorded_by_member_id' => $childId,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        $this->expectException(RuntimeException::class);
-
-        Artisan::call('migrate:rollback', [
-            '--path' => 'database/migrations/2026_07_19_120017_revise_reflection_sessions_for_history.php',
-        ]);
-    }
-
-    public function test_phase_cde_migrations_can_roll_back_and_reapply_safely(): void
+    public function test_consolidated_migrations_can_roll_back_and_reapply_safely(): void
     {
         $this->assertSame(0, ReflectionSession::query()->count());
 
-        Artisan::call('migrate:rollback', ['--step' => 17]);
+        Artisan::call('migrate:rollback', ['--step' => 26]);
 
+        $this->assertFalse(Schema::hasTable('family_members'));
         $this->assertFalse(Schema::hasTable('activity_definitions'));
         $this->assertFalse(Schema::hasTable('plan_answer_versions'));
 
         Artisan::call('migrate');
         $this->seed();
 
+        $this->assertTrue(Schema::hasTable('family_members'));
         $this->assertTrue(Schema::hasTable('activity_definitions'));
         $this->assertTrue(Schema::hasTable('plan_answer_versions'));
         $this->assertSame(22, RoutineTemplate::query()->count());

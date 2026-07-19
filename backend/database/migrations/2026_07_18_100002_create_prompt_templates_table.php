@@ -17,6 +17,10 @@ return new class extends Migration
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestampsTz();
 
+            $table->unique(
+                ['routine_template_id', 'prompt_level', 'sort_order'],
+                'prompt_templates_routine_level_sort_unique',
+            );
             $table->index(['routine_template_id', 'prompt_level']);
         });
     }

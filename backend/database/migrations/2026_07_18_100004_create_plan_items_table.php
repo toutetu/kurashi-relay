@@ -18,6 +18,10 @@ return new class extends Migration
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestampsTz();
 
+            $table->unique(
+                ['daily_plan_id', 'category', 'sort_order'],
+                'plan_items_plan_category_sort_unique',
+            );
             $table->index(['daily_plan_id', 'category']);
         });
     }
