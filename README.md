@@ -2,12 +2,15 @@
 
 母と娘の生活、予定と実績、支援、待機・拘束、回復を見えるようにし、家族・学校・支援機関との役割分担につなげるWebアプリのPoCです。
 
-第1実装は、Laravel REST APIと独立したReact SPAを接続し、Laravel側の固定データを母向けホームダッシュボードと「今日の予定と実績」画面へ表示します。Inertiaは使用しません。
+現在はLaravel REST APIとRender上の独立React SPAを接続して運用しています。統合後DBのスキーマ完成後、
+通常Web画面をLaravel+Inertia.js+Reactへ移し、offline再送・通知・外部client等に必要なAPIだけを残す計画です。
+現行構成は移行完了まで維持します。
 
 ## 現在の実装計画
 
 実装済みの機能、未実装領域、今後の開発順序は [くらしリレー 実装計画](docs/development-plan.md) を参照してください。
 今後「次に何を実装するか」を判断するときは、この文書を全体ロードマップの正とします。
+Inertia移行の詳細は [Inertia移行 実装計画](docs/wip/inertia-migration/implementation-plan.md) を参照してください。
 
 ## 構成
 

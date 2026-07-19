@@ -173,3 +173,17 @@ DELETE /api/task-records/{id}
 節目報酬が発生したときだけ、`revealed_reward` は
 `type`、`item_slug`、`milestone_number`、`obtained_on` を持つオブジェクトになる。
 同一 `idempotency_key` の再送は同じrecordを返し、`meta.deduplicated` を `true` とする。
+
+# 10. Inertia移行時の契約方針
+
+DB target schema完成後、通常Web画面はLaravel+Inertia+Reactへ段階移行する。移行が完了するまで、
+本書の既存REST契約は有効であり、同じreleaseで一括削除しない。
+
+Inertia I0で全18 endpointを次へ分類する。
+
+- 通常画面の初期表示・通常formだけが利用: Inertia props/formへ移し、旧endpointは廃止候補。
+- offline退避・再送、冪等性、Service Worker、通知に必要: 内部JSON APIとして残す。
+- native appまたは外部clientへJSON提供が必要: versionと認証を明示して残す。
+
+TanStack Query、Zod schema、API Resourceは一括削除せず、利用client、code reference、accessがなくなった
+対象だけをI7で整理する。Google Calendar APIはLaravelから外部サービスを呼ぶ契約なので、この分類とは別に継続する。

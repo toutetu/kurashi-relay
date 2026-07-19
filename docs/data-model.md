@@ -13,7 +13,8 @@
 - 複数家庭・SaaS化は対象外。全テーブルへの `household_id` 追加は行わない。
 - 人物の区別には既存の `family_members` を使用する。
 - 母・娘以外の家族を追加できる余地は残すが、複数家庭テナント分離は設計しない。
-- 本番データが存在するため、スキーマ変更は必ず差分マイグレーションで行う。
+- 通常のスキーマ変更は差分マイグレーションで行う。Inertia移行前はデータが少量なため、DR-031により
+  backup/exportとユーザーの実行時明示確認を条件に、管理下のDB refreshを選べる。
 - 記録は監視・評価ではなく、支援・待機・回復・役割分担の把握に使う。
 - Google Calendarは予定の入力源の1つとして扱い、Calendar側を実績の正本にはしない。
 
@@ -69,7 +70,7 @@ flowchart TB
     end
 
     subgraph DETAILS["該当するときだけ存在する従属行"]
-        AO["activity_event_outcomes<br/>完了・一部・延期等の結果"]
+        AO["activity_event_outcomes<br/>完了・一部・延期・不明の結果"]
         PE["prompt_events<br/>声かけ回数・文面"]
         AEC["activity_event_cancellations<br/>取消履歴"]
         PAL["plan_actual_links<br/>予定との対応"]
@@ -295,6 +296,11 @@ flowchart TB
 | 娘が準備し、母が同時に支援 | `activity` | 娘=`actor`、母=`supporter` |
 | 母が家事を実施 | `activity` | 母=`actor` |
 
+画面操作からの自動付与はDR-032と
+`docs/wip/database-unification/implementation-plan.md` の「8.1 Gate 1確定事項」を正とする。
+`recorded_by_member_id` と人物参加は同一人物とは限らず、母が娘の完了を入力する場合は
+母=`recorded_by`、娘=`actor` とする。
+
 ### 7.3 `activity_event_outcomes`（新規・活動結果）
 
 完了・一部・延期等の結果があるイベントにだけ1行作る。声かけや支援を記録しただけの場合は
@@ -310,6 +316,8 @@ flowchart TB
 - `result` CHECK
 - `activity_events.event_type='activity'` との整合をアプリ層とテストで保証する。
 - 「一緒にした」「母が代行した」は結果値にせず、参加者の役割から表現する。
+- `deferred` / `unknown` は娘の予定活動について母が状態を入力した結果であり、娘=`actor`、
+  母=`recorded_by` とする。`completed` と区別し、活動が完了した事実として集計しない。
 
 ### 7.4 `activity_event_cancellations`（新規・取消履歴）
 
@@ -333,6 +341,9 @@ flowchart TB
   出来事ヘッダーへnullable `note` 列を置かない。
 
 ### 7.6 既存記録テーブルの移行
+
+DR-031により、Inertia開始前の標準経路はtarget schemaを作成してrefreshする経路とする。
+次のbackfill・互換処理は、既存データを保持する判断をした場合の代替経路として残す。
 
 - `task_records` は `activity_events`、`activity_event_participants`、必要な結果・報酬行へバックフィルする。
 - `completion_events` は `activity_events`、参加行、`activity_event_outcomes` へバックフィルする。
@@ -641,10 +652,12 @@ flowchart TB
 - 比較は `hash_equals`、失敗は401、連続失敗にはRate Limitを適用する。
 - トークンは環境変数差し替えでローテーション可能にする。
 - 本番で `FAMILY_TOKEN` が未設定の場合は保護を無効化せず、起動失敗または保護APIを503にする（fail closed）。
-- 将来、端末紛失・個別失効が必要になった時点でSanctum等へ移行する。
+- Inertia I5では通常Web画面をLaravel session認証へ移す。残存APIは利用clientに応じて
+  session+CSRFまたは専用tokenを選び、家族共有トークンは利用0件確認後の別releaseで整理する。
 
 ## 16. 実装順
 
 実際の移行順、バックフィル、互換期間、検証条件は
-`docs/wip/database-unification/implementation-plan.md` を正とする。同計画は2026-07-19にDR-027へ同期済みである。
+`docs/wip/database-unification/implementation-plan.md` を正とする。同計画は2026-07-19にDR-027〜DR-032へ同期済みである。
 今後同計画と本書が矛盾した場合は、最新のDRと本書を先に更新してから実装する。
+現在はPhase C/D1/Eのtarget schemaとmigration/seed確認を完了後、本番安定観測を待たずInertia I0へ進む。
