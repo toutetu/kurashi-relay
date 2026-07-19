@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TaskDefinition extends Model
@@ -11,6 +12,7 @@ class TaskDefinition extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'activity_definition_id',
         'owner_role',
         'slug',
         'category',
@@ -30,6 +32,11 @@ class TaskDefinition extends Model
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    public function activityDefinition(): BelongsTo
+    {
+        return $this->belongsTo(ActivityDefinition::class);
     }
 
     public function taskRecords(): HasMany

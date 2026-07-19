@@ -2,18 +2,27 @@
 
 namespace Database\Seeders;
 
+use App\Models\ActivityDefinition;
 use App\Models\PromptTemplate;
 use App\Models\RoutineTemplate;
+use App\Support\FamilyMemberResolver;
+use Database\Support\RoutineTemplateSlugCatalog;
 use Illuminate\Database\Seeder;
 
 class KoekakeSeeder extends Seeder
 {
     public function run(): void
     {
+        $childMemberId = FamilyMemberResolver::childId();
         $routines = $this->routineDefinitions();
         $promptTexts = $this->promptTexts();
 
         foreach ($routines as $routine) {
+            $slug = RoutineTemplateSlugCatalog::slugFor($routine['phase'], $routine['sort_order']);
+            $activityDefinition = ActivityDefinition::query()
+                ->where('activity_key', $routine['activity_key'])
+                ->firstOrFail();
+
             $promptKey = $routine['phase'].'::'.$routine['name'];
             $promptLevels = $promptTexts[$promptKey] ?? $promptTexts[$routine['name']] ?? null;
 
@@ -22,16 +31,17 @@ class KoekakeSeeder extends Seeder
             }
 
             $template = RoutineTemplate::query()->updateOrCreate(
+                ['slug' => $slug],
                 [
+                    'activity_definition_id' => $activityDefinition->id,
+                    'subject_member_id' => $childMemberId,
+                    'activity_key' => $activityDefinition->activity_key,
                     'phase' => $routine['phase'],
                     'name' => $routine['name'],
-                ],
-                [
-                    'activity_key' => $routine['activity_key'],
                     'icon' => $routine['icon'],
-                    'parent_prompt_label' => $routine['parent_prompt_label'],
-                    'child_label' => $routine['child_label'],
-                    'quick_label' => $routine['quick_label'],
+                    'parent_prompt_label' => $activityDefinition->parent_prompt_label,
+                    'child_label' => $activityDefinition->child_label,
+                    'quick_label' => $activityDefinition->quick_label,
                     'default_time' => $routine['default_time'],
                     'daily_limit' => $routine['daily_limit'],
                     'display_rule' => null,

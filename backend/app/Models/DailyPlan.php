@@ -45,6 +45,16 @@ class DailyPlan extends Model
 
     public function reflectionSession(): HasOne
     {
-        return $this->hasOne(ReflectionSession::class);
+        return $this->hasOne(ReflectionSession::class)->latestOfMany('revision_no');
+    }
+
+    public function reflectionSessions(): HasMany
+    {
+        return $this->hasMany(ReflectionSession::class);
+    }
+
+    public function answerVersions(): HasMany
+    {
+        return $this->hasMany(PlanAnswerVersion::class);
     }
 }

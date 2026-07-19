@@ -2,6 +2,12 @@
 
 return [
 
+    'family_token' => env('FAMILY_TOKEN', ''),
+
+    'family_token_max_attempts' => (int) env('FAMILY_TOKEN_MAX_ATTEMPTS', 5),
+
+    'family_token_decay_seconds' => (int) env('FAMILY_TOKEN_DECAY_SECONDS', 60),
+
     'timezone' => 'Asia/Tokyo',
 
     'stamp_size' => 10,
