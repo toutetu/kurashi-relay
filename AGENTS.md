@@ -6,13 +6,19 @@
 
 | 役割 | 担当 |
 |---|---|
-| 要件整理・実装 | そのセッションでユーザーが依頼したAI(Fable / Codex / Cursor等) |
-| レビュー | 原則なし。壊すと復旧コストが高い変更だけ、実装者以外が1周 |
+| 要件定義 | ChatGPT |
+| デザイン・設計 | Claude (Fable) |
+| 実装指示書/レビュー依頼書の作成・委譲の指揮・合否判断・実装の控え・セカンドオピニオン・**コードレビュー・品質ゲート検証** | Codex |
+| 実装 | Cursor **Composer 2.5　(fast: "false") (第一候補) , Grok 4.5**|
 
 > **標準フローは「1機能を1セッションで実装 → 動作確認1回 → 完了」**。
-> 別AIへの実装委譲、独立レビュー、再レビューは標準工程にしない。
 > DBスキーマ・データ移行などの高リスク変更だけ
 > `docs/ops/ai-implementation-review-workflow.md` を任意に使う。
+> **レビューはFableではなくCodexが行う**(2026-07-18 ユーザー指示。旧「Fable=差分レビュー」を撤回)。
+> Fableは自分でコードを精読・差分レビューせず、レビュー依頼書を書いて Codex に委譲し、Codexの合否レポート
+> だけ読んでマージ判断する。理由: Codexに任せる方がFableのトークンを節約でき、かつ質でも上回る
+> (Fableの自前レビューが見落とした実バグをCodexが複数検出した実績あり)。
+
 
 運用ルール:
 
@@ -56,6 +62,7 @@ docs の無限増殖を防ぐため、ライフサイクルで置き場所を分
   `docs/logs/`(日報)は恒久扱いの資産・ログ置き場。archive へ移さない。
 - **結論は DR に蒸留**。`docs/design-decisions.md` は現在参照する判断とarchive索引を置き、
   古いDR本文は `docs/archive/design-decisions/` へ20件程度のまとまりで移す。archiveは失効を意味しない。
+   archive を消しても DR を辿れば判断が復元できる状態を保つ。
   DR番号は通番を維持し、必要な過去DRだけ索引から個別に読む。
 
 ### 新機能の 提案 → 実装 → 完了 の流れ
@@ -75,14 +82,25 @@ Webアプリ「くらしリレー」のPoCです。
 母に集中している支援、待機・拘束、回復時間を見えるようにし、
 家族・学校・支援機関との役割分担につなげることが目的です。
 
-## 作業前に読む資料(最小限)
 
-- 毎回すべての恒久資料を通読しない。
+## 作業前に読む資料
+
+1. `docs/product-plan.md`
+2. `docs/development-plan.md`
+3. `docs/architecture.md`
+4. `docs/design-principles.md`
+5. `docs/data-model.md`
+6. `docs/api-contract.md`
+7. 対象タスクの実装指示書(`docs/wip/<機能>/` 配下)
+
+- product-plan / development-plan / architecture / design-principles / data-model / api-contract は、変更に関係するものだけを部分参照する。
+
 - まず変更対象と直接関係するコード・文書を検索し、必要な箇所だけ読む。
 - 対象タスクのWIPメモがある場合は、そのファイルだけ読む。`docs/wip/` 全体は読まない。
+
 - `docs/archive/` と過去DRは、履歴確認が必要な場合だけ索引から該当ファイルを読む。
-- product-plan / development-plan / architecture / design-principles / data-model / api-contract は、
-  変更に関係するものだけを部分参照する。
+
+- product-plan / development-plan / architecture / design-principles / data-model / api-contract は、  変更に関係するものだけを部分参照する。
 
 ## 採用技術
 
@@ -233,14 +251,15 @@ B案v3を土台に、娘のアイデンティティカラー(藤 `--fuji`)をア
 - 一時的な `.log` / `.err` / `.pid` はdocsに保管しない。
 
 ### 実装と分業
+### トークン節約の分業
+- コードを書く作業は原則すべて Cursor(composer-2.5)へ委譲する。小さな修正・アニメ調整も含む。
+  難所・強い推論が必要な箇所は Codex 上位モデルへエスカレーションしてよい。
+- 指示は docs/*.md に精密なスペックとして書き、CLIへは「そのファイルを読んで実装せよ」と
+  1行プロンプトで渡す(複数行プロンプトは.cmdラッパーが切る)。
 
-- Fable / Codex / Cursorのうち、依頼を受けたエージェントがそのまま実装してよい。
-  コスト削減だけを理由に、同じ機能を別AIへ再説明・再実装・再レビューさせない。
-- 数行で足りる依頼は文書化しない。複数セッションにまたがる場合だけ最小のWIPメモを作る。
-- 高価なモデルや別エージェントへの委譲は、ユーザーが指定した場合か、現在の担当では進められない難所だけにする。
-- コミットは確認不要で区切りごとに自律実行(conventional commits)。push/PRはユーザー確認後。
+- コミット、push、pRは確認不要で区切りごとに自律実行。margeはユーザー確認後。
 
 ### 各エージェントが自動で読む資料
-- Cursor Composer/Grok: この AGENTS.md を毎回読む。
+- Cursor Composer/Grok ,Codex: この AGENTS.md を毎回読む。
 - Fable(Claude Code): CLAUDE.md と自身の永続メモリを毎回読む(AGENTS.mdは自動では読まれない)。
   Fable向けの恒常ルールは CLAUDE.md にも記載する。
