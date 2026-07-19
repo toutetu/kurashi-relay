@@ -19,17 +19,46 @@ export function isTokyoDateAfter(date: string, other: string): boolean {
   return date > other;
 }
 
-export function getTokyoToday(): string {
+export function formatTokyoDate(date: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: TOKYO_TIME_ZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(new Date());
+  }).formatToParts(date);
   const values = Object.fromEntries(
     parts.map((part) => [part.type, part.value]),
   );
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+export function getTokyoToday(): string {
+  return formatTokyoDate(new Date());
+}
+
+/**
+ * 確認用の仮想時刻。例: 2026-07-19T14:59 （Asia/Tokyo）
+ * URLの +09:00 が空白になる場合も吸収する。
+ */
+export function parseMusumePreviewAt(raw: string | null | undefined): Date | null {
+  if (!raw) return null;
+
+  const normalized = raw
+    .trim()
+    .replace(/ (\d{2}:\d{2}(?::\d{2})?)$/, "+$1");
+
+  const tokyoLocal =
+    /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(normalized);
+  if (tokyoLocal) {
+    const second = tokyoLocal[4] ?? "00";
+    return new Date(
+      `${tokyoLocal[1]}T${tokyoLocal[2]}:${tokyoLocal[3]}:${second}+09:00`,
+    );
+  }
+
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
 }
 
 export function formatDate(date: string): string {

@@ -5,7 +5,9 @@ import {
   SCHOOL_START_OPTIONS,
   SCHOOL_TODAY_CHIPS,
   SCHOOL_TOMORROW_CHIPS,
+  SUMMER_BEDTIME_OPTIONS,
   SUMMER_TODAY_CHIPS,
+  SUMMER_TODAY_ITEM_CHIPS,
   SUMMER_TOMORROW_CHIPS,
   SUMMER_TOMORROW_PLAN_CHIPS,
   WAKE_UP_OPTIONS,
@@ -13,12 +15,14 @@ import {
 } from "../utils";
 import { MusumeBottomSheet } from "./MusumeBottomSheet";
 
-type ItemCategory = "today_task" | "tomorrow_plan" | "tomorrow_item";
+type ItemCategory =
+  "today_task" | "today_item" | "bedtime" | "tomorrow_plan" | "tomorrow_item";
 
 type OutlookSheetProps = {
   kind: OutlookSheetKind | null;
   plan: MusumePlan;
   open: boolean;
+  useTodayLabels: boolean;
   resetKey: number;
   onClose: () => void;
   onSaveItems: (
@@ -30,9 +34,14 @@ type OutlookSheetProps = {
   isSaving: boolean;
 };
 
-function getPresetChips(kind: OutlookSheetKind, plan: MusumePlan): readonly string[] {
+function getPresetChips(
+  kind: OutlookSheetKind,
+  plan: MusumePlan,
+): readonly string[] {
   const summer = plan.mode === "summer";
   if (kind === "today") return summer ? SUMMER_TODAY_CHIPS : SCHOOL_TODAY_CHIPS;
+  if (kind === "today_item") return SUMMER_TODAY_ITEM_CHIPS;
+  if (kind === "bedtime") return SUMMER_BEDTIME_OPTIONS;
   if (kind === "tomorrow_plan") return SUMMER_TOMORROW_PLAN_CHIPS;
   if (kind === "tomorrow") {
     return summer ? SUMMER_TOMORROW_CHIPS : SCHOOL_TOMORROW_CHIPS;
@@ -40,12 +49,20 @@ function getPresetChips(kind: OutlookSheetKind, plan: MusumePlan): readonly stri
   return [];
 }
 
-function getInitialSelected(kind: OutlookSheetKind, plan: MusumePlan): string[] {
+function getInitialSelected(
+  kind: OutlookSheetKind,
+  plan: MusumePlan,
+): string[] {
   if (kind === "today") return plan.items.today_task.map((item) => item.title);
+  if (kind === "today_item") {
+    return plan.items.today_item.map((item) => item.title);
+  }
+  if (kind === "bedtime") return plan.items.bedtime.map((item) => item.title);
   if (kind === "tomorrow_plan") {
     return plan.items.tomorrow_plan.map((item) => item.title);
   }
-  if (kind === "tomorrow") return plan.items.tomorrow_item.map((item) => item.title);
+  if (kind === "tomorrow")
+    return plan.items.tomorrow_item.map((item) => item.title);
   if (kind === "start") {
     if (plan.mode === "summer" && plan.wake_up_time) return [plan.wake_up_time];
     if (plan.mode !== "summer" && plan.school_start_period) {
@@ -55,7 +72,10 @@ function getInitialSelected(kind: OutlookSheetKind, plan: MusumePlan): string[] 
   return [];
 }
 
-function splitOtherTitle(title: string, presets: readonly string[]): {
+function splitOtherTitle(
+  title: string,
+  presets: readonly string[],
+): {
   chip: string | null;
   otherText: string;
 } {
@@ -70,7 +90,7 @@ function splitOtherTitle(title: string, presets: readonly string[]): {
 
 function buildInitialSelection(kind: OutlookSheetKind, plan: MusumePlan) {
   const initial = getInitialSelected(kind, plan);
-  if (kind === "start") {
+  if (kind === "start" || kind === "bedtime") {
     return { selected: initial, otherText: "" };
   }
   const presets = getPresetChips(kind, plan);
@@ -86,13 +106,41 @@ function buildInitialSelection(kind: OutlookSheetKind, plan: MusumePlan) {
 
 function itemCategoryForKind(kind: OutlookSheetKind): ItemCategory {
   if (kind === "today") return "today_task";
+  if (kind === "today_item") return "today_item";
+  if (kind === "bedtime") return "bedtime";
   if (kind === "tomorrow_plan") return "tomorrow_plan";
   return "tomorrow_item";
+}
+
+function questionForKind(
+  kind: OutlookSheetKind,
+  plan: MusumePlan,
+  useTodayLabels: boolean,
+): string {
+  if (kind === "today") {
+    return useTodayLabels ? "今日は なにする?" : "いまから何する?";
+  }
+  if (kind === "today_item") return "今日 何がいる?";
+  if (kind === "bedtime") return "今日 何時に寝る?";
+  if (kind === "tomorrow_plan") return "明日 なにする?";
+  if (kind === "tomorrow") return "明日 何がいる?";
+  return plan.mode === "summer"
+    ? "明日 何時に起きる?"
+    : "明日 何時間目から登校?";
+}
+
+function iconForKind(kind: OutlookSheetKind, plan: MusumePlan): string {
+  if (kind === "today") return "❤️";
+  if (kind === "today_item" || kind === "tomorrow") return "🎒";
+  if (kind === "bedtime") return "⏰";
+  if (kind === "tomorrow_plan") return "🔮";
+  return plan.mode === "summer" ? "⏰" : "🕒";
 }
 
 type OutlookSheetEditorProps = {
   kind: OutlookSheetKind;
   plan: MusumePlan;
+  useTodayLabels: boolean;
   onClose: () => void;
   onSaveItems: (
     category: ItemCategory,
@@ -106,6 +154,7 @@ type OutlookSheetEditorProps = {
 function OutlookSheetEditor({
   kind,
   plan,
+  useTodayLabels,
   onClose,
   onSaveItems,
   onSaveStart,
@@ -116,24 +165,19 @@ function OutlookSheetEditor({
   const [otherText, setOtherText] = useState(initial.otherText);
 
   const summer = plan.mode === "summer";
-  const isMulti = kind !== "start";
+  const isMulti = kind !== "start" && kind !== "bedtime";
   const presets = getPresetChips(kind, plan);
 
-  const title =
-    kind === "today"
-      ? "❤️ いまから何する?"
-      : kind === "tomorrow_plan"
-        ? "🔮 明日 なにする?"
-        : kind === "tomorrow"
-          ? "🎒 明日 何がいる?"
-          : summer
-            ? "⏰ 明日 何時に起きる?"
-            : "🕒 明日 何時間目から登校?";
+  const title = `${iconForKind(kind, plan)} ${questionForKind(
+    kind,
+    plan,
+    useTodayLabels,
+  )}`;
 
   const hint =
     kind === "today" || kind === "tomorrow_plan"
       ? "いくつ選んでもOK。あとから変えてもOK。"
-      : kind === "tomorrow"
+      : kind === "today_item" || kind === "tomorrow"
         ? "よく使う物から選べるよ。"
         : "だいたいでOK。";
 
@@ -256,6 +300,7 @@ export function OutlookSheet({
   kind,
   plan,
   open,
+  useTodayLabels,
   resetKey,
   onClose,
   onSaveItems,
@@ -264,16 +309,7 @@ export function OutlookSheet({
 }: OutlookSheetProps) {
   if (!kind) return null;
 
-  const title =
-    kind === "today"
-      ? "いまから何する?"
-      : kind === "tomorrow_plan"
-        ? "明日 なにする?"
-        : kind === "tomorrow"
-          ? "明日 何がいる?"
-          : plan.mode === "summer"
-            ? "明日 何時に起きる?"
-            : "明日 何時間目から登校?";
+  const title = questionForKind(kind, plan, useTodayLabels);
 
   return (
     <MusumeBottomSheet open={open} onClose={onClose} title={title}>
@@ -282,6 +318,7 @@ export function OutlookSheet({
           key={`${kind}-${resetKey}`}
           kind={kind}
           plan={plan}
+          useTodayLabels={useTodayLabels}
           onClose={onClose}
           onSaveItems={onSaveItems}
           onSaveStart={onSaveStart}

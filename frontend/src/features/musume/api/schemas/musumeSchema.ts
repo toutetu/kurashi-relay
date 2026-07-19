@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-export const musumeModeSchema = z.enum(["school", "summer", "holiday", "outing"]);
+export const musumeModeSchema = z.enum([
+  "school",
+  "summer",
+  "holiday",
+  "outing",
+]);
 
 export const decidedWithSchema = z.enum(["mama"]);
 
@@ -17,6 +22,8 @@ export const schoolStartPeriodSchema = z.enum([
 
 export const planItemCategorySchema = z.enum([
   "today_task",
+  "today_item",
+  "bedtime",
   "tomorrow_plan",
   "tomorrow_item",
   "memo",
@@ -44,6 +51,8 @@ export const musumePlanSchema = z.object({
   review: planReviewSchema,
   items: z.object({
     today_task: z.array(planItemSchema),
+    today_item: z.array(planItemSchema),
+    bedtime: z.array(planItemSchema),
     tomorrow_plan: z.array(planItemSchema),
     tomorrow_item: z.array(planItemSchema),
     memo: z.array(planItemSchema),

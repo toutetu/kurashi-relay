@@ -5,6 +5,9 @@ import type {
 } from "./api/schemas/musumeSchema";
 
 const TOKYO_TIME_ZONE = "Asia/Tokyo";
+const SUMMER_VACATION_START_MONTH = 7;
+const SUMMER_VACATION_START_DAY = 18;
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export const UNDECIDED_LABEL = "タップして決めよう";
 export const MAMA_DECIDED_RIBBON = "🎀";
@@ -44,6 +47,24 @@ export const SUMMER_TOMORROW_CHIPS = [
   "財布",
   "ハンカチ",
   "その他",
+] as const;
+
+export const SUMMER_TODAY_ITEM_CHIPS = [
+  "水筒",
+  "ぼうし",
+  "宿題",
+  "財布",
+  "ハンカチ",
+  "その他",
+] as const;
+
+export const SUMMER_BEDTIME_OPTIONS = [
+  "21:00",
+  "21:30",
+  "22:00",
+  "22:30",
+  "23:00",
+  "23:00より あと",
 ] as const;
 
 export const SCHOOL_TOMORROW_CHIPS = [
@@ -94,7 +115,8 @@ export const SCHOOL_REVIEW_ITEMS = [
   "明日の予定",
 ] as const;
 
-export type OutlookSheetKind = "today" | "tomorrow_plan" | "tomorrow" | "start";
+export type OutlookSheetKind =
+  "today" | "today_item" | "bedtime" | "tomorrow_plan" | "tomorrow" | "start";
 
 export function isSummerMode(mode: MusumeMode): boolean {
   return mode === "summer";
@@ -108,6 +130,38 @@ export function formatMusumeShortDate(date: string): string {
     day: "numeric",
     weekday: "short",
   }).format(parsed);
+}
+
+export function getSummerVacationDay(date: string): number {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return 1;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const currentDate = Date.UTC(year, month - 1, day);
+  const summerStart = Date.UTC(
+    year,
+    SUMMER_VACATION_START_MONTH - 1,
+    SUMMER_VACATION_START_DAY,
+  );
+
+  return Math.max(
+    1,
+    Math.floor((currentDate - summerStart) / MILLISECONDS_PER_DAY) + 1,
+  );
+}
+
+export function isBeforeTokyoHour(hour: number, now = new Date()): boolean {
+  const tokyoHour = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: TOKYO_TIME_ZONE,
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).format(now),
+  );
+
+  return tokyoHour < hour;
 }
 
 export function formatWakeUpTime(value: string): string {
@@ -126,13 +180,17 @@ function joinTitles(titles: string[]): string {
   return titles.join("・");
 }
 
-function withMamaRibbon(text: string, decidedWith: string | null | undefined): string {
+function withMamaRibbon(
+  text: string,
+  decidedWith: string | null | undefined,
+): string {
   return decidedWith === "mama" ? `${text} ${MAMA_DECIDED_RIBBON}` : text;
 }
 
-function itemsAnswer(
-  items: MusumePlan["items"]["today_task"],
-): { text: string; decided: boolean } {
+function itemsAnswer(items: MusumePlan["items"]["today_task"]): {
+  text: string;
+  decided: boolean;
+} {
   if (items.length === 0) {
     return { text: UNDECIDED_LABEL, decided: false };
   }
@@ -150,6 +208,20 @@ export function getTodayAnswer(plan: MusumePlan): {
   return itemsAnswer(plan.items.today_task);
 }
 
+export function getTodayItemsAnswer(plan: MusumePlan): {
+  text: string;
+  decided: boolean;
+} {
+  return itemsAnswer(plan.items.today_item);
+}
+
+export function getBedtimeAnswer(plan: MusumePlan): {
+  text: string;
+  decided: boolean;
+} {
+  return itemsAnswer(plan.items.bedtime);
+}
+
 export function getTomorrowPlanAnswer(plan: MusumePlan): {
   text: string;
   decided: boolean;
@@ -164,7 +236,10 @@ export function getTomorrowItemsAnswer(plan: MusumePlan): {
   return itemsAnswer(plan.items.tomorrow_item);
 }
 
-export function getStartAnswer(plan: MusumePlan): { text: string; decided: boolean } {
+export function getStartAnswer(plan: MusumePlan): {
+  text: string;
+  decided: boolean;
+} {
   if (isSummerMode(plan.mode) && plan.wake_up_time) {
     return {
       text: withMamaRibbon(

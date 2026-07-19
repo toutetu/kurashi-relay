@@ -37,7 +37,11 @@ function planResponse(overrides: Record<string, unknown> = {}) {
       start_decided_with: null,
       review: { mode: "summer", completed_at: null },
       items: {
-        today_task: [{ id: 1, title: "遊ぶ", sort_order: 0, decided_with: null }],
+        today_task: [
+          { id: 1, title: "遊ぶ", sort_order: 0, decided_with: null },
+        ],
+        today_item: [],
+        bedtime: [],
         tomorrow_plan: [],
         tomorrow_item: [],
         memo: [],
