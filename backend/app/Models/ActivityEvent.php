@@ -21,6 +21,7 @@ class ActivityEvent extends Model
         'activity_definition_id',
         'event_type',
         'occurred_at',
+        'ended_at',
         'recorded_by_member_id',
         'source',
         'idempotency_key',
@@ -33,6 +34,7 @@ class ActivityEvent extends Model
     {
         return [
             'occurred_at' => 'datetime',
+            'ended_at' => 'datetime',
         ];
     }
 
@@ -49,11 +51,6 @@ class ActivityEvent extends Model
     public function participants(): HasMany
     {
         return $this->hasMany(ActivityEventParticipant::class);
-    }
-
-    public function outcome(): HasOne
-    {
-        return $this->hasOne(ActivityEventOutcome::class);
     }
 
     public function cancellation(): HasOne

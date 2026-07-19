@@ -24,6 +24,8 @@ final class UpdateCompletionRequest extends FormRequest
                 Rule::in(['completed', 'partial', 'together', 'parent_done', 'deferred', 'unknown']),
             ],
             'note' => ['nullable', 'string', 'max:200'],
+            'occurred_at' => ['nullable', 'date'],
+            'ended_at' => ['nullable', 'date', 'after_or_equal:occurred_at'],
         ];
     }
 }

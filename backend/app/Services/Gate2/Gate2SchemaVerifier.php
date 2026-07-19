@@ -13,7 +13,6 @@ final class Gate2SchemaVerifier
         'activity_definitions',
         'activity_events',
         'activity_event_participants',
-        'activity_event_outcomes',
         'activity_event_cancellations',
         'planned_activities',
         'plan_actual_links',
@@ -30,13 +29,12 @@ final class Gate2SchemaVerifier
             'quick_label', 'kind', 'is_active', 'sort_order',
         ],
         'activity_events' => [
-            'activity_definition_id', 'event_type', 'occurred_at', 'recorded_by_member_id',
-            'source', 'idempotency_key',
+            'activity_definition_id', 'event_type', 'occurred_at', 'ended_at',
+            'recorded_by_member_id', 'source', 'idempotency_key',
         ],
         'activity_event_participants' => [
             'activity_event_id', 'family_member_id', 'role',
         ],
-        'activity_event_outcomes' => ['activity_event_id', 'result'],
         'activity_event_cancellations' => [
             'activity_event_id', 'cancelled_at', 'cancelled_by_member_id',
         ],
@@ -70,7 +68,6 @@ final class Gate2SchemaVerifier
         ['table' => 'activity_events', 'column' => 'recorded_by_member_id', 'references' => 'family_members'],
         ['table' => 'activity_event_participants', 'column' => 'activity_event_id', 'references' => 'activity_events'],
         ['table' => 'activity_event_participants', 'column' => 'family_member_id', 'references' => 'family_members'],
-        ['table' => 'activity_event_outcomes', 'column' => 'activity_event_id', 'references' => 'activity_events'],
         ['table' => 'activity_event_cancellations', 'column' => 'activity_event_id', 'references' => 'activity_events'],
         ['table' => 'activity_event_cancellations', 'column' => 'cancelled_by_member_id', 'references' => 'family_members'],
         ['table' => 'planned_activities', 'column' => 'subject_member_id', 'references' => 'family_members'],
@@ -111,8 +108,8 @@ final class Gate2SchemaVerifier
     private const POSTGRESQL_ONLY_CHECKS = [
         'activity_events_event_type_check',
         'activity_events_source_check',
+        'activity_events_ended_at_order_check',
         'activity_event_participants_role_check',
-        'activity_event_outcomes_result_check',
         'planned_activities_source_type_check',
         'planned_activities_status_check',
         'planned_activities_time_order_check',

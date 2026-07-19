@@ -70,7 +70,6 @@ flowchart TB
     end
 
     subgraph DETAILS["該当するときだけ存在する従属行"]
-        AO["activity_event_outcomes<br/>完了・一部・延期・不明の結果"]
         PE["prompt_events<br/>声かけ回数・文面"]
         AEC["activity_event_cancellations<br/>取消履歴"]
         PAL["plan_actual_links<br/>予定との対応"]
@@ -93,7 +92,6 @@ flowchart TB
     FM -->|"入力者"| AE
     AE -->|"1件以上"| AEP
     FM --> AEP
-    AE -->|"活動結果がある場合"| AO
     AE -->|"声かけの場合"| PE
     AE -->|"取消した場合"| AEC
     AE -->|"報酬がある場合"| RTx
@@ -252,6 +250,7 @@ flowchart TB
 - activity_definition_id FK -> activity_definitions
 - event_type: `activity | prompt | support`
 - occurred_at
+- ended_at nullable（瞬間の出来事は NULL。期間がある場合のみ）
 - recorded_by_member_id FK -> family_members
 - source: `mother_quick | daughter_task | oshigoto | koekake | manual | import`
 - idempotency_key
@@ -260,9 +259,12 @@ flowchart TB
 
 制約:
 
-- 上記の業務列は全て NOT NULL
+- `ended_at` 以外の上記業務列は全て NOT NULL
 - `event_type` CHECK
 - `idempotency_key` UNIQUE
+- `ended_at IS NULL OR ended_at >= occurred_at`
+- `event_type=activity` のイベントが存在すること自体が「その活動が起きた」実績である。
+  完了・一部・延期・不明の結果行は持たない（`activity_event_outcomes` は廃止。DR-034）。
 - 1イベントの作成時に、少なくとも1件の `activity_event_participants` を同一トランザクションで追加する。
 - 1タップは1イベントとし、連打した回数だけ別イベントを追記する。
 - 記録済みイベントを物理削除・業務内容の上書きで訂正しない。
@@ -301,23 +303,12 @@ flowchart TB
 `recorded_by_member_id` と人物参加は同一人物とは限らず、母が娘の完了を入力する場合は
 母=`recorded_by`、娘=`actor` とする。
 
-### 7.3 `activity_event_outcomes`（新規・活動結果）
+### 7.3 （廃止）`activity_event_outcomes`
 
-完了・一部・延期等の結果があるイベントにだけ1行作る。声かけや支援を記録しただけの場合は
-結果行を作らず、`activity_events.result=NULL` のような表現はしない。
-
-- activity_event_id PK / FK -> activity_events
-- result: `completed | partial | deferred | unknown`
-- created_at
-
-制約:
-
-- 全列 NOT NULL
-- `result` CHECK
-- `activity_events.event_type='activity'` との整合をアプリ層とテストで保証する。
-- 「一緒にした」「母が代行した」は結果値にせず、参加者の役割から表現する。
-- `deferred` / `unknown` は娘の予定活動について母が状態を入力した結果であり、娘=`actor`、
-  母=`recorded_by` とする。`completed` と区別し、活動が完了した事実として集計しない。
+DR-034により廃止。活動実績は `activity_events`（`event_type=activity`）の存在で表す。
+`partial` / `deferred` / `unknown` は活動実績へ持ち込まない。先送りは `reminder_schedules` や
+`planned_activities.status`、予定時刻の変更で扱う。「一緒にした」「母が代行した」は
+`activity_event_participants` の役割で表す。
 
 ### 7.4 `activity_event_cancellations`（新規・取消履歴）
 
@@ -346,7 +337,7 @@ DR-031により、Inertia開始前の標準経路はtarget schemaを作成して
 次のbackfill・互換処理は、既存データを保持する判断をした場合の代替経路として残す。
 
 - `task_records` は `activity_events`、`activity_event_participants`、必要な結果・報酬行へバックフィルする。
-- `completion_events` は `activity_events`、参加行、`activity_event_outcomes` へバックフィルする。
+- `completion_events` は `activity_events` と参加行へバックフィルする（結果行は作らない）。
 - 既存 `prompt_events` は次節の固有情報を残し、各行に対応する `activity_events` と参加行を作る。
 - 過去データで入力者・実行者を直接保持していないものは、既存画面の利用者と状態値から移行規則を明示して補完し、
   `source='import'` で推定移行であることを識別できるようにする。
@@ -614,7 +605,7 @@ DR-031により、Inertia開始前の標準経路はtarget schemaを作成して
 |---|---|---|
 | `daily_tasks.prompt_count` | 非取消の `event_type='prompt'` イベント件数 | APIで集計。移行後に列削除 |
 | `daily_tasks.latest_prompt_at` | 同イベントの `activity_events.occurred_at` 最大値 | APIで集計。移行後に列削除 |
-| `daily_tasks.status` | 予定に対応する最新の有効な `activity_event_outcomes.result` | APIで導出。移行後に列削除 |
+| `daily_tasks.status` | 予定に対応する有効な `activity_events`（`event_type=activity`）の有無と参加者役割 | APIで導出。移行後に列削除 |
 | `daily_plans.review_completed_at` | 最新の完了 `reflection_sessions.completed_at` | APIで導出。移行後に列削除 |
 
 次は履歴スナップショットなので残す。
@@ -631,7 +622,8 @@ DR-031により、Inertia開始前の標準経路はtarget schemaを作成して
 - 変更しやすさを優先し、PostgreSQLのネイティブENUMではなく `string + CHECK` を使う。
 - 必須値は `NOT NULL`。
 - 常に存在しない役割・結果・予定対応・取消はnullable列で表さず、必要な場合だけ従属行を追加する。
-- `activity_events` は必須の出来事ヘッダーだけを持ち、人物参加・結果・声かけ・取消・予定対応の正本を重複させない。
+- `activity_events` は必須の出来事ヘッダーだけを持ち、人物参加・声かけ・取消・予定対応の正本を重複させない。
+  活動の「結果ラベル」従属表は持たない（DR-034）。
 - 数値範囲・日時順序・状態値をCHECK制約で守る。
 - 外部キー削除動作を全て明示する。
   - マスタ・履歴: `RESTRICT`

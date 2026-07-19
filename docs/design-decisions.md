@@ -32,6 +32,21 @@
 
 ---
 
+## DR-034: 活動実績は activity_events の存在で表し、activity_event_outcomes を廃止する(2026-07-20)
+
+- **課題感**: 娘の活動に `completed` / `partial` / `deferred` / `unknown` の結果行を持つと、
+  「起きた事実」と「状態ラベル」が混ざり、起床のような瞬間の出来事でも結果テーブルが必要になる。
+  先送りや一部実施は実績イベントではなく、再通知・予定変更として扱いたい。
+- **選択肢**: (a) `activity_event_outcomes` を維持し完了時に結果行を書く /
+  (b) 活動が起きたときだけ `activity_events`（`event_type=activity`）を作り、結果テーブルを廃止する。
+- **決定**: (b)。実績の正本は `activity_events` の存在とする。参加者で「一緒にした」「代行」を表し、
+  起床など本人しかできない活動は代行を選べない。`ended_at` を nullable で追加し、瞬間の出来事は NULL、
+  期間のある活動は `ended_at >= occurred_at` とする。声かけ完了の冪等キーは
+  `koekake:daily-task:{daily_task_id}:completion` をサーバー側で安定生成する。
+  移行中は `completion_events` / `daily_tasks.status` を同一トランザクションで二重書き込みしてよい。
+- **理由**: 「イベントがある＝起きた」が直感的で、未完了・不明の偽実績を作らない。
+  DR-027のうち結果従属表の部分を改訂する。詳細は `docs/data-model.md`。
+
 ## DR-033: 個人利用の機能追加は動作確認1回で完了し、作業文書と古いDRをアーカイブする(2026-07-19)
 
 - **課題感**: 機能が増えるたびに、自動テストの追加、全テスト・lint・build、別AIレビュー、修正後の再レビュー、
