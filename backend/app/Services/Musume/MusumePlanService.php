@@ -3,7 +3,9 @@
 namespace App\Services\Musume;
 
 use App\Models\DailyPlan;
-use App\Models\PlanItem;
+use App\Models\PlanAnswerVersion;
+use App\Models\PlannedActivity;
+use App\Models\PlanQuestion;
 use App\Models\ReflectionSession;
 use App\Support\FamilyMemberResolver;
 use App\Support\JstDate;
@@ -13,6 +15,29 @@ use Illuminate\Support\Facades\DB;
 
 final class MusumePlanService
 {
+    private const ITEM_QUESTION_KEYS = [
+        'today_task',
+        'today_item',
+        'bedtime',
+        'tomorrow_plan',
+        'tomorrow_item',
+        'memo',
+    ];
+
+    private const PLANNABLE_QUESTION_KEYS = [
+        'today_task',
+        'tomorrow_plan',
+        'bedtime',
+        'wake_up_time',
+        'school_start_period',
+    ];
+
+    private const NEXT_DAY_QUESTION_KEYS = [
+        'tomorrow_plan',
+        'wake_up_time',
+        'school_start_period',
+    ];
+
     /**
      * @return array{plan: array<string, mixed>}
      */
@@ -36,24 +61,42 @@ final class MusumePlanService
         return DB::transaction(function () use ($id, $attributes): array {
             $plan = DailyPlan::query()->lockForUpdate()->findOrFail($id);
 
-            $updates = array_intersect_key($attributes, array_flip([
-                'mode',
-                'school_start_period',
-                'wake_up_time',
-                'start_decided_with',
-            ]));
-
-            if ($updates !== []) {
-                $plan->update($updates);
+            if (array_key_exists('mode', $attributes)) {
+                $plan->update(['mode' => $attributes['mode']]);
                 $plan->refresh();
             }
 
-            $baseline = $plan->mode === 'summer'
-                ? $plan->wake_up_time
-                : $plan->school_start_period;
+            $decidedWithMemberId = ($attributes['start_decided_with'] ?? null) === 'mama'
+                ? FamilyMemberResolver::motherId()
+                : null;
 
-            if ($baseline === null && $plan->start_decided_with !== null) {
-                $plan->update(['start_decided_with' => null]);
+            if (array_key_exists('wake_up_time', $attributes)) {
+                $time = $attributes['wake_up_time'];
+                $this->appendAnswerVersion(
+                    $plan,
+                    'wake_up_time',
+                    ['time' => $time],
+                    $this->isEmptyScalar($time) ? null : $decidedWithMemberId,
+                );
+            }
+
+            if (array_key_exists('school_start_period', $attributes)) {
+                $value = $attributes['school_start_period'];
+                $this->appendAnswerVersion(
+                    $plan,
+                    'school_start_period',
+                    ['value' => $value],
+                    $this->isEmptyScalar($value) ? null : $decidedWithMemberId,
+                );
+            }
+
+            if (array_key_exists('bedtime', $attributes)) {
+                $this->appendAnswerVersion(
+                    $plan,
+                    'bedtime',
+                    ['time' => $attributes['bedtime']],
+                    null,
+                );
             }
 
             return $this->formatPlanResponse($this->reloadPlan($plan));
@@ -68,22 +111,18 @@ final class MusumePlanService
     {
         return DB::transaction(function () use ($planId, $category, $titles, $decidedWith): array {
             $plan = DailyPlan::query()->lockForUpdate()->findOrFail($planId);
+            $question = PlanQuestion::query()->where('question_key', $category)->firstOrFail();
 
-            PlanItem::query()
-                ->where('daily_plan_id', $plan->id)
-                ->where('category', $category)
-                ->delete();
+            $decidedWithMemberId = $decidedWith === 'mama'
+                ? FamilyMemberResolver::motherId()
+                : null;
 
-            foreach ($titles as $sortOrder => $title) {
-                PlanItem::query()->create([
-                    'daily_plan_id' => $plan->id,
-                    'category' => $category,
-                    'title' => $title,
-                    'status' => 'planned',
-                    'decided_with' => $decidedWith,
-                    'sort_order' => $sortOrder,
-                ]);
+            $valueJson = $this->valueJsonForTitles($question->answer_type, $titles);
+            if ($this->isEmptyValueJson($question->answer_type, $valueJson)) {
+                $decidedWithMemberId = null;
             }
+
+            $this->appendAnswerVersion($plan, $category, $valueJson, $decidedWithMemberId);
 
             return $this->formatPlanResponse($this->reloadPlan($plan));
         });
@@ -112,10 +151,6 @@ final class MusumePlanService
             $session->note = $note;
             $session->save();
 
-            if ($plan->review_completed_at === null) {
-                $plan->update(['review_completed_at' => $session->completed_at]);
-            }
-
             return $this->formatPlanResponse($this->reloadPlan($plan));
         });
     }
@@ -126,11 +161,11 @@ final class MusumePlanService
     public function getSummary(?string $date): array
     {
         $planDate = $date ?? JstDate::today();
+        $childId = FamilyMemberResolver::childId();
 
         $plan = DailyPlan::query()
-            ->with([
-                'planItems' => fn ($q) => $q->orderBy('sort_order'),
-            ])
+            ->with(['reflectionSession'])
+            ->where('subject_member_id', $childId)
             ->where('plan_date', $planDate)
             ->first();
 
@@ -138,44 +173,50 @@ final class MusumePlanService
             return ['summary' => null];
         }
 
-        $itemsByCategory = $plan->planItems->groupBy('category');
+        $latestByKey = $this->latestAnswersByQuestionKey($plan);
 
         return [
             'summary' => [
                 'mode' => $plan->mode,
-                'today_tasks' => $this->titlesForCategory($itemsByCategory, 'today_task'),
-                'tomorrow_plans' => $this->titlesForCategory($itemsByCategory, 'tomorrow_plan'),
-                'tomorrow_items' => $this->titlesForCategory($itemsByCategory, 'tomorrow_item'),
-                'wake_up_time' => $this->formatWakeUpTime($plan->wake_up_time),
-                'school_start_period' => $plan->school_start_period,
+                'today_tasks' => $this->titlesFromAnswer($latestByKey->get('today_task')),
+                'tomorrow_plans' => $this->titlesFromAnswer($latestByKey->get('tomorrow_plan')),
+                'tomorrow_items' => $this->titlesFromAnswer($latestByKey->get('tomorrow_item')),
+                'wake_up_time' => $this->timeFromAnswer($latestByKey->get('wake_up_time')),
+                'school_start_period' => $this->choiceFromAnswer($latestByKey->get('school_start_period')),
                 'decided_with' => [
-                    'today' => $this->decidedWithForCategory($itemsByCategory, 'today_task'),
-                    'tomorrow_plan' => $this->decidedWithForCategory($itemsByCategory, 'tomorrow_plan'),
-                    'tomorrow_item' => $this->decidedWithForCategory($itemsByCategory, 'tomorrow_item'),
-                    'start' => $plan->start_decided_with,
+                    'today' => $this->decidedWithLabel($latestByKey->get('today_task')),
+                    'tomorrow_plan' => $this->decidedWithLabel($latestByKey->get('tomorrow_plan')),
+                    'tomorrow_item' => $this->decidedWithLabel($latestByKey->get('tomorrow_item')),
+                    'start' => $this->startDecidedWithLabel($plan, $latestByKey),
                 ],
-                'review_completed_at' => $plan->review_completed_at !== null
-                  ? $this->formatDateTime($plan->review_completed_at)
-                  : null,
+                'review_completed_at' => $plan->reflectionSession?->completed_at !== null
+                    ? $this->formatDateTime($plan->reflectionSession->completed_at)
+                    : null,
             ],
         ];
     }
 
     public function ensureDailyPlan(string $planDate): void
     {
-        $existing = DailyPlan::query()->where('plan_date', $planDate)->exists();
+        $childId = FamilyMemberResolver::childId();
+
+        $existing = DailyPlan::query()
+            ->where('subject_member_id', $childId)
+            ->where('plan_date', $planDate)
+            ->exists();
 
         if ($existing) {
             return;
         }
 
         $mode = DailyPlan::query()
+            ->where('subject_member_id', $childId)
             ->where('plan_date', '<', $planDate)
             ->orderByDesc('plan_date')
             ->value('mode') ?? 'summer';
 
         DailyPlan::query()->insertOrIgnore([
-            'subject_member_id' => FamilyMemberResolver::childId(),
+            'subject_member_id' => $childId,
             'plan_date' => $planDate,
             'mode' => $mode,
             'created_at' => now('UTC'),
@@ -183,23 +224,182 @@ final class MusumePlanService
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $valueJson
+     */
+    private function appendAnswerVersion(
+        DailyPlan $plan,
+        string $questionKey,
+        array $valueJson,
+        ?int $decidedWithMemberId,
+    ): PlanAnswerVersion {
+        $question = PlanQuestion::query()->where('question_key', $questionKey)->firstOrFail();
+
+        $previous = PlanAnswerVersion::query()
+            ->where('daily_plan_id', $plan->id)
+            ->where('question_id', $question->id)
+            ->orderByDesc('version_no')
+            ->lockForUpdate()
+            ->first();
+
+        $now = now('UTC');
+
+        $version = PlanAnswerVersion::query()->create([
+            'daily_plan_id' => $plan->id,
+            'question_id' => $question->id,
+            'version_no' => ($previous?->version_no ?? 0) + 1,
+            'value_json' => $valueJson,
+            'decided_with_member_id' => $decidedWithMemberId,
+            'recorded_by_member_id' => FamilyMemberResolver::childId(),
+            'recorded_at' => $now,
+            'supersedes_version_id' => $previous?->id,
+            'created_at' => $now,
+        ]);
+
+        $this->syncPlannedActivities($plan, $question, $version);
+
+        return $version;
+    }
+
+    private function syncPlannedActivities(
+        DailyPlan $plan,
+        PlanQuestion $question,
+        PlanAnswerVersion $version,
+    ): void {
+        if (! in_array($question->question_key, self::PLANNABLE_QUESTION_KEYS, true)) {
+            return;
+        }
+
+        $previousVersionIds = PlanAnswerVersion::query()
+            ->where('daily_plan_id', $plan->id)
+            ->where('question_id', $question->id)
+            ->where('id', '!=', $version->id)
+            ->pluck('id');
+
+        if ($previousVersionIds->isNotEmpty()) {
+            PlannedActivity::query()
+                ->whereIn('plan_answer_version_id', $previousVersionIds)
+                ->where('status', '!=', 'cancelled')
+                ->update(['status' => 'cancelled']);
+        }
+
+        $entries = $this->buildPlannedActivityEntries($plan, $question, $version);
+
+        foreach ($entries as $index => $entry) {
+            PlannedActivity::query()->create([
+                'subject_member_id' => $plan->subject_member_id,
+                'activity_definition_id' => $question->activity_definition_id,
+                'source_type' => 'child_plan',
+                'source_key' => $version->id.':'.$index,
+                'title_snapshot' => $entry['title'],
+                'category_snapshot' => $question->question_key,
+                'planned_start_at' => $entry['planned_start_at'],
+                'planned_end_at' => null,
+                'is_all_day' => $entry['is_all_day'],
+                'local_date' => $entry['local_date'],
+                'status' => 'planned',
+                'routine_template_id' => null,
+                'plan_answer_version_id' => $version->id,
+                'calendar_event_version_id' => null,
+            ]);
+        }
+    }
+
+    /**
+     * @return list<array{title: string, local_date: string, is_all_day: bool, planned_start_at: CarbonImmutable|null}>
+     */
+    private function buildPlannedActivityEntries(
+        DailyPlan $plan,
+        PlanQuestion $question,
+        PlanAnswerVersion $version,
+    ): array {
+        $planDate = $plan->plan_date->toDateString();
+        $localDate = in_array($question->question_key, self::NEXT_DAY_QUESTION_KEYS, true)
+            ? CarbonImmutable::parse($planDate, JstDate::TIMEZONE)->addDay()->toDateString()
+            : $planDate;
+
+        $value = $version->value_json ?? [];
+
+        return match ($question->answer_type) {
+            'multi_select' => collect($value['values'] ?? [])
+                ->filter(fn (mixed $title): bool => is_string($title) && $title !== '')
+                ->values()
+                ->map(fn (string $title): array => [
+                    'title' => $title,
+                    'local_date' => $localDate,
+                    'is_all_day' => true,
+                    'planned_start_at' => null,
+                ])
+                ->all(),
+            'time' => $this->isEmptyScalar($value['time'] ?? null)
+                ? []
+                : [[
+                    'title' => (string) $value['time'],
+                    'local_date' => $localDate,
+                    'is_all_day' => false,
+                    'planned_start_at' => CarbonImmutable::parse(
+                        $localDate.' '.$value['time'],
+                        JstDate::TIMEZONE,
+                    )->utc(),
+                ]],
+            'choice' => $this->isEmptyScalar($value['value'] ?? null)
+                ? []
+                : [[
+                    'title' => (string) $value['value'],
+                    'local_date' => $localDate,
+                    'is_all_day' => true,
+                    'planned_start_at' => null,
+                ]],
+            default => [],
+        };
+    }
+
+    /**
+     * @param  list<string>  $titles
+     * @return array<string, mixed>
+     */
+    private function valueJsonForTitles(string $answerType, array $titles): array
+    {
+        return match ($answerType) {
+            'multi_select' => ['values' => array_values($titles)],
+            'text' => ['text' => $titles === [] ? null : implode("\n", $titles)],
+            'time' => ['time' => $titles[0] ?? null],
+            'choice' => ['value' => $titles[0] ?? null],
+            default => ['values' => array_values($titles)],
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $valueJson
+     */
+    private function isEmptyValueJson(string $answerType, array $valueJson): bool
+    {
+        return match ($answerType) {
+            'multi_select' => ($valueJson['values'] ?? []) === [],
+            'text' => $this->isEmptyScalar($valueJson['text'] ?? null),
+            'time' => $this->isEmptyScalar($valueJson['time'] ?? null),
+            'choice' => $this->isEmptyScalar($valueJson['value'] ?? null),
+            default => true,
+        };
+    }
+
+    private function isEmptyScalar(mixed $value): bool
+    {
+        return $value === null || $value === '';
+    }
+
     private function loadPlan(string $planDate): DailyPlan
     {
         return DailyPlan::query()
-            ->with([
-                'planItems' => fn ($q) => $q->orderBy('sort_order'),
-                'reflectionSession',
-            ])
+            ->with(['reflectionSession'])
+            ->where('subject_member_id', FamilyMemberResolver::childId())
             ->where('plan_date', $planDate)
             ->firstOrFail();
     }
 
     private function reloadPlan(DailyPlan $plan): DailyPlan
     {
-        return $plan->fresh([
-            'planItems' => fn ($q) => $q->orderBy('sort_order'),
-            'reflectionSession',
-        ]);
+        return $plan->fresh(['reflectionSession']) ?? $plan;
     }
 
     /**
@@ -207,25 +407,41 @@ final class MusumePlanService
      */
     private function formatPlanResponse(DailyPlan $plan): array
     {
-        $itemsByCategory = $plan->planItems->groupBy('category');
+        $latestByKey = $this->latestAnswersByQuestionKey($plan);
+
+        $items = [];
+        foreach (self::ITEM_QUESTION_KEYS as $questionKey) {
+            $items[$questionKey] = $this->formatItemsFromAnswer($latestByKey->get($questionKey));
+        }
 
         return [
             'plan' => [
                 'id' => $plan->id,
                 'plan_date' => $plan->plan_date->toDateString(),
                 'mode' => $plan->mode,
-                'school_start_period' => $plan->school_start_period,
-                'wake_up_time' => $this->formatWakeUpTime($plan->wake_up_time),
-                'start_decided_with' => $plan->start_decided_with,
+                'school_start_period' => $this->choiceFromAnswer($latestByKey->get('school_start_period')),
+                'wake_up_time' => $this->timeFromAnswer($latestByKey->get('wake_up_time')),
+                'start_decided_with' => $this->startDecidedWithLabel($plan, $latestByKey),
                 'review' => $this->formatReview($plan),
-                'items' => [
-                    'today_task' => $this->formatItems($itemsByCategory, 'today_task'),
-                    'tomorrow_plan' => $this->formatItems($itemsByCategory, 'tomorrow_plan'),
-                    'tomorrow_item' => $this->formatItems($itemsByCategory, 'tomorrow_item'),
-                    'memo' => $this->formatItems($itemsByCategory, 'memo'),
-                ],
+                'items' => $items,
             ],
         ];
+    }
+
+    /**
+     * @return Collection<string, PlanAnswerVersion>
+     */
+    private function latestAnswersByQuestionKey(DailyPlan $plan): Collection
+    {
+        return PlanAnswerVersion::query()
+            ->where('daily_plan_id', $plan->id)
+            ->with('question')
+            ->orderByDesc('version_no')
+            ->orderByDesc('id')
+            ->get()
+            ->unique('question_id')
+            ->filter(fn (PlanAnswerVersion $version): bool => $version->question !== null)
+            ->keyBy(fn (PlanAnswerVersion $version): string => $version->question->question_key);
     }
 
     /**
@@ -239,16 +455,14 @@ final class MusumePlanService
             return [
                 'mode' => $session->mode,
                 'completed_at' => $session->completed_at !== null
-                  ? $this->formatDateTime($session->completed_at)
-                  : null,
+                    ? $this->formatDateTime($session->completed_at)
+                    : null,
             ];
         }
 
         return [
             'mode' => $this->defaultReflectionMode($plan->mode),
-            'completed_at' => $plan->review_completed_at !== null
-              ? $this->formatDateTime($plan->review_completed_at)
-              : null,
+            'completed_at' => null,
         ];
     }
 
@@ -258,54 +472,116 @@ final class MusumePlanService
     }
 
     /**
-     * @param  Collection<string, Collection<int, PlanItem>>  $itemsByCategory
      * @return list<array{id: int, title: string, sort_order: int, decided_with: string|null}>
      */
-    private function formatItems(Collection $itemsByCategory, string $category): array
+    private function formatItemsFromAnswer(?PlanAnswerVersion $version): array
     {
-        return ($itemsByCategory->get($category) ?? collect())
-            ->map(fn (PlanItem $item): array => [
-                'id' => $item->id,
-                'title' => $item->title,
-                'sort_order' => $item->sort_order,
-                'decided_with' => $item->decided_with,
-            ])
+        if ($version === null || $version->question === null) {
+            return [];
+        }
+
+        $decidedWith = $this->decidedWithLabel($version);
+        $titles = $this->titlesFromAnswer($version);
+
+        return collect($titles)
             ->values()
+            ->map(fn (string $title, int $index): array => [
+                'id' => $this->deterministicItemId($version->id, $index),
+                'title' => $title,
+                'sort_order' => $index,
+                'decided_with' => $decidedWith,
+            ])
             ->all();
     }
 
     /**
-     * @param  Collection<string, Collection<int, PlanItem>>  $itemsByCategory
      * @return list<string>
      */
-    private function titlesForCategory(Collection $itemsByCategory, string $category): array
+    private function titlesFromAnswer(?PlanAnswerVersion $version): array
     {
-        return ($itemsByCategory->get($category) ?? collect())
-            ->pluck('title')
-            ->all();
+        if ($version === null || $version->question === null) {
+            return [];
+        }
+
+        $value = $version->value_json ?? [];
+
+        return match ($version->question->answer_type) {
+            'multi_select' => collect($value['values'] ?? [])
+                ->filter(fn (mixed $title): bool => is_string($title) && $title !== '')
+                ->values()
+                ->all(),
+            'text' => $this->isEmptyScalar($value['text'] ?? null)
+                ? []
+                : [(string) $value['text']],
+            'time' => $this->isEmptyScalar($value['time'] ?? null)
+                ? []
+                : [(string) $value['time']],
+            'choice' => $this->isEmptyScalar($value['value'] ?? null)
+                ? []
+                : [(string) $value['value']],
+            default => [],
+        };
     }
 
-    /**
-     * @param  Collection<string, Collection<int, PlanItem>>  $itemsByCategory
-     */
-    private function decidedWithForCategory(Collection $itemsByCategory, string $category): ?string
+    private function timeFromAnswer(?PlanAnswerVersion $version): ?string
     {
-        $first = ($itemsByCategory->get($category) ?? collect())->first();
-
-        return $first instanceof PlanItem ? $first->decided_with : null;
-    }
-
-    private function formatWakeUpTime(mixed $wakeUpTime): ?string
-    {
-        if ($wakeUpTime === null) {
+        if ($version === null) {
             return null;
         }
 
-        if ($wakeUpTime instanceof \DateTimeInterface) {
-            return CarbonImmutable::instance($wakeUpTime)->format('H:i');
+        $time = $version->value_json['time'] ?? null;
+
+        return $this->isEmptyScalar($time) ? null : substr((string) $time, 0, 5);
+    }
+
+    private function choiceFromAnswer(?PlanAnswerVersion $version): ?string
+    {
+        if ($version === null) {
+            return null;
         }
 
-        return substr((string) $wakeUpTime, 0, 5);
+        $value = $version->value_json['value'] ?? null;
+
+        return $this->isEmptyScalar($value) ? null : (string) $value;
+    }
+
+    private function decidedWithLabel(?PlanAnswerVersion $version): ?string
+    {
+        if ($version === null || $version->decided_with_member_id === null) {
+            return null;
+        }
+
+        if ($this->titlesFromAnswer($version) === []) {
+            return null;
+        }
+
+        return $version->decided_with_member_id === FamilyMemberResolver::motherId()
+            ? 'mama'
+            : null;
+    }
+
+    /**
+     * @param  Collection<string, PlanAnswerVersion>  $latestByKey
+     */
+    private function startDecidedWithLabel(DailyPlan $plan, Collection $latestByKey): ?string
+    {
+        $questionKey = $plan->mode === 'summer' ? 'wake_up_time' : 'school_start_period';
+        $answer = $latestByKey->get($questionKey);
+
+        if ($questionKey === 'wake_up_time' && $this->timeFromAnswer($answer) === null) {
+            return null;
+        }
+
+        if ($questionKey === 'school_start_period' && $this->choiceFromAnswer($answer) === null) {
+            return null;
+        }
+
+        return $this->decidedWithLabel($answer);
+    }
+
+    private function deterministicItemId(int $versionId, int $index): int
+    {
+        return ($versionId * 1000) + $index;
     }
 
     public function formatDateTime(\DateTimeInterface $dateTime): string

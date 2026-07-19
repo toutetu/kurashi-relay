@@ -16,10 +16,6 @@ class DailyPlan extends Model
         'subject_member_id',
         'plan_date',
         'mode',
-        'school_start_period',
-        'wake_up_time',
-        'start_decided_with',
-        'review_completed_at',
     ];
 
     /**
@@ -29,18 +25,12 @@ class DailyPlan extends Model
     {
         return [
             'plan_date' => 'date',
-            'review_completed_at' => 'datetime',
         ];
     }
 
     public function subjectMember(): BelongsTo
     {
         return $this->belongsTo(FamilyMember::class, 'subject_member_id');
-    }
-
-    public function planItems(): HasMany
-    {
-        return $this->hasMany(PlanItem::class);
     }
 
     public function reflectionSession(): HasOne

@@ -3,9 +3,14 @@
 namespace Tests\Feature\Api\Musume;
 
 use App\Models\DailyPlan;
+use App\Models\PlanAnswerVersion;
+use App\Models\PlannedActivity;
+use App\Models\PlanQuestion;
 use App\Models\ReflectionSession;
+use App\Support\FamilyMemberResolver;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
 
@@ -27,6 +32,21 @@ class MusumePlanTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_migrate_seed_creates_vertical_schema(): void
+    {
+        // RefreshDatabase が migrate + seed 相当を適用済み。SQLite in-memory では
+        // トランザクション内の migrate:fresh が VACUUM で失敗するため、結果スキーマを検証する。
+        $this->assertFalse(Schema::hasTable('plan_items'));
+        $this->assertFalse(Schema::hasColumn('daily_plans', 'school_start_period'));
+        $this->assertFalse(Schema::hasColumn('daily_plans', 'wake_up_time'));
+        $this->assertFalse(Schema::hasColumn('daily_plans', 'start_decided_with'));
+        $this->assertFalse(Schema::hasColumn('daily_plans', 'review_completed_at'));
+        $this->assertSame(8, PlanQuestion::query()->count());
+        $this->assertTrue(Schema::hasTable('plan_answer_versions'));
+        $this->assertTrue(Schema::hasTable('planned_activities'));
+        $this->assertTrue(Schema::hasTable('reflection_sessions'));
+    }
+
     public function test_get_plan_lazy_generates_once_per_date(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
@@ -36,16 +56,34 @@ class MusumePlanTest extends TestCase
             ->assertJsonPath('plan.plan_date', '2026-07-18')
             ->assertJsonPath('plan.mode', 'summer')
             ->assertJson(fn (AssertableJson $json) => $json
+                ->has('plan.items.today_task')
+                ->has('plan.items.today_item')
+                ->has('plan.items.bedtime')
                 ->has('plan.items.tomorrow_plan')
+                ->has('plan.items.tomorrow_item')
+                ->has('plan.items.memo')
                 ->where('plan.items.tomorrow_plan', []));
 
-        $this->assertSame(1, DailyPlan::query()->where('plan_date', '2026-07-18')->count());
+        $childId = FamilyMemberResolver::childId();
+        $this->assertSame(
+            1,
+            DailyPlan::query()
+                ->where('subject_member_id', $childId)
+                ->where('plan_date', '2026-07-18')
+                ->count(),
+        );
 
         $second = $this->getJson('/api/musume/plan?date=2026-07-18');
         $second->assertOk()
             ->assertJsonPath('plan.id', $first->json('plan.id'));
 
-        $this->assertSame(1, DailyPlan::query()->where('plan_date', '2026-07-18')->count());
+        $this->assertSame(
+            1,
+            DailyPlan::query()
+                ->where('subject_member_id', $childId)
+                ->where('plan_date', '2026-07-18')
+                ->count(),
+        );
     }
 
     public function test_mode_inherits_from_previous_plan(): void
@@ -67,13 +105,15 @@ class MusumePlanTest extends TestCase
             ->assertJsonPath('plan.mode', 'school');
     }
 
-    public function test_replace_items_persists_today_task_and_tomorrow_item(): void
+    public function test_replace_items_appends_versions_and_keeps_history(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
 
         $planId = $this->getJson('/api/musume/plan?date=2026-07-18')
             ->assertOk()
             ->json('plan.id');
+
+        $questionId = PlanQuestion::query()->where('question_key', 'today_task')->valueOrFail('id');
 
         $this->putJson("/api/musume/plan/{$planId}/items", [
             'category' => 'today_task',
@@ -82,10 +122,35 @@ class MusumePlanTest extends TestCase
             ->assertOk()
             ->assertJsonCount(2, 'plan.items.today_task')
             ->assertJsonPath('plan.items.today_task.0.title', '夏休みの宿題')
-            ->assertJson(fn (AssertableJson $json) => $json
-                ->has('plan.items.today_task.0.decided_with')
-                ->where('plan.items.today_task.0.decided_with', null))
             ->assertJsonPath('plan.items.today_task.1.title', '遊ぶ');
+
+        $firstVersion = PlanAnswerVersion::query()
+            ->where('daily_plan_id', $planId)
+            ->where('question_id', $questionId)
+            ->where('version_no', 1)
+            ->firstOrFail();
+
+        $this->assertSame(['values' => ['夏休みの宿題', '遊ぶ']], $firstVersion->value_json);
+        $this->assertNull($firstVersion->supersedes_version_id);
+
+        $this->putJson("/api/musume/plan/{$planId}/items", [
+            'category' => 'today_task',
+            'titles' => ['読み書き'],
+        ])
+            ->assertOk()
+            ->assertJsonCount(1, 'plan.items.today_task')
+            ->assertJsonPath('plan.items.today_task.0.title', '読み書き');
+
+        $versions = PlanAnswerVersion::query()
+            ->where('daily_plan_id', $planId)
+            ->where('question_id', $questionId)
+            ->orderBy('version_no')
+            ->get();
+
+        $this->assertCount(2, $versions);
+        $this->assertSame(1, $versions[0]->version_no);
+        $this->assertSame(2, $versions[1]->version_no);
+        $this->assertSame($versions[0]->id, $versions[1]->supersedes_version_id);
 
         $this->putJson("/api/musume/plan/{$planId}/items", [
             'category' => 'today_task',
@@ -94,28 +159,39 @@ class MusumePlanTest extends TestCase
             ->assertOk()
             ->assertJsonCount(0, 'plan.items.today_task');
 
-        $this->putJson("/api/musume/plan/{$planId}/items", [
-            'category' => 'tomorrow_item',
-            'titles' => ['水筒'],
-        ])
+        $clearVersion = PlanAnswerVersion::query()
+            ->where('daily_plan_id', $planId)
+            ->where('question_id', $questionId)
+            ->where('version_no', 3)
+            ->firstOrFail();
+
+        $this->assertSame(['values' => []], $clearVersion->value_json);
+        $this->assertSame($versions[1]->id, $clearVersion->supersedes_version_id);
+    }
+
+    public function test_replace_items_persists_today_item_and_memo(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
+
+        $planId = $this->getJson('/api/musume/plan?date=2026-07-18')
             ->assertOk()
-            ->assertJsonCount(1, 'plan.items.tomorrow_item')
-            ->assertJsonPath('plan.items.tomorrow_item.0.title', '水筒');
+            ->json('plan.id');
 
         $this->putJson("/api/musume/plan/{$planId}/items", [
-            'category' => 'tomorrow_item',
-            'titles' => [],
+            'category' => 'today_item',
+            'titles' => ['水筒', '帽子'],
         ])
             ->assertOk()
-            ->assertJsonCount(0, 'plan.items.tomorrow_item');
+            ->assertJsonCount(2, 'plan.items.today_item')
+            ->assertJsonPath('plan.items.today_item.0.title', '水筒');
 
         $this->putJson("/api/musume/plan/{$planId}/items", [
             'category' => 'memo',
             'titles' => ['メモ'],
         ])
             ->assertOk()
-            ->assertJsonCount(0, 'plan.items.today_task')
-            ->assertJsonCount(1, 'plan.items.memo');
+            ->assertJsonCount(1, 'plan.items.memo')
+            ->assertJsonPath('plan.items.memo.0.title', 'メモ');
     }
 
     public function test_replace_items_persists_tomorrow_plan_category(): void
@@ -245,7 +321,7 @@ class MusumePlanTest extends TestCase
                 ->where('plan.start_decided_with', null));
     }
 
-    public function test_patch_wake_up_time_and_start_decided_with_together(): void
+    public function test_patch_bedtime_and_wake_up_time(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
 
@@ -256,10 +332,99 @@ class MusumePlanTest extends TestCase
         $this->patchJson("/api/musume/plan/{$planId}", [
             'wake_up_time' => '07:30',
             'start_decided_with' => 'mama',
+            'bedtime' => '21:00',
         ])
             ->assertOk()
             ->assertJsonPath('plan.wake_up_time', '07:30')
-            ->assertJsonPath('plan.start_decided_with', 'mama');
+            ->assertJsonPath('plan.start_decided_with', 'mama')
+            ->assertJsonPath('plan.items.bedtime.0.title', '21:00');
+    }
+
+    public function test_planned_activities_created_cancelled_and_skipped_for_non_targets(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
+
+        $planId = $this->getJson('/api/musume/plan?date=2026-07-18')
+            ->assertOk()
+            ->json('plan.id');
+
+        $this->putJson("/api/musume/plan/{$planId}/items", [
+            'category' => 'today_task',
+            'titles' => ['宿題'],
+        ])->assertOk();
+
+        $firstVersion = PlanAnswerVersion::query()
+            ->where('daily_plan_id', $planId)
+            ->whereHas('question', fn ($q) => $q->where('question_key', 'today_task'))
+            ->where('version_no', 1)
+            ->firstOrFail();
+
+        $planned = PlannedActivity::query()
+            ->where('plan_answer_version_id', $firstVersion->id)
+            ->get();
+
+        $this->assertCount(1, $planned);
+        $this->assertSame('child_plan', $planned[0]->source_type);
+        $this->assertSame($firstVersion->id.':0', $planned[0]->source_key);
+        $this->assertSame('2026-07-18', $planned[0]->local_date->toDateString());
+        $this->assertTrue($planned[0]->is_all_day);
+        $this->assertSame('planned', $planned[0]->status);
+
+        $this->putJson("/api/musume/plan/{$planId}/items", [
+            'category' => 'today_task',
+            'titles' => ['遊ぶ'],
+        ])->assertOk();
+
+        $this->assertSame('cancelled', $planned[0]->fresh()->status);
+
+        $secondVersion = PlanAnswerVersion::query()
+            ->where('daily_plan_id', $planId)
+            ->whereHas('question', fn ($q) => $q->where('question_key', 'today_task'))
+            ->where('version_no', 2)
+            ->firstOrFail();
+
+        $this->assertSame(
+            1,
+            PlannedActivity::query()
+                ->where('plan_answer_version_id', $secondVersion->id)
+                ->where('status', 'planned')
+                ->count(),
+        );
+
+        $beforeNonTarget = PlannedActivity::query()->count();
+
+        $this->putJson("/api/musume/plan/{$planId}/items", [
+            'category' => 'today_item',
+            'titles' => ['水筒'],
+        ])->assertOk();
+
+        $this->putJson("/api/musume/plan/{$planId}/items", [
+            'category' => 'memo',
+            'titles' => ['自由記述'],
+        ])->assertOk();
+
+        $this->assertSame($beforeNonTarget, PlannedActivity::query()->count());
+
+        $this->patchJson("/api/musume/plan/{$planId}", [
+            'bedtime' => '21:30',
+        ])->assertOk();
+
+        $bedtimeVersion = PlanAnswerVersion::query()
+            ->where('daily_plan_id', $planId)
+            ->whereHas('question', fn ($q) => $q->where('question_key', 'bedtime'))
+            ->latest('id')
+            ->firstOrFail();
+
+        $bedtimeActivity = PlannedActivity::query()
+            ->where('plan_answer_version_id', $bedtimeVersion->id)
+            ->firstOrFail();
+
+        $this->assertSame('2026-07-18', $bedtimeActivity->local_date->toDateString());
+        $this->assertFalse($bedtimeActivity->is_all_day);
+        $this->assertSame(
+            '2026-07-18T12:30:00+00:00',
+            $bedtimeActivity->planned_start_at?->utc()->toIso8601String(),
+        );
     }
 
     public function test_reflection_complete_is_idempotent(): void
@@ -279,9 +444,7 @@ class MusumePlanTest extends TestCase
             ->assertJsonPath('plan.review.completed_at', '2026-07-18T20:00:00+09:00');
 
         $this->assertSame(1, ReflectionSession::query()->where('daily_plan_id', $planId)->count());
-        $this->assertNotNull(
-            DailyPlan::query()->findOrFail($planId)->review_completed_at
-        );
+        $this->assertFalse(Schema::hasColumn('daily_plans', 'review_completed_at'));
 
         Carbon::setTestNow(Carbon::parse('2026-07-18 20:05:00', 'Asia/Tokyo'));
 
@@ -293,10 +456,6 @@ class MusumePlanTest extends TestCase
             ->assertJsonPath('plan.review.completed_at', '2026-07-18T20:00:00+09:00');
 
         $this->assertSame(1, ReflectionSession::query()->where('daily_plan_id', $planId)->count());
-        $this->assertSame(
-            '2026-07-18T20:00:00+09:00',
-            DailyPlan::query()->findOrFail($planId)->review_completed_at?->timezone('Asia/Tokyo')->toIso8601String(),
-        );
     }
 
     public function test_musume_summary_returns_null_when_plan_missing_without_generation(): void

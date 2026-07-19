@@ -65,6 +65,24 @@ class PlanQuestionSeeder extends Seeder
                 'activity_definition_id' => null,
                 'sort_order' => 6,
             ],
+            [
+                'question_key' => 'today_item',
+                'label' => '今日 何がいる？',
+                'answer_type' => 'multi_select',
+                'mode_rule' => 'summer',
+                'activity_definition_id' => null,
+                'sort_order' => 7,
+            ],
+            [
+                'question_key' => 'bedtime',
+                'label' => '今日 何時に寝る？',
+                'answer_type' => 'time',
+                'mode_rule' => 'summer',
+                'activity_definition_id' => ActivityDefinition::query()
+                    ->where('activity_key', 'ACT-025')
+                    ->value('id'),
+                'sort_order' => 8,
+            ],
         ];
 
         foreach ($questions as $question) {
