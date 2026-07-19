@@ -10,11 +10,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [
     laravel({
-      input: ["resources/js/inertia/app.tsx"],
+      input: [
+        "resources/js/inertia/app.tsx",
+        "resources/js/main.tsx",
+      ],
       refresh: [
         "routes/**",
         "app/Http/**",
-        "resources/js/inertia/**",
+        "resources/js/**",
+        "resources/views/**",
       ],
     }),
     react(),

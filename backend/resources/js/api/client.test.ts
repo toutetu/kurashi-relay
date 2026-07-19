@@ -191,6 +191,32 @@ describe("API client family token", () => {
   });
 });
 
+describe("API client same-origin default", () => {
+  beforeEach(() => {
+    resetFamilyTokenStateForTests();
+    setInertiaSessionAuth(false);
+    setInertiaPathPrefix("/app");
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("location", {
+      origin: "http://localhost:8000",
+      protocol: "http:",
+      hostname: "localhost",
+      assign: vi.fn(),
+    });
+  });
+
+  it("VITE_API_BASE_URL未設定時は相対/apiへsame-origin credentialsで送る", async () => {
+    fetchMock.mockImplementation(() => jsonResponse({ status: "success" }));
+
+    await apiGet("/api/dashboard");
+
+    const [url, request] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe("/api/dashboard");
+    expect(request?.credentials).toBe("same-origin");
+  });
+});
+
 describe("API client inertia session mode", () => {
   beforeEach(() => {
     resetFamilyTokenStateForTests();
