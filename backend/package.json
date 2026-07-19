@@ -5,6 +5,15 @@
     "dev": "vite",
     "build": "vite build"
   },
+  "dependencies": {
+    "@inertiajs/react": "^3.6.1",
+    "@tanstack/react-query": "^5.101.2",
+    "lucide-react": "^1.24.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1",
+    "zod": "^4.4.3"
+  },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",
     "@vitejs/plugin-react": "^5.0.0",

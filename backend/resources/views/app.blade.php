@@ -11,7 +11,7 @@
 
         <title inertia>{{ config('app.name', 'くらしリレー') }}</title>
 
-        @vite(['src/inertia/app.tsx'])
+        @vite(['resources/js/inertia/app.tsx'])
         @inertiaHead
     </head>
     <body class="antialiased">

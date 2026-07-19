@@ -6,19 +6,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const frontendRoot = path.resolve(__dirname, "../frontend");
 
 export default defineConfig({
-  root: frontendRoot,
   plugins: [
     laravel({
-      publicDirectory: path.resolve(__dirname, "public"),
-      buildDirectory: "build",
-      input: [path.resolve(frontendRoot, "src/inertia/app.tsx")],
+      input: ["resources/js/inertia/app.tsx"],
       refresh: [
-        path.resolve(__dirname, "routes/**"),
-        path.resolve(__dirname, "app/Http/**"),
-        path.resolve(frontendRoot, "src/inertia/**"),
+        "routes/**",
+        "app/Http/**",
+        "resources/js/inertia/**",
       ],
     }),
     react(),
@@ -26,7 +22,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "@": path.resolve(frontendRoot, "src"),
+      "@": path.resolve(__dirname, "resources/js"),
     },
   },
 });

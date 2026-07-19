@@ -1,0 +1,275 @@
+:root,
+html[data-mood="sakura"] {
+  --primary: #c9647e;
+  --primary-deep: #a94e66;
+  --primary-soft: #fae9ee;
+  --ground: #fdf6f7;
+  --line: #f2dfe4;
+  --line-soft: #f7eaee;
+  --ink: #443340;
+  --muted: #8a7580;
+  --faint: #b3a0aa;
+}
+
+html[data-mood="ai"] {
+  --primary: #33608c;
+  --primary-deep: #28517a;
+  --primary-soft: #eef3f8;
+  --ground: #f8f6f1;
+  --line: #e7e2d8;
+  --line-soft: #efebe2;
+  --ink: #2c3446;
+  --muted: #6c7280;
+  --faint: #9aa0ad;
+}
+
+html[data-mood="sora"] {
+  --primary: #3f7cb8;
+  --primary-deep: #326396;
+  --primary-soft: #e7f0f9;
+  --ground: #f4f8fb;
+  --line: #dde8f1;
+  --line-soft: #eaf2f8;
+  --ink: #2c3a4a;
+  --muted: #6e8092;
+  --faint: #9cadbd;
+}
+
+html[data-mood="mori"] {
+  --primary: #45855a;
+  --primary-deep: #366b48;
+  --primary-soft: #e6f2e9;
+  --ground: #f4f9f5;
+  --line: #dceae0;
+  --line-soft: #e9f3ec;
+  --ink: #2e4033;
+  --muted: #6d8474;
+  --faint: #9cb2a2;
+}
+
+html[data-mood="yoru"] {
+  --primary: #6c5cb8;
+  --primary-deep: #584a99;
+  --primary-soft: #ece8f8;
+  --ground: #f4f2fa;
+  --line: #e2ddf0;
+  --line-soft: #edeaf7;
+  --ink: #362f4d;
+  --muted: #776f92;
+  --faint: #a49dbb;
+}
+
+:root {
+  --coral: #cf6a5f;
+  --coral-deep: #a94a41;
+  --coral-soft: #faefec;
+  --amber: #b07c1f;
+  --amber-deep: #8a6215;
+  --amber-soft: #f9f1de;
+  --cat-blue: #4a7fb5;
+  --cat-blue-deep: #38618c;
+  --cat-blue-soft: #e9f1f8;
+  --fuji: #7a69ae;
+  --fuji-deep: #60528c;
+  --fuji-soft: #f2eff9;
+  --green: #3f7d54;
+  --green-deep: #326543;
+  --green-soft: #eaf3ec;
+  --balance-sleep: #a8b8d8;
+  --balance-waiting: #e2d4ae;
+  --balance-activity: #e8a29a;
+  --balance-recovery: #a8c9ab;
+  --surface: #ffffff;
+
+  --page-background: var(--ground);
+  --text: var(--ink);
+  --muted-text: var(--muted);
+  --border: var(--line);
+  --neutral-soft: var(--line-soft);
+  --focus: var(--primary);
+  --mother-red: var(--coral);
+  --mother-red-strong: var(--coral-deep);
+  --mother-red-soft: var(--coral-soft);
+  --mother-yellow: #d9a53e;
+  --mother-yellow-strong: var(--amber-deep);
+  --mother-yellow-soft: var(--amber-soft);
+  --mother-blue: var(--cat-blue);
+  --mother-blue-strong: var(--primary-deep);
+  --mother-blue-soft: var(--primary-soft);
+  --daughter-purple: var(--fuji);
+  --daughter-purple-soft: var(--fuji-soft);
+  --daughter-blue: var(--fuji-soft);
+  --daughter-blue-strong: var(--fuji);
+  --daughter-pink: #f0b6d2;
+  --daughter-text: var(--ink);
+  --daughter-surface: var(--surface);
+
+  --card-radius: 1.25rem;
+  --card-shadow:
+    0 1px 2px color-mix(in srgb, var(--ink) 3%, transparent),
+    0 10px 28px -14px color-mix(in srgb, var(--ink) 10%, transparent);
+
+  --card-neutral-background: var(--surface);
+  --card-neutral-border: var(--line);
+  --card-neutral-accent: var(--line);
+  --card-neutral-icon-background: var(--line-soft);
+  --card-neutral-icon-color: var(--ink);
+  --card-neutral-text: var(--ink);
+
+  --card-red-background: var(--surface);
+  --card-red-border: var(--line);
+  --card-red-accent: var(--line);
+  --card-red-icon-background: var(--coral-soft);
+  --card-red-icon-color: var(--coral);
+  --card-red-text: var(--ink);
+
+  --card-yellow-background: var(--surface);
+  --card-yellow-border: var(--line);
+  --card-yellow-accent: var(--line);
+  --card-yellow-icon-background: var(--amber-soft);
+  --card-yellow-icon-color: var(--amber);
+  --card-yellow-text: var(--ink);
+
+  --card-blue-background: var(--surface);
+  --card-blue-border: var(--line);
+  --card-blue-accent: var(--line);
+  --card-blue-icon-background: var(--primary-soft);
+  --card-blue-icon-color: var(--primary);
+  --card-blue-text: var(--ink);
+
+  --card-daughter-background: var(--surface);
+  --card-daughter-border: var(--line);
+  --card-daughter-accent: var(--line);
+  --card-daughter-icon-background: var(--fuji-soft);
+  --card-daughter-icon-color: var(--fuji);
+  --card-daughter-text: var(--ink);
+
+  --button-red-background: var(--coral);
+  --button-red-text: var(--surface);
+  --button-red-border: var(--coral);
+  --button-red-icon: var(--surface);
+  --button-red-hover-background: color-mix(in srgb, var(--coral) 88%, white);
+  --button-red-hover-text: var(--surface);
+  --button-red-hover-border: var(--coral-deep);
+  --button-red-hover-icon: var(--surface);
+  --button-red-active-background: var(--coral-deep);
+  --button-red-active-border: var(--coral-deep);
+  --button-red-disabled-background: var(--coral-soft);
+  --button-red-disabled-text: var(--muted);
+  --button-red-solid-foreground: var(--surface);
+  --button-red-soft-foreground: var(--coral-deep);
+  --button-red-outline-foreground: var(--coral-deep);
+  --button-red-ghost-foreground: var(--coral-deep);
+  --button-red-solid-hover-foreground: var(--surface);
+  --button-red-soft-hover-foreground: var(--coral-deep);
+  --button-red-outline-hover-foreground: var(--coral-deep);
+  --button-red-ghost-hover-foreground: var(--coral-deep);
+  --button-red-solid-active-foreground: var(--surface);
+  --button-red-soft-active-foreground: var(--coral-deep);
+  --button-red-outline-active-foreground: var(--coral-deep);
+  --button-red-ghost-active-foreground: var(--coral-deep);
+
+  --button-yellow-background: var(--amber);
+  --button-yellow-text: var(--surface);
+  --button-yellow-border: var(--amber);
+  --button-yellow-icon: var(--surface);
+  --button-yellow-hover-background: color-mix(in srgb, var(--amber) 88%, white);
+  --button-yellow-hover-text: var(--surface);
+  --button-yellow-hover-border: var(--amber-deep);
+  --button-yellow-hover-icon: var(--surface);
+  --button-yellow-active-background: var(--amber-deep);
+  --button-yellow-active-border: var(--amber-deep);
+  --button-yellow-disabled-background: var(--amber-soft);
+  --button-yellow-disabled-text: var(--muted);
+  --button-yellow-solid-foreground: var(--surface);
+  --button-yellow-soft-foreground: var(--amber-deep);
+  --button-yellow-outline-foreground: var(--amber-deep);
+  --button-yellow-ghost-foreground: var(--amber-deep);
+  --button-yellow-solid-hover-foreground: var(--surface);
+  --button-yellow-soft-hover-foreground: var(--amber-deep);
+  --button-yellow-outline-hover-foreground: var(--amber-deep);
+  --button-yellow-ghost-hover-foreground: var(--amber-deep);
+  --button-yellow-solid-active-foreground: var(--surface);
+  --button-yellow-soft-active-foreground: var(--amber-deep);
+  --button-yellow-outline-active-foreground: var(--amber-deep);
+  --button-yellow-ghost-active-foreground: var(--amber-deep);
+
+  --button-blue-background: var(--primary);
+  --button-blue-text: var(--surface);
+  --button-blue-border: var(--primary);
+  --button-blue-icon: var(--surface);
+  --button-blue-hover-background: color-mix(
+    in srgb,
+    var(--primary) 88%,
+    white
+  );
+  --button-blue-hover-text: var(--surface);
+  --button-blue-hover-border: var(--primary-deep);
+  --button-blue-hover-icon: var(--surface);
+  --button-blue-active-background: var(--primary-deep);
+  --button-blue-active-border: var(--primary-deep);
+  --button-blue-disabled-background: var(--primary-soft);
+  --button-blue-disabled-text: var(--muted);
+  --button-blue-solid-foreground: var(--surface);
+  --button-blue-soft-foreground: var(--primary-deep);
+  --button-blue-outline-foreground: var(--primary-deep);
+  --button-blue-ghost-foreground: var(--primary-deep);
+  --button-blue-solid-hover-foreground: var(--surface);
+  --button-blue-soft-hover-foreground: var(--primary-deep);
+  --button-blue-outline-hover-foreground: var(--primary-deep);
+  --button-blue-ghost-hover-foreground: var(--primary-deep);
+  --button-blue-solid-active-foreground: var(--surface);
+  --button-blue-soft-active-foreground: var(--primary-deep);
+  --button-blue-outline-active-foreground: var(--primary-deep);
+  --button-blue-ghost-active-foreground: var(--primary-deep);
+
+  --button-neutral-background: var(--ink);
+  --button-neutral-text: var(--surface);
+  --button-neutral-border: var(--ink);
+  --button-neutral-icon: var(--surface);
+  --button-neutral-hover-background: color-mix(in srgb, var(--ink) 88%, white);
+  --button-neutral-hover-text: var(--surface);
+  --button-neutral-hover-border: var(--ink);
+  --button-neutral-hover-icon: var(--surface);
+  --button-neutral-active-background: var(--ink);
+  --button-neutral-active-border: var(--ink);
+  --button-neutral-disabled-background: var(--line-soft);
+  --button-neutral-disabled-text: var(--muted);
+  --button-neutral-solid-foreground: var(--surface);
+  --button-neutral-soft-foreground: var(--ink);
+  --button-neutral-outline-foreground: var(--ink);
+  --button-neutral-ghost-foreground: var(--ink);
+  --button-neutral-solid-hover-foreground: var(--surface);
+  --button-neutral-soft-hover-foreground: var(--ink);
+  --button-neutral-outline-hover-foreground: var(--ink);
+  --button-neutral-ghost-hover-foreground: var(--ink);
+  --button-neutral-solid-active-foreground: var(--surface);
+  --button-neutral-soft-active-foreground: var(--ink);
+  --button-neutral-outline-active-foreground: var(--ink);
+  --button-neutral-ghost-active-foreground: var(--ink);
+
+  --button-daughter-background: var(--fuji);
+  --button-daughter-text: var(--surface);
+  --button-daughter-border: var(--fuji);
+  --button-daughter-icon: var(--surface);
+  --button-daughter-hover-background: color-mix(in srgb, var(--fuji) 88%, white);
+  --button-daughter-hover-text: var(--surface);
+  --button-daughter-hover-border: var(--fuji-deep);
+  --button-daughter-hover-icon: var(--surface);
+  --button-daughter-active-background: var(--fuji-deep);
+  --button-daughter-active-border: var(--fuji-deep);
+  --button-daughter-disabled-background: var(--fuji-soft);
+  --button-daughter-disabled-text: var(--muted);
+  --button-daughter-solid-foreground: var(--surface);
+  --button-daughter-soft-foreground: var(--fuji-deep);
+  --button-daughter-outline-foreground: var(--fuji-deep);
+  --button-daughter-ghost-foreground: var(--fuji-deep);
+  --button-daughter-solid-hover-foreground: var(--surface);
+  --button-daughter-soft-hover-foreground: var(--fuji-deep);
+  --button-daughter-outline-hover-foreground: var(--fuji-deep);
+  --button-daughter-ghost-hover-foreground: var(--fuji-deep);
+  --button-daughter-solid-active-foreground: var(--surface);
+  --button-daughter-soft-active-foreground: var(--fuji-deep);
+  --button-daughter-outline-active-foreground: var(--fuji-deep);
+  --button-daughter-ghost-active-foreground: var(--fuji-deep);
+}
