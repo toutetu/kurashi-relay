@@ -67,12 +67,16 @@ function summaryResponse(overrides: Record<string, unknown> = {}) {
     summary: {
       mode: "summer",
       today_tasks: [],
+      today_items: [],
+      bedtime: null,
       tomorrow_plans: [],
       tomorrow_items: [],
       wake_up_time: null,
       school_start_period: null,
       decided_with: {
         today: null,
+        today_item: null,
+        bedtime: null,
         tomorrow_plan: null,
         tomorrow_item: null,
         start: null,
@@ -801,6 +805,8 @@ describe("母側 KoekakePage むすめ拡張", () => {
             wake_up_time: "07:30",
             decided_with: {
               today: null,
+              today_item: null,
+              bedtime: null,
               tomorrow_plan: "mama",
               tomorrow_item: null,
               start: null,
