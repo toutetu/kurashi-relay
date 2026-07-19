@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Web\FamilyTokenController;
 use App\Http\Controllers\Web\InertiaPageController;
 use App\Http\Controllers\Web\LegacyInertiaRedirectController;
 use App\Http\Controllers\Web\RecordsController;
@@ -34,19 +33,11 @@ $registerInertiaAppRoutes = function () {
     Route::get('/settings', [InertiaPageController::class, 'settings'])->name('settings');
 };
 
-$registerFamilyTokenRoutes = function () {
-    Route::get('/family-token', [FamilyTokenController::class, 'show'])->name('show');
-    Route::post('/family-token', [FamilyTokenController::class, 'store'])->name('store');
-};
-
 $inertiaRoutePrefix = InertiaPath::routePrefix();
-$inertiaAppRoutes = Route::middleware(['inertia.enabled', 'web.family-token'])->name('inertia.');
-$familyTokenRoutes = Route::middleware(['inertia.enabled'])->name('inertia.family-token.');
+$inertiaAppRoutes = Route::middleware(['inertia.enabled'])->name('inertia.');
 
 if ($inertiaRoutePrefix !== null) {
     $inertiaAppRoutes->prefix($inertiaRoutePrefix);
-    $familyTokenRoutes->prefix($inertiaRoutePrefix);
 }
 
 $inertiaAppRoutes->group($registerInertiaAppRoutes);
-$familyTokenRoutes->group($registerFamilyTokenRoutes);
