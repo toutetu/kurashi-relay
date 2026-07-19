@@ -8,6 +8,7 @@ import { LastWarPage } from "./pages/LastWarPage";
 import { MamaKajiLayout } from "./pages/MamaKajiLayout";
 import { MamaKajiPage } from "./pages/MamaKajiPage";
 import { MamaKajiZukanPage } from "./pages/MamaKajiZukanPage";
+import { MamaStatePage } from "./pages/MamaStatePage";
 import { OshigotoPage } from "./pages/OshigotoPage";
 import { OshigotoUsjPage } from "./pages/OshigotoUsjPage";
 import { OshigotoZukanPage } from "./pages/OshigotoZukanPage";
@@ -27,12 +28,14 @@ export default function App() {
           element={<ScheduleComparisonPage />}
         />
         <Route path="schedule" element={<PlaceholderPage page="schedule" />} />
-        <Route path="records" element={<RecordsPage />} />
+        <Route path="records" element={<RecordsPage scope="all" />} />
+        <Route path="records/musume" element={<RecordsPage scope="child" />} />
         <Route path="mama-kaji" element={<MamaKajiLayout />}>
           <Route index element={<MamaKajiPage />} />
           <Route path="zukan" element={<MamaKajiZukanPage />} />
         </Route>
         <Route path="child-plan" element={<ChildPlanPage />} />
+        <Route path="mama-state" element={<MamaStatePage />} />
         <Route path="musume" element={<MusumePage />} />
         <Route path="koekake" element={<KoekakePage />} />
         <Route path="oshigoto" element={<OshigotoPage />} />

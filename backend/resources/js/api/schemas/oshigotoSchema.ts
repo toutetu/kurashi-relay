@@ -53,9 +53,22 @@ export const taskRecordSchema = z.object({
   id: z.number().int(),
   member: memberSchema,
   task: z.string(),
+  task_title: z.string().optional(),
   record_date: z.string(),
   completed_at: z.string(),
   cancelled_at: z.string().nullable(),
+});
+
+export const taskRecordsDataSchema = z.object({
+  date: z.string(),
+  member: memberSchema,
+  records: z.array(taskRecordSchema),
+});
+
+export const taskRecordsResponseSchema = z.object({
+  status: z.literal("success"),
+  data: taskRecordsDataSchema,
+  meta: timezoneMetaSchema,
 });
 
 export const taskRecordResponseSchema = z.object({
