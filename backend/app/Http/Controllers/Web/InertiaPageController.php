@@ -28,6 +28,11 @@ final class InertiaPageController extends Controller
         return $this->render('ChildPlan/Index');
     }
 
+    public function mamaState(): Response
+    {
+        return $this->render('MamaState/Index');
+    }
+
     public function summary(): Response
     {
         return $this->render('Summary/Index');

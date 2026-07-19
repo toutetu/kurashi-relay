@@ -18,9 +18,11 @@ $registerInertiaAppRoutes = function () {
     Route::get('/schedule-comparison', [InertiaPageController::class, 'scheduleComparison'])->name('schedule-comparison');
     Route::get('/schedule', [InertiaPageController::class, 'schedule'])->name('schedule');
     Route::get('/records', [RecordsController::class, 'index'])->name('records.index');
+    Route::get('/records/musume', [RecordsController::class, 'musume'])->name('records.musume');
     Route::get('/mama-kaji', [InertiaPageController::class, 'mamaKaji'])->name('mama-kaji');
     Route::get('/mama-kaji/zukan', [InertiaPageController::class, 'mamaKajiZukan'])->name('mama-kaji.zukan');
     Route::get('/child-plan', [InertiaPageController::class, 'childPlan'])->name('child-plan');
+    Route::get('/mama-state', [InertiaPageController::class, 'mamaState'])->name('mama-state');
     Route::get('/musume', [InertiaPageController::class, 'musume'])->name('musume');
     Route::get('/koekake', [InertiaPageController::class, 'koekake'])->name('koekake');
     Route::get('/oshigoto', [InertiaPageController::class, 'oshigoto'])->name('oshigoto');

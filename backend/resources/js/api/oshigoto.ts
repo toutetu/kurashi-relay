@@ -3,6 +3,7 @@ import {
   collectionsResponseSchema,
   rewardsSummaryResponseSchema,
   taskRecordResponseSchema,
+  taskRecordsResponseSchema,
   tasksResponseSchema,
   type Member,
 } from "./schemas/oshigotoSchema";
@@ -30,6 +31,23 @@ export async function getTasks(
   const parsed = tasksResponseSchema.safeParse(response);
   if (!parsed.success) {
     throw new ApiError("おしごとのデータ形式が正しくありません。", 200);
+  }
+  return parsed.data.data;
+}
+
+export async function getTaskRecords(
+  member: Member,
+  date: string,
+  signal?: AbortSignal,
+) {
+  const search = new URLSearchParams({ member, date });
+  const response = await apiGet<unknown>(
+    `/api/task-records?${search.toString()}`,
+    signal,
+  );
+  const parsed = taskRecordsResponseSchema.safeParse(response);
+  if (!parsed.success) {
+    throw new ApiError("きろく一覧のデータ形式が正しくありません。", 200);
   }
   return parsed.data.data;
 }

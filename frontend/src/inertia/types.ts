@@ -29,6 +29,7 @@ export type RecordsPageProps = SharedPageProps & {
   today: string;
   child: MemberRecordsPayload;
   mother: MemberRecordsPayload;
+  scope?: "child" | "all";
 };
 
 export type WelcomePageProps = SharedPageProps & {
