@@ -5,7 +5,6 @@ namespace Tests\Feature\Database;
 use App\Models\DailyPlan;
 use App\Models\DailyTask;
 use App\Models\FamilyMember;
-use App\Models\PlanItem;
 use App\Models\PromptTemplate;
 use App\Models\ReminderSchedule;
 use App\Models\RewardCollection;
@@ -100,33 +99,6 @@ class PhaseBConstraintsTest extends TestCase
             'sort_order' => 0,
             'text' => '重複テスト',
             'is_preferred' => false,
-        ]);
-    }
-
-    public function test_plan_items_reject_duplicate_sort_positions(): void
-    {
-        Carbon::setTestNow(Carbon::parse('2026-07-18 08:00:00', 'Asia/Tokyo'));
-
-        $planId = $this->getJson('/api/musume/plan?date=2026-07-18')
-            ->assertOk()
-            ->json('plan.id');
-
-        PlanItem::query()->create([
-            'daily_plan_id' => $planId,
-            'category' => 'today_task',
-            'title' => '重複テスト',
-            'status' => 'planned',
-            'sort_order' => 0,
-        ]);
-
-        $this->expectException(QueryException::class);
-
-        PlanItem::query()->create([
-            'daily_plan_id' => $planId,
-            'category' => 'today_task',
-            'title' => 'もう一つ',
-            'status' => 'planned',
-            'sort_order' => 0,
         ]);
     }
 

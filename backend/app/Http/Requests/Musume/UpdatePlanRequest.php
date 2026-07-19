@@ -35,6 +35,7 @@ final class UpdatePlanRequest extends FormRequest
                 ]),
             ],
             'wake_up_time' => ['sometimes', 'nullable', 'date_format:H:i'],
+            'bedtime' => ['sometimes', 'nullable', 'date_format:H:i'],
             'start_decided_with' => ['sometimes', 'nullable', 'string', Rule::in(['mama'])],
         ];
     }

@@ -65,7 +65,7 @@ class PhaseCdeTargetSchemaTest extends TestCase
         $this->assertSame(count(ActivityDefinitionCatalog::definitions()), ActivityDefinition::query()->count());
         $this->assertSame(22, RoutineTemplate::query()->count());
         $this->assertSame(10, TaskDefinition::query()->count());
-        $this->assertSame(6, PlanQuestion::query()->count());
+        $this->assertSame(8, PlanQuestion::query()->count());
         $this->assertSame(5, RewardRule::query()->count());
         $this->assertSame(2, FamilyMember::query()->count());
 
@@ -74,7 +74,7 @@ class PhaseCdeTargetSchemaTest extends TestCase
         $this->assertSame(count(ActivityDefinitionCatalog::definitions()), ActivityDefinition::query()->count());
         $this->assertSame(22, RoutineTemplate::query()->count());
         $this->assertSame(10, TaskDefinition::query()->count());
-        $this->assertSame(6, PlanQuestion::query()->count());
+        $this->assertSame(8, PlanQuestion::query()->count());
         $this->assertSame(5, RewardRule::query()->count());
     }
 
