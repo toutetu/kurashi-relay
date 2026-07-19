@@ -9,14 +9,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('prompt_events', function (Blueprint $table) {
+        Schema::create('prompt_events', function (Blueprint $table) {
+            $table->id();
             $table->foreignId('activity_event_id')
                 ->nullable()
-                ->after('id')
                 ->constrained('activity_events')
                 ->restrictOnDelete();
+            $table->foreignId('daily_task_id')->constrained('daily_tasks');
+            $table->timestampTz('prompted_at');
+            $table->unsignedSmallInteger('prompt_order');
+            $table->unsignedTinyInteger('prompt_level')->nullable();
+            $table->string('prompt_text', 200);
+            $table->string('source', 20);
+            $table->string('idempotency_key', 64)->unique();
+            $table->timestampTz('cancelled_at')->nullable();
+            $table->timestampsTz();
 
-            $table->unsignedTinyInteger('prompt_level')->nullable()->after('prompt_order');
+            $table->index(['daily_task_id', 'prompted_at']);
         });
 
         MigrationConstraintHelper::addCheck(
@@ -43,9 +52,6 @@ return new class extends Migration
         MigrationConstraintHelper::dropCheck('prompt_events', 'prompt_events_prompt_level_check');
         MigrationConstraintHelper::dropCheck('prompt_events', 'prompt_events_prompt_order_check');
 
-        Schema::table('prompt_events', function (Blueprint $table) {
-            $table->dropForeign(['activity_event_id']);
-            $table->dropColumn(['activity_event_id', 'prompt_level']);
-        });
+        Schema::dropIfExists('prompt_events');
     }
 };

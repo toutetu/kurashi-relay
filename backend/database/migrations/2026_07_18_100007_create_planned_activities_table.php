@@ -31,7 +31,10 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('routine_templates')
                 ->restrictOnDelete();
-            $table->unsignedBigInteger('plan_answer_version_id')->nullable();
+            $table->foreignId('plan_answer_version_id')
+                ->nullable()
+                ->constrained('plan_answer_versions')
+                ->restrictOnDelete();
             $table->unsignedBigInteger('calendar_event_version_id')->nullable();
             $table->timestampsTz();
 

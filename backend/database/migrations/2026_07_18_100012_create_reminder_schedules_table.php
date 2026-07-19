@@ -1,5 +1,6 @@
 <?php
 
+use Database\Support\MigrationConstraintHelper;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,10 +18,19 @@ return new class extends Migration
 
             $table->index(['daily_task_id', 'status']);
         });
+
+        MigrationConstraintHelper::createPartialUniqueIndex(
+            'reminder_schedules_one_scheduled_per_task_unique',
+            'reminder_schedules',
+            'daily_task_id',
+            "status = 'scheduled'",
+        );
     }
 
     public function down(): void
     {
+        MigrationConstraintHelper::dropIndexIfExists('reminder_schedules_one_scheduled_per_task_unique');
+
         Schema::dropIfExists('reminder_schedules');
     }
 };

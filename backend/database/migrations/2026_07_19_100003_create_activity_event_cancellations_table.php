@@ -21,7 +21,6 @@ return new class extends Migration
             $table->timestampsTz();
         });
 
-        // PostgreSQL: cross-table trigger. SQLite: ActivityEventCancellationGuard at write time.
         MigrationConstraintHelper::addActivityEventCancellationOccurrenceTrigger();
     }
 

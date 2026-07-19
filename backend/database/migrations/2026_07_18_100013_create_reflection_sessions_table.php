@@ -11,13 +11,21 @@ return new class extends Migration
         Schema::create('reflection_sessions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('daily_plan_id')->constrained('daily_plans')->cascadeOnDelete();
+            $table->unsignedSmallInteger('revision_no')->default(1);
             $table->string('mode', 20);
             $table->timestampTz('started_at');
             $table->timestampTz('completed_at')->nullable();
             $table->string('note', 200)->nullable();
+            $table->foreignId('recorded_by_member_id')
+                ->nullable()
+                ->constrained('family_members')
+                ->restrictOnDelete();
             $table->timestampsTz();
 
-            $table->unique('daily_plan_id');
+            $table->unique(
+                ['daily_plan_id', 'revision_no'],
+                'reflection_sessions_plan_revision_unique',
+            );
         });
     }
 

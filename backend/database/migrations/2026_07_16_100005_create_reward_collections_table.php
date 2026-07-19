@@ -1,5 +1,6 @@
 <?php
 
+use Database\Support\MigrationConstraintHelper;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -20,10 +21,19 @@ return new class extends Migration
 
             $table->unique(['family_member_id', 'milestone_number']);
         });
+
+        MigrationConstraintHelper::createPartialUniqueIndex(
+            'reward_collections_task_record_id_unique',
+            'reward_collections',
+            'task_record_id',
+            'task_record_id IS NOT NULL',
+        );
     }
 
     public function down(): void
     {
+        MigrationConstraintHelper::dropIndexIfExists('reward_collections_task_record_id_unique');
+
         Schema::dropIfExists('reward_collections');
     }
 };
