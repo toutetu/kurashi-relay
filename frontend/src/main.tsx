@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
+import { FamilyTokenProvider } from "./features/auth/FamilyTokenProvider";
 import { MoodProvider } from "./features/mood/mood";
 import "./index.css";
 
@@ -18,11 +19,13 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <MoodProvider>
-          <App />
-        </MoodProvider>
-      </BrowserRouter>
+      <FamilyTokenProvider>
+        <BrowserRouter>
+          <MoodProvider>
+            <App />
+          </MoodProvider>
+        </BrowserRouter>
+      </FamilyTokenProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

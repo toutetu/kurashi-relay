@@ -14,6 +14,7 @@ import { OshigotoZukanPage } from "./pages/OshigotoZukanPage";
 import { NotFoundPage, PlaceholderPage } from "./pages/PlaceholderPage";
 import { RecordsPage } from "./pages/RecordsPage";
 import { ScheduleComparisonPage } from "./pages/ScheduleComparisonPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { SummaryPage } from "./pages/SummaryPage";
 
 export default function App() {
@@ -41,7 +42,7 @@ export default function App() {
         <Route path="last-war" element={<LastWarPage />} />
         <Route path="support" element={<PlaceholderPage page="support" />} />
         <Route path="reports" element={<PlaceholderPage page="reports" />} />
-        <Route path="settings" element={<PlaceholderPage page="settings" />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

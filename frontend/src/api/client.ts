@@ -1,4 +1,9 @@
 import type { ApiErrorPayload } from "../types/dashboard";
+import {
+  captureFamilyTokenAuth,
+  createFamilyTokenHeaders,
+  requireFamilyToken,
+} from "./familyToken";
 
 const defaultApiBaseUrl =
   typeof window === "undefined"
@@ -41,11 +46,12 @@ export async function apiGet<T>(
   path: string,
   signal?: AbortSignal,
 ): Promise<T> {
+  const authSnapshot = captureFamilyTokenAuth();
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: createFamilyTokenHeaders({ Accept: "application/json" }),
       signal,
     });
   } catch (error) {
@@ -56,6 +62,7 @@ export async function apiGet<T>(
     );
   }
   const payload = await parseJson(response);
+  if (response.status === 401) requireFamilyToken(authSnapshot);
 
   if (!response.ok) {
     const errorPayload = isErrorPayload(payload) ? payload : null;
@@ -78,18 +85,19 @@ export async function apiGet<T>(
 
 export async function apiSend<T>(
   path: string,
-  method: "POST" | "DELETE" | "PATCH",
+  method: "POST" | "DELETE" | "PATCH" | "PUT",
   body?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
+  const authSnapshot = captureFamilyTokenAuth();
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
-      headers: {
+      headers: createFamilyTokenHeaders({
         Accept: "application/json",
         ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-      },
+      }),
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal,
     });
@@ -102,6 +110,7 @@ export async function apiSend<T>(
   }
 
   const payload = await parseJson(response);
+  if (response.status === 401) requireFamilyToken(authSnapshot);
   if (!response.ok) {
     const errorPayload = isErrorPayload(payload) ? payload : null;
     throw new ApiError(

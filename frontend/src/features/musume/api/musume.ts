@@ -1,4 +1,4 @@
-import { ApiError, API_BASE_URL, apiGet, apiSend } from "../../../api/client";
+import { ApiError, apiGet, apiSend } from "../../../api/client";
 import {
   musumePlanResponseSchema,
   musumeSummaryResponseSchema,
@@ -7,55 +7,6 @@ import {
   type PlanItemCategory,
   type SchoolStartPeriod,
 } from "./schemas/musumeSchema";
-
-async function apiPut<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      method: "PUT",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-      signal,
-    });
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") throw error;
-    throw new ApiError(
-      "APIに接続できませんでした。通信状態を確認してください。",
-      0,
-    );
-  }
-
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    payload = null;
-  }
-
-  if (!response.ok) {
-    const errorPayload =
-      typeof payload === "object" && payload !== null
-        ? (payload as { message?: string; errors?: Record<string, string[]> })
-        : null;
-    throw new ApiError(
-      errorPayload?.message ?? "データの保存中に問題が発生しました。",
-      response.status,
-      errorPayload?.errors,
-    );
-  }
-
-  if (payload === null) {
-    throw new ApiError(
-      "サーバーから正しいデータを受け取れませんでした。",
-      response.status,
-    );
-  }
-
-  return payload as T;
-}
 
 export type UpdateMusumePlanInput = {
   mode?: MusumeMode;
@@ -90,8 +41,15 @@ export async function getMusumePlan(date?: string, signal?: AbortSignal) {
   return parsed.data;
 }
 
-export async function updateMusumePlan(id: number, body: UpdateMusumePlanInput) {
-  const response = await apiSend<unknown>(`/api/musume/plan/${id}`, "PATCH", body);
+export async function updateMusumePlan(
+  id: number,
+  body: UpdateMusumePlanInput,
+) {
+  const response = await apiSend<unknown>(
+    `/api/musume/plan/${id}`,
+    "PATCH",
+    body,
+  );
   const parsed = musumePlanResponseSchema.safeParse(response);
   if (!parsed.success) {
     throw new ApiError("娘の見通しの保存結果が正しくありません。", 200);
@@ -103,7 +61,11 @@ export async function replaceMusumeItems(
   planId: number,
   body: ReplaceMusumeItemsInput,
 ) {
-  const response = await apiPut<unknown>(`/api/musume/plan/${planId}/items`, body);
+  const response = await apiSend<unknown>(
+    `/api/musume/plan/${planId}/items`,
+    "PUT",
+    body,
+  );
   const parsed = musumePlanResponseSchema.safeParse(response);
   if (!parsed.success) {
     throw new ApiError("娘の見通しの保存結果が正しくありません。", 200);
