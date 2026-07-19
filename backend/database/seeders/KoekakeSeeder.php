@@ -83,7 +83,7 @@ class KoekakeSeeder extends Seeder
     private function routineDefinitions(): array
     {
         return [
-            ['phase' => 'morning', 'sort_order' => 1, 'name' => '起床', 'icon' => '⏰', 'activity_key' => 'ACT-037', 'daily_limit' => 1, 'default_time' => '07:00', 'parent_prompt_label' => '起きるように声をかけた', 'child_label' => '自分で起きた', 'quick_label' => '起床の声かけ'],
+            ['phase' => 'morning', 'sort_order' => 1, 'name' => '起床', 'icon' => '⏰', 'activity_key' => 'ACT-037', 'daily_limit' => 1, 'default_time' => '07:00', 'parent_prompt_label' => '起きるように声をかけた', 'child_label' => '起きた', 'quick_label' => '起床の声かけ'],
             ['phase' => 'morning', 'sort_order' => 2, 'name' => '朝食', 'icon' => '🍞', 'activity_key' => 'ACT-004', 'daily_limit' => 3, 'default_time' => '07:20', 'parent_prompt_label' => 'ご飯を食べるように声をかけた', 'child_label' => 'ご飯を食べた', 'quick_label' => '食事の声かけ'],
             ['phase' => 'morning', 'sort_order' => 3, 'name' => '歯磨き', 'icon' => '🪥', 'activity_key' => 'ACT-005', 'daily_limit' => 2, 'default_time' => '07:40', 'parent_prompt_label' => '歯をみがくように声をかけた', 'child_label' => '歯をみがいた', 'quick_label' => '歯みがきの声かけ'],
             ['phase' => 'morning', 'sort_order' => 4, 'name' => '服薬', 'icon' => '💊', 'activity_key' => 'ACT-038', 'daily_limit' => 2, 'default_time' => '07:45', 'parent_prompt_label' => '薬を飲むように声をかけた', 'child_label' => '薬を飲んだ', 'quick_label' => '服薬の声かけ'],

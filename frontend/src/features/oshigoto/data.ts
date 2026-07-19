@@ -18,16 +18,16 @@ export const INITIAL_TASKS: Task[] = [
   {
     id: "okita",
     emoji: "⏰",
-    label: "自分で起きた",
-    praise: "自分で起きられたね！",
+    label: "起きた",
+    praise: "起きられたね！",
     count: 0,
     tone: "lav",
   },
   {
     id: "kigae",
     emoji: "👚",
-    label: "自分で着替えた",
-    praise: "自分で着替えられたね！",
+    label: "着替えた",
+    praise: "着替えられたね！",
     count: 1,
     tone: "lav",
   },
@@ -62,6 +62,14 @@ export const INITIAL_TASKS: Task[] = [
     praise: "水筒、出せたね！",
     count: 0,
     tone: "peri",
+  },
+  {
+    id: "neta",
+    emoji: "🛏️",
+    label: "寝た",
+    praise: "寝られたね！",
+    count: 0,
+    tone: "mint",
   },
 ];
 
