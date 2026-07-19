@@ -1,7 +1,9 @@
-import { ClipboardPenLine } from "lucide-react";
+import { ClipboardPenLine, LayoutList } from "lucide-react";
 import { useState } from "react";
+import { Button } from "../components/ui/Button";
 import { MemberRecordsSection } from "../features/records/components/MemberRecordsSection";
 import { RecordsDateNav } from "../features/records/components/RecordsDateNav";
+import { RecordsDetailSheet } from "../features/records/components/RecordsDetailSheet";
 import {
   getTokyoToday,
   isTokyoDateAfter,
@@ -11,11 +13,12 @@ import {
 export function RecordsPage() {
   const today = getTokyoToday();
   const [selectedDate, setSelectedDate] = useState(today);
+  const [detailOpen, setDetailOpen] = useState(false);
   const isToday = selectedDate === today;
   const canGoNext = !isTokyoDateAfter(shiftTokyoDate(selectedDate, 1), today);
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl md:max-w-4xl">
       <div className="mb-5">
         <p className="flex items-center gap-2 text-sm font-bold text-[var(--mother-blue-strong)]">
           <ClipboardPenLine aria-hidden="true" size={17} />
@@ -41,18 +44,40 @@ export function RecordsPage() {
         onBackToToday={() => setSelectedDate(today)}
       />
 
-      <div className="mt-6 space-y-6">
-        <MemberRecordsSection
-          member="child"
-          date={selectedDate}
-          title="むすめ の きろく"
-        />
-        <MemberRecordsSection
-          member="mother"
-          date={selectedDate}
-          title="ママ の きろく"
-        />
+      <div className="mt-4 flex justify-center">
+        <Button
+          variant="outline"
+          tone="blue"
+          icon={LayoutList}
+          onClick={() => setDetailOpen(true)}
+        >
+          詳しく
+        </Button>
       </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="min-w-0 order-2 md:order-1">
+          <MemberRecordsSection
+            member="mother"
+            date={selectedDate}
+            title="ママ の きろく"
+          />
+        </div>
+        <div className="min-w-0 order-1 md:order-2">
+          <MemberRecordsSection
+            member="child"
+            date={selectedDate}
+            title="むすめ の きろく"
+          />
+        </div>
+      </div>
+
+      {detailOpen && (
+        <RecordsDetailSheet
+          date={selectedDate}
+          onClose={() => setDetailOpen(false)}
+        />
+      )}
     </div>
   );
 }
