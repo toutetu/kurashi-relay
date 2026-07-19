@@ -3,9 +3,9 @@
 Fable からの依頼。**あなた(Codex)が curl を実行し、合否と出力要点だけを報告**してください。
 Fable は自分では叩かず、あなたのレポートを読みます(委譲方針)。
 
-- 親: `docs/deploy_change/phase8-stability-and-render-stop.md`(8a チェックリスト #1〜7)
-- API 契約: `docs/deploy_change/oshigoto-persistence-backend-spec.md` §5
-- 前フェーズ実証: `docs/deploy_change/phase6-results.md`(単発系は合格済み)
+- 親: `docs/archive/phases/phase8-stability-and-render-stop.md`(8a チェックリスト #1〜7)
+- API 契約: `docs/archive/specs/oshigoto-persistence-backend-spec.md` §5
+- 前フェーズ実証: `docs/archive/phases/phase6-results.md`(単発系は合格済み)
 
 ## 対象と大前提
 

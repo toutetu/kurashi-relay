@@ -71,5 +71,5 @@
 
 **main へマージ可。**
 
-K0 の実装は指示書、`docs/koekake-plan-01.md` §4、および DR-013 に適合している。
+K0 の実装は指示書、`docs/archive/phases/koekake-plan-01.md` §4、および DR-013 に適合している。
 重大・中程度・軽微の指摘はなく、ローカル fresh、列生成、全バックエンドテスト、Pint のすべてが成功した。
