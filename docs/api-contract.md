@@ -193,10 +193,13 @@ TanStack Query、Zod schema、API Resourceは一括削除しない。利用clien
 
 # 11. 現行アクセス契約
 
-DR-035により、現行runtimeのアクセス動作を事実として固定する。
+DR-042により、家族共有トークンで個人データAPIを保護する。
 
-- API routeは19本。`routes/api.php` にfamily-token middlewareは付いていない。
-- `7a8391b` 以降、未認証のGET/writeが通るruntimeである（staleな401期待テストで上書きしない）。
-- Sanctum、session/CSRF追加、`EnsureFamilyToken`のAPI再接続は本移行では行わなかった。
-- アクセス保護の再設計は別課題とする。詳細は
-  `docs/archive/phases/api-first-spa-migration/access-contract-a3.md` を参照する。
+- `/api/health` は未認証のまま通す。
+- それ以外の `/api/*` は `X-Family-Token`（`EnsureFamilyToken`）必須。
+- トークン未設定は503、不一致は401、連続失敗は429。比較は `hash_equals`。
+- フロントは端末内あいことば（半角英数字）を保存し、共通API clientがヘッダを付与する。
+- Sanctum・ユーザー個別認証は導入しない（単一家庭の共有あいことば運用）。
+- SPA移行当時の未認証公開の記録は DR-035 と
+  `docs/archive/phases/api-first-spa-migration/access-contract-a3.md` に残す。
+- 実装指示の保管: `docs/archive/specs/family-token/`。

@@ -4,7 +4,10 @@
 作成日: 2026-07-16  
 対象リポジトリ: `toutetu/kurashi-relay`  
 対象ブランチ: `main`  
-構成: `frontend/` = React + TypeScript + Vite、`backend/` = Laravel 12 REST API
+構成: 当時は `frontend/` = React + TypeScript + Vite、`backend/` = Laravel 12 REST API。
+**現行(2026-07-20以降)**: React正本は `backend/resources/js`、Laravel同一オリジンSPA配信（DR-034/038）。
+本指示書の「RenderにReactを残す」構成は移行当時の手順であり、現行本番の正ではない。
+現行アクセス保護は家族共有トークン（DR-042）。診断用の履歴として残す。
 
 > **運用更新(2026-07-19・DR-033)**: 本文中の「必須」全テスト・lint・typecheck・buildは現在の完了条件ではない。
 > 通常変更は対象画面の操作1回または代表的な `curl` 1本だけを確認する。本番配信設定の変更時は、
