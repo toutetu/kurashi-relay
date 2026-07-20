@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DailyCondition;
 use App\Models\PlannedActivity;
 use App\Support\JstDate;
 use Illuminate\Support\Collection;
@@ -10,6 +11,8 @@ final class DashboardService
 {
     public function __construct(
         private readonly PlannedActivityService $plannedActivities,
+        private readonly HomeEventService $homeEvents,
+        private readonly ScheduleComparisonService $scheduleComparisons,
     ) {}
 
     /**
@@ -19,24 +22,15 @@ final class DashboardService
     {
         $resolvedDate = $date ?? JstDate::today();
         $plans = $this->plannedActivities->listForDate($resolvedDate);
+        $comparison = $this->scheduleComparisons->forDate($resolvedDate);
+        $condition = $this->homeEvents->conditionsForDate($resolvedDate);
 
         return [
             'date' => $resolvedDate,
             'currentActivity' => null,
             'nextPlans' => $this->mapNextPlans($plans, $resolvedDate),
-            'quickLogs' => [],
-            'conditions' => [
-                'mother' => [
-                    'physical' => 3,
-                    'mood' => 3,
-                    'inputSource' => 'self',
-                ],
-                'daughter' => [
-                    'physical' => 3,
-                    'mood' => 3,
-                    'inputSource' => 'guardian_observation',
-                ],
-            ],
+            'quickLogs' => $this->mapQuickLogs($this->homeEvents->quickLogCounts($resolvedDate)),
+            'conditions' => $this->mapConditions($condition),
             'childStrategy' => [
                 'desiredOutcome' => '',
                 'firstStep' => '',
@@ -51,15 +45,7 @@ final class DashboardService
                 'activityMinutes' => 0,
                 'recoveryMinutes' => 0,
             ],
-            'scheduleImpactSummary' => [
-                'onScheduleCount' => 0,
-                'delayedCount' => 0,
-                'interruptedCount' => 0,
-                'cancelledCount' => 0,
-                'movedToNightCount' => 0,
-                'lostMinutes' => 0,
-                'mainCauses' => [],
-            ],
+            'scheduleImpactSummary' => $comparison['summary'],
             'actionItems' => [],
             'lastWar' => [
                 'gameName' => 'ラストウォー',
@@ -69,7 +55,7 @@ final class DashboardService
                 'playMinutes' => 0,
                 'recoveryEffect' => 0,
             ],
-            'scheduleComparisons' => [],
+            'scheduleComparisons' => $comparison['comparisons'],
         ];
     }
 
@@ -98,6 +84,54 @@ final class DashboardService
                 ];
             })
             ->all();
+    }
+
+    /**
+     * @param  list<array{type: string, label: string, count: int, activity_definition_id: int|null}>  $logs
+     * @return list<array<string, mixed>>
+     */
+    private function mapQuickLogs(array $logs): array
+    {
+        return array_map(fn (array $log): array => [
+            'type' => $log['type'],
+            'label' => $log['label'],
+            'count' => $log['count'],
+            'activityDefinitionId' => $log['activity_definition_id'],
+        ], $logs);
+    }
+
+    /**
+     * @return array{mother: array<string, mixed>, daughter: array<string, mixed>}
+     */
+    private function mapConditions(?DailyCondition $condition): array
+    {
+        return [
+            'mother' => [
+                'physical' => $condition?->mother_physical ?? 3,
+                'mood' => $condition?->mother_mood ?? 3,
+                'inputSource' => $this->mapSource($condition?->mother_source, 'self'),
+            ],
+            'daughter' => [
+                'physical' => $condition?->daughter_physical ?? 3,
+                'mood' => $condition?->daughter_mood ?? 3,
+                'inputSource' => $this->mapSource($condition?->daughter_source, 'guardian_observation'),
+            ],
+        ];
+    }
+
+    private function mapSource(?string $source, string $fallback): string
+    {
+        $allowed = ['self', 'guardian_confirmed', 'guardian_observation'];
+
+        if ($source !== null && in_array($source, $allowed, true)) {
+            return $source;
+        }
+
+        if ($source === 'mother_assumption') {
+            return 'guardian_observation';
+        }
+
+        return $fallback;
     }
 
     private function mapCategory(?string $snapshot, ?string $kind): string
