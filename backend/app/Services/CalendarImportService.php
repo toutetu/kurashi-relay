@@ -88,51 +88,6 @@ final class CalendarImportService
     }
 
     /**
-     * OAuth未接続時のローカル確認用サンプル（当日 JST）。
-     *
-     * @return list<array<string, mixed>>
-     */
-    public function localSampleEvents(?string $localDate = null): array
-    {
-        $date = $localDate ?? JstDate::today();
-        $day = CarbonImmutable::createFromFormat('Y-m-d', $date, 'Asia/Tokyo')
-            ->startOfDay();
-
-        return [
-            [
-                'id' => 'local-sample-morning',
-                'status' => 'confirmed',
-                'summary' => '就労準備（カレンダー取込サンプル）',
-                'updated' => now('UTC')->toIso8601String(),
-                'start' => ['dateTime' => $day->setTime(9, 0)->toIso8601String()],
-                'end' => ['dateTime' => $day->setTime(11, 0)->toIso8601String()],
-                'location' => null,
-                'description' => 'ローカル確認用。GOOGLE_CALENDAR_ACCESS_TOKEN 設定後は実データに置き換わります。',
-            ],
-            [
-                'id' => 'local-sample-afternoon',
-                'status' => 'confirmed',
-                'summary' => '通所・外出（カレンダー取込サンプル）',
-                'updated' => now('UTC')->toIso8601String(),
-                'start' => ['dateTime' => $day->setTime(13, 30)->toIso8601String()],
-                'end' => ['dateTime' => $day->setTime(15, 0)->toIso8601String()],
-                'location' => null,
-                'description' => null,
-            ],
-            [
-                'id' => 'local-sample-allday',
-                'status' => 'confirmed',
-                'summary' => '終日メモ（カレンダー取込サンプル）',
-                'updated' => now('UTC')->toIso8601String(),
-                'start' => ['date' => $date],
-                'end' => ['date' => $day->addDay()->toDateString()],
-                'location' => null,
-                'description' => null,
-            ],
-        ];
-    }
-
-    /**
      * @param  array<string, mixed>  $payload
      * @return array{
      *   title: string,

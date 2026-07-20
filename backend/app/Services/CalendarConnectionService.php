@@ -231,7 +231,7 @@ final class CalendarConnectionService
      *   imported: int,
      *   updated: int,
      *   cancelled: int,
-     *   mode: 'google_api'|'local_sample',
+     *   mode: 'google_api',
      *   message: string
      * }
      */
@@ -247,28 +247,26 @@ final class CalendarConnectionService
             ?: (string) config('services.google.calendar_id', 'primary');
 
         $accessToken = $this->resolveAccessToken($connection);
-        $mode = 'local_sample';
-        $events = [];
+        if ($accessToken === null) {
+            throw new RuntimeException(
+                'Googleカレンダーが未接続です。「Googleに接続」から連携してください。',
+            );
+        }
 
-        if ($accessToken !== null) {
-            try {
-                $events = $this->googleClient->listEvents(
-                    $accessToken,
-                    $calendarId,
-                    $dayStart,
-                    $dayEnd,
-                );
-                $mode = 'google_api';
-            } catch (Throwable $exception) {
-                throw new RuntimeException(
-                    $exception->getMessage() !== ''
-                        ? $exception->getMessage()
-                        : 'Googleカレンダーの取得に失敗しました。',
-                    previous: $exception instanceof \Exception ? $exception : null,
-                );
-            }
-        } else {
-            $events = $this->importService->localSampleEvents($date);
+        try {
+            $events = $this->googleClient->listEvents(
+                $accessToken,
+                $calendarId,
+                $dayStart,
+                $dayEnd,
+            );
+        } catch (Throwable $exception) {
+            throw new RuntimeException(
+                $exception->getMessage() !== ''
+                    ? $exception->getMessage()
+                    : 'Googleカレンダーの取得に失敗しました。',
+                previous: $exception instanceof \Exception ? $exception : null,
+            );
         }
 
         $counts = $this->importService->importGoogleEvents($connection, $events);
@@ -279,14 +277,11 @@ final class CalendarConnectionService
 
         $who = $connection->subject_role === 'child' ? 'むすめ' : '私';
         $total = $counts['imported'] + $counts['updated'] + $counts['cancelled'];
-        $message = $mode === 'google_api'
-            ? "{$who}のGoogleカレンダーから {$total} 件を取り込みました。"
-            : "Google未接続のため、確認用サンプルを {$total} 件取り込みました。「Googleに接続」から実カレンダーを連携してください。";
 
         return [
             ...$counts,
-            'mode' => $mode,
-            'message' => $message,
+            'mode' => 'google_api',
+            'message' => "{$who}のGoogleカレンダーから {$total} 件を取り込みました。",
         ];
     }
 

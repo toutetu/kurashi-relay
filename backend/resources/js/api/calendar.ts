@@ -32,7 +32,7 @@ const syncSchema = z.object({
     imported: z.number(),
     updated: z.number(),
     cancelled: z.number(),
-    mode: z.enum(["google_api", "local_sample"]),
+    mode: z.enum(["google_api"]),
     message: z.string(),
   }),
 });
