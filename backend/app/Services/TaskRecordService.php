@@ -15,31 +15,39 @@ final class TaskRecordService
 {
     public function __construct(
         private readonly RewardCalculator $rewardCalculator,
+        private readonly ActivityEventRecordQuery $activityEventRecordQuery,
     ) {}
 
     /**
+     * きろくタイムラインは activity_events（event_type=activity）を正本とする(DR-036)。
+     *
      * @return array{
      *     date: string,
      *     member: string,
-     *     records: list<TaskRecord>
+     *     records: list<array{
+     *         id: int,
+     *         member: string,
+     *         task: string,
+     *         task_title: string,
+     *         record_date: string,
+     *         completed_at: string,
+     *         cancelled_at: null
+     *     }>
      * }
      */
     public function listForMember(FamilyMember $member, string $recordDate): array
     {
-        $records = TaskRecord::query()
-            ->with(['familyMember', 'taskDefinition'])
-            ->where('family_member_id', $member->id)
-            ->whereDate('record_date', $recordDate)
-            ->whereNull('cancelled_at')
-            ->orderBy('completed_at')
-            ->orderBy('id')
-            ->get()
-            ->all();
+        $events = $this->activityEventRecordQuery
+            ->activityEventsForActorOnDate($member, $recordDate);
 
         return [
             'date' => $recordDate,
             'member' => $member->role,
-            'records' => $records,
+            'records' => $this->activityEventRecordQuery->toTimelineRecords(
+                $member,
+                $recordDate,
+                $events,
+            ),
         ];
     }
 

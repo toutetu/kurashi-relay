@@ -6,7 +6,6 @@ use App\Models\TaskRecord;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin TaskRecord */
 final class TaskRecordResource extends JsonResource
 {
     /**
@@ -14,14 +13,21 @@ final class TaskRecordResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        if (is_array($this->resource)) {
+            return $this->resource;
+        }
+
+        /** @var TaskRecord $record */
+        $record = $this->resource;
+
         return [
-            'id' => $this->id,
-            'member' => $this->familyMember->role,
-            'task' => $this->taskDefinition->slug,
-            'task_title' => $this->taskDefinition->title,
-            'record_date' => $this->record_date->toDateString(),
-            'completed_at' => $this->completed_at->timezone('Asia/Tokyo')->toIso8601String(),
-            'cancelled_at' => $this->cancelled_at?->timezone('Asia/Tokyo')->toIso8601String(),
+            'id' => $record->id,
+            'member' => $record->familyMember->role,
+            'task' => $record->taskDefinition->slug,
+            'task_title' => $record->taskDefinition->title,
+            'record_date' => $record->record_date->toDateString(),
+            'completed_at' => $record->completed_at->timezone('Asia/Tokyo')->toIso8601String(),
+            'cancelled_at' => $record->cancelled_at?->timezone('Asia/Tokyo')->toIso8601String(),
         ];
     }
 }
