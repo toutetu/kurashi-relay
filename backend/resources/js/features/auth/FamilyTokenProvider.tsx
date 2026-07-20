@@ -116,7 +116,7 @@ export function FamilyTokenProvider({ children }: { children: ReactNode }) {
               id="family-token-description"
               className="mt-2 leading-relaxed text-[var(--muted-text)]"
             >
-              家族の記録を守るためのあいことばです。この端末だけに保存します。
+              家族の記録を守るためのあいことばです。ひらがな・漢字・カタカナでも使えます。この端末だけに保存します。
             </p>
 
             <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
@@ -128,14 +128,19 @@ export function FamilyTokenProvider({ children }: { children: ReactNode }) {
               </label>
               <input
                 id="family-token-input"
-                type="password"
+                type="text"
+                lang="ja"
                 autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
                 autoFocus
                 value={tokenInput}
                 onChange={(event) => {
                   setTokenInput(event.target.value);
                   setInputError(null);
                 }}
+                placeholder="例：あきちゃんのいえ"
                 className="min-h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 text-base outline-none transition focus:border-[var(--primary)] focus:ring-3 focus:ring-[var(--primary-soft)]"
               />
               {inputError && (
