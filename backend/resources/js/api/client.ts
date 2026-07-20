@@ -1,5 +1,4 @@
 import type { ApiErrorPayload } from "../types/dashboard";
-import { isInertiaSessionAuth, getInertiaPathPrefix } from "./inertiaAuth";
 import {
   captureFamilyTokenAuth,
   createFamilyTokenHeaders,
@@ -33,10 +32,6 @@ function normalizeApiPath(path: string): string {
 }
 
 function isSameOriginApiBase(): boolean {
-  if (isInertiaSessionAuth()) {
-    return true;
-  }
-
   const apiBaseUrl = resolveConfiguredApiBaseUrl();
 
   if (apiBaseUrl === "") {
@@ -121,11 +116,7 @@ export async function apiGet<T>(
   }
   const payload = await parseJson(response);
   if (response.status === 401) {
-    if (isInertiaSessionAuth()) {
-      window.location.assign(`${getInertiaPathPrefix()}/family-token`);
-    } else {
-      requireFamilyToken(authSnapshot);
-    }
+    requireFamilyToken(authSnapshot);
   }
 
   if (!response.ok) {
@@ -175,11 +166,7 @@ export async function apiSend<T>(
 
   const payload = await parseJson(response);
   if (response.status === 401) {
-    if (isInertiaSessionAuth()) {
-      window.location.assign(`${getInertiaPathPrefix()}/family-token`);
-    } else {
-      requireFamilyToken(authSnapshot);
-    }
+    requireFamilyToken(authSnapshot);
   }
   if (!response.ok) {
     const errorPayload = isErrorPayload(payload) ? payload : null;

@@ -1,4 +1,4 @@
-import type { ApiTask, TaskRecord } from "../../../api/schemas/oshigotoSchema";
+import type { ApiTask, TaskRecord } from "../../api/schemas/oshigotoSchema";
 
 /** 時系列きろくを回数一覧用の行へ集計する */
 export function aggregateRecordsToCountedTasks(

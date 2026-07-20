@@ -7,17 +7,17 @@ use App\Http\Requests\Web\FamilyTokenStoreRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
-use Inertia\Inertia;
-use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
+/**
+ * Legacy web family-token endpoints (unregistered in SPA mode).
+ * Kept for auth-redesign backlog; no longer depends on Inertia.
+ */
 final class FamilyTokenController extends Controller
 {
-    public function show(Request $request): Response
+    public function show(Request $request): RedirectResponse
     {
-        return Inertia::render('Auth/FamilyToken', [
-            'intendedUrl' => $request->session()->get('url.intended', route('inertia.home')),
-        ]);
+        return redirect('/');
     }
 
     public function store(FamilyTokenStoreRequest $request): RedirectResponse
@@ -49,6 +49,6 @@ final class FamilyTokenController extends Controller
         RateLimiter::clear($limiterKey);
         $request->session()->put('family_token_verified', true);
 
-        return redirect()->intended(route('inertia.home'));
+        return redirect()->intended('/');
     }
 }
