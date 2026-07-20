@@ -1,10 +1,55 @@
-import { KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CalendarDays, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  createCalendarConnectionPlaceholder,
+  getFamilySettings,
+  updateFamilySettings,
+  type FamilySettings,
+} from "../api/settings";
 import { Button } from "../components/ui/Button";
 import { useFamilyToken } from "../features/auth/FamilyTokenProvider";
+
+const dayTypeLabels: Record<FamilySettings["day_type"], string> = {
+  weekday: "平日",
+  holiday: "休日",
+  long_vacation: "長期休暇",
+};
 
 export function SettingsPage() {
   const { hasSavedToken, openFamilyTokenDialog, removeSavedToken } =
     useFamilyToken();
+  const queryClient = useQueryClient();
+  const [dayType, setDayType] =
+    useState<FamilySettings["day_type"]>("weekday");
+  const [message, setMessage] = useState<string | null>(null);
+
+  const settingsQuery = useQuery({
+    queryKey: ["family-settings"],
+    queryFn: ({ signal }) => getFamilySettings(signal),
+  });
+
+  useEffect(() => {
+    if (settingsQuery.data) {
+      setDayType(settingsQuery.data.day_type);
+    }
+  }, [settingsQuery.data]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => updateFamilySettings({ day_type: dayType }),
+    onSuccess: async () => {
+      setMessage("日種別を保存しました。");
+      await queryClient.invalidateQueries({ queryKey: ["family-settings"] });
+    },
+  });
+
+  const calendarMutation = useMutation({
+    mutationFn: () =>
+      createCalendarConnectionPlaceholder("Googleカレンダー（準備中）"),
+    onSuccess: () => {
+      setMessage("カレンダー接続の表示名を保存しました（OAuthは未接続）。");
+    },
+  });
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -50,6 +95,67 @@ export function SettingsPage() {
           </Button>
         </div>
       </section>
+
+      <section className="mt-5 rounded-[var(--card-radius)] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm sm:p-6">
+        <h2 className="font-black">日種別</h2>
+        <p className="mt-1 text-sm text-[var(--muted-text)]">
+          平日・休日・長期休暇で、ホームや予定の見え方を切り替えるための設定です。
+        </p>
+        <label className="mt-4 grid gap-1 text-sm">
+          <span className="font-bold">きょうの日種別</span>
+          <select
+            value={dayType}
+            onChange={(e) =>
+              setDayType(e.target.value as FamilySettings["day_type"])
+            }
+            className="min-h-11 rounded-xl border border-[var(--line)] px-3"
+          >
+            {Object.entries(dayTypeLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="mt-4">
+          <Button
+            disabled={saveMutation.isPending || settingsQuery.isPending}
+            onClick={() => saveMutation.mutate()}
+          >
+            {saveMutation.isPending ? "保存中…" : "日種別を保存"}
+          </Button>
+        </div>
+      </section>
+
+      <section className="mt-5 rounded-[var(--card-radius)] border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--amber-soft)] text-[var(--amber)]">
+            <CalendarDays aria-hidden="true" size={22} />
+          </span>
+          <div>
+            <h2 className="font-black">Googleカレンダーは準備中</h2>
+            <p className="mt-1 leading-relaxed text-[var(--muted-text)]">
+              OAuth連携と予定の自動取込はまだありません。表示名だけ先に保存できます。
+            </p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <Button
+            variant="ghost"
+            tone="neutral"
+            disabled={calendarMutation.isPending}
+            onClick={() => calendarMutation.mutate()}
+          >
+            {calendarMutation.isPending ? "保存中…" : "準備中の接続を登録"}
+          </Button>
+        </div>
+      </section>
+
+      {message && (
+        <p className="mt-4 text-sm font-bold text-[var(--green)]" role="status">
+          {message}
+        </p>
+      )}
     </div>
   );
 }

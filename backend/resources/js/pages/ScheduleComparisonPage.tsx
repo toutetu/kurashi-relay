@@ -1,12 +1,16 @@
+import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, RefreshCcw } from "lucide-react";
+import { getScheduleComparisons } from "../api/scheduleComparisons";
 import { DashboardError, DashboardLoading } from "../components/ui/AsyncStates";
-import { useDashboardQuery } from "../features/dashboard/queries/useDashboardQuery";
 import { ScheduleComparisonList } from "../features/schedule/components/ScheduleComparisonList";
 import { formatDate, formatMinutes, getTokyoToday } from "../utils/date";
 
 export function ScheduleComparisonPage() {
   const today = getTokyoToday();
-  const query = useDashboardQuery(today);
+  const query = useQuery({
+    queryKey: ["schedule-comparisons", today],
+    queryFn: ({ signal }) => getScheduleComparisons(today, signal),
+  });
 
   return (
     <div className="mx-auto max-w-[1320px]">
@@ -60,7 +64,7 @@ export function ScheduleComparisonPage() {
           >
             <div className="rounded-xl bg-[#edf6ff] p-3 text-center">
               <span className="block text-xl font-black text-[#236da8]">
-                {query.data.scheduleImpactSummary.onScheduleCount}
+                {query.data.summary.onScheduleCount}
               </span>
               <span className="text-xs font-bold text-[#526078]">
                 予定どおり
@@ -68,14 +72,14 @@ export function ScheduleComparisonPage() {
             </div>
             <div className="rounded-xl bg-[#fff8db] p-3 text-center">
               <span className="block text-xl font-black text-[#8a6411]">
-                {query.data.scheduleImpactSummary.delayedCount}
+                {query.data.summary.delayedCount}
               </span>
               <span className="text-xs font-bold text-[#526078]">遅れ</span>
             </div>
             <div className="rounded-xl bg-[#fff0f1] p-3 text-center">
               <span className="block text-xl font-black text-[#b84047]">
-                {query.data.scheduleImpactSummary.interruptedCount +
-                  query.data.scheduleImpactSummary.cancelledCount}
+                {query.data.summary.interruptedCount +
+                  query.data.summary.cancelledCount}
               </span>
               <span className="text-xs font-bold text-[#526078]">
                 中断・中止
@@ -83,14 +87,14 @@ export function ScheduleComparisonPage() {
             </div>
             <div className="rounded-xl bg-[#eee8ff] p-3 text-center">
               <span className="block text-xl font-black text-[#684baa]">
-                {formatMinutes(query.data.scheduleImpactSummary.lostMinutes)}
+                {formatMinutes(query.data.summary.lostMinutes)}
               </span>
               <span className="text-xs font-bold text-[#526078]">
                 失われた時間
               </span>
             </div>
           </section>
-          <ScheduleComparisonList items={query.data.scheduleComparisons} />
+          <ScheduleComparisonList items={query.data.comparisons} />
         </>
       )}
     </div>

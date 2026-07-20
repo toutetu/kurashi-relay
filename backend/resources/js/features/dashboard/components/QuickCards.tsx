@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { cancelHomeEvent, createHomeEvent } from "../../../api/home";
 import { DashboardCard } from "../../../components/ui/DashboardCard";
 import { Button } from "../../../components/ui/Button";
 import { EmptyState } from "../../../components/ui/DashboardPrimitives";
@@ -144,8 +145,15 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
   const [lastAction, setLastAction] = useState<{
     type: QuickLogType;
     label: string;
+    eventId: number;
   } | null>(null);
+  const [savingType, setSavingType] = useState<QuickLogType | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const undoTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    setLogs(initialLogs);
+  }, [initialLogs]);
 
   useEffect(
     () => () => {
@@ -154,31 +162,68 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
     [],
   );
 
-  const addLog = (log: QuickLog) => {
-    setLogs((current) =>
-      current.map((item) =>
-        item.type === log.type ? { ...item, count: item.count + 1 } : item,
-      ),
-    );
-    setFlyKeys((current) => ({
-      ...current,
-      [log.type]: (current[log.type] ?? 0) + 1,
-    }));
-    setLastAction({ type: log.type, label: log.label });
-    if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
-    undoTimer.current = window.setTimeout(() => setLastAction(null), 5_000);
+  const addLog = async (log: QuickLog) => {
+    if (!log.activityDefinitionId) {
+      setErrorMessage("この項目はまだ記録用マスタがありません。");
+      return;
+    }
+    if (savingType !== null) return;
+
+    setSavingType(log.type);
+    setErrorMessage(null);
+    const idempotencyKey = `quick:${log.type}:${crypto.randomUUID()}`;
+
+    try {
+      const event = await createHomeEvent({
+        activity_definition_id: log.activityDefinitionId,
+        idempotency_key: idempotencyKey,
+      });
+
+      setLogs((current) =>
+        current.map((item) =>
+          item.type === log.type ? { ...item, count: item.count + 1 } : item,
+        ),
+      );
+      setFlyKeys((current) => ({
+        ...current,
+        [log.type]: (current[log.type] ?? 0) + 1,
+      }));
+      setLastAction({ type: log.type, label: log.label, eventId: event.id });
+      if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
+      undoTimer.current = window.setTimeout(() => setLastAction(null), 5_000);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "記録の保存に失敗しました。もう一度お試しください。",
+      );
+    } finally {
+      setSavingType(null);
+    }
   };
-  const undo = () => {
+
+  const undo = async () => {
     if (!lastAction) return;
-    setLogs((current) =>
-      current.map((item) =>
-        item.type === lastAction.type
-          ? { ...item, count: Math.max(0, item.count - 1) }
-          : item,
-      ),
-    );
+    const action = lastAction;
     setLastAction(null);
     if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
+
+    try {
+      await cancelHomeEvent(action.eventId);
+      setLogs((current) =>
+        current.map((item) =>
+          item.type === action.type
+            ? { ...item, count: Math.max(0, item.count - 1) }
+            : item,
+        ),
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "取り消しに失敗しました。",
+      );
+    }
   };
 
   return (
@@ -201,8 +246,9 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
                   <button
                     type="button"
                     aria-label={`${log.label}を記録。現在${log.count}件`}
-                    onClick={() => addLog(log)}
-                    className="pressable group relative flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-[13px] font-semibold text-[var(--ink)] transition hover:bg-[color-mix(in_srgb,var(--primary-soft)_65%,var(--surface))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                    disabled={savingType !== null}
+                    onClick={() => void addLog(log)}
+                    className="pressable group relative flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-[13px] font-semibold text-[var(--ink)] transition hover:bg-[color-mix(in_srgb,var(--primary-soft)_65%,var(--surface))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:opacity-60"
                   >
                     <span className="min-w-0 flex-1 truncate">{log.label}</span>
                     <span
@@ -235,6 +281,11 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
         ) : (
           <EmptyState>記録できる項目はありません。</EmptyState>
         )}
+        {errorMessage && (
+          <p className="mt-2 text-xs font-bold text-[var(--coral)]" role="alert">
+            {errorMessage}
+          </p>
+        )}
       </DashboardCard>
       {lastAction && (
         <div
@@ -244,7 +295,7 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
         >
           <span className="font-bold">{lastAction.label}を1件記録しました</span>
           <Button
-            onClick={undo}
+            onClick={() => void undo()}
             variant="solid"
             tone="neutral"
             size="compact"

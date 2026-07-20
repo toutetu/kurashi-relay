@@ -45,6 +45,7 @@ const quickLog = z.strictObject({
   ]),
   label: z.string().min(1),
   count: nonNegativeInteger,
+  activityDefinitionId: z.number().int().nullable().optional(),
 });
 
 const score = z.union([
