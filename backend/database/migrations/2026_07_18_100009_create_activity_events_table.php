@@ -20,12 +20,24 @@ return new class extends Migration
             $table->foreignId('recorded_by_member_id')
                 ->constrained('family_members')
                 ->restrictOnDelete();
+            $table->foreignId('actor_member_id')
+                ->constrained('family_members')
+                ->restrictOnDelete();
+            $table->foreignId('target_member_id')
+                ->nullable()
+                ->constrained('family_members')
+                ->restrictOnDelete();
+            $table->foreignId('supporter_member_id')
+                ->nullable()
+                ->constrained('family_members')
+                ->restrictOnDelete();
             $table->string('source', 30);
             $table->string('idempotency_key', 64);
             $table->timestampsTz();
 
             $table->unique('idempotency_key', 'activity_events_idempotency_key_unique');
             $table->index(['event_type', 'occurred_at']);
+            $table->index(['actor_member_id', 'occurred_at']);
         });
 
         MigrationConstraintHelper::addCheck(

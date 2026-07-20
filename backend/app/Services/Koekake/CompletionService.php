@@ -3,7 +3,6 @@
 namespace App\Services\Koekake;
 
 use App\Models\ActivityEvent;
-use App\Models\ActivityEventParticipant;
 use App\Models\CompletionEvent;
 use App\Models\DailyTask;
 use App\Models\PlanActualLink;
@@ -128,6 +127,8 @@ final class CompletionService
         $occurredAtUtc = ($occurredAt ?? CarbonImmutable::now('UTC'))->utc();
         $endedAtUtc = $endedAt?->utc();
 
+        $roles = $this->rolesForStatus($status, $childId, $motherId);
+
         try {
             $event = ActivityEvent::query()->create([
                 'activity_definition_id' => $activityDefinitionId,
@@ -135,6 +136,9 @@ final class CompletionService
                 'occurred_at' => $occurredAtUtc,
                 'ended_at' => $endedAtUtc,
                 'recorded_by_member_id' => $motherId,
+                'actor_member_id' => $roles['actor_member_id'],
+                'target_member_id' => $roles['target_member_id'],
+                'supporter_member_id' => $roles['supporter_member_id'],
                 'source' => 'koekake',
                 'idempotency_key' => $idempotencyKey,
             ]);
@@ -156,34 +160,33 @@ final class CompletionService
             return;
         }
 
-        foreach ($this->participantsForStatus($status, $childId, $motherId) as $participant) {
-            ActivityEventParticipant::query()->create([
-                'activity_event_id' => $event->id,
-                'family_member_id' => $participant['family_member_id'],
-                'role' => $participant['role'],
-                'created_at' => now('UTC'),
-            ]);
-        }
-
         $this->ensurePlanActualLink($task, $event);
     }
 
     /**
-     * @return list<array{family_member_id: int, role: string}>
+     * @return array{
+     *     actor_member_id: int,
+     *     target_member_id: int|null,
+     *     supporter_member_id: int|null
+     * }
      */
-    private function participantsForStatus(string $status, int $childId, int $motherId): array
+    private function rolesForStatus(string $status, int $childId, int $motherId): array
     {
         return match ($status) {
             'together' => [
-                ['family_member_id' => $childId, 'role' => 'actor'],
-                ['family_member_id' => $motherId, 'role' => 'supporter'],
+                'actor_member_id' => $childId,
+                'target_member_id' => null,
+                'supporter_member_id' => $motherId,
             ],
             'parent_done' => [
-                ['family_member_id' => $motherId, 'role' => 'actor'],
-                ['family_member_id' => $childId, 'role' => 'target'],
+                'actor_member_id' => $motherId,
+                'target_member_id' => $childId,
+                'supporter_member_id' => null,
             ],
             default => [
-                ['family_member_id' => $childId, 'role' => 'actor'],
+                'actor_member_id' => $childId,
+                'target_member_id' => null,
+                'supporter_member_id' => null,
             ],
         };
     }

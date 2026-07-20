@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\ActivityDefinition;
 use App\Models\ActivityEvent;
 use App\Models\ActivityEventCancellation;
-use App\Models\ActivityEventParticipant;
 use App\Models\DailyCondition;
 use App\Support\FamilyMemberResolver;
 use App\Support\JstDate;
@@ -57,7 +56,7 @@ final class HomeEventService
                 ->first();
 
             if ($existing !== null) {
-                return ['event' => $existing->load(['activityDefinition', 'participants']), 'created' => false];
+                return ['event' => $existing->load(['activityDefinition']), 'created' => false];
             }
 
             $event = ActivityEvent::query()->create([
@@ -66,18 +65,12 @@ final class HomeEventService
                 'occurred_at' => $occurredAt,
                 'ended_at' => $endedAt,
                 'recorded_by_member_id' => $motherId,
+                'actor_member_id' => $motherId,
                 'source' => 'mother_quick',
                 'idempotency_key' => $input['idempotency_key'],
             ]);
 
-            ActivityEventParticipant::query()->create([
-                'activity_event_id' => $event->id,
-                'family_member_id' => $motherId,
-                'role' => 'actor',
-                'created_at' => now('UTC'),
-            ]);
-
-            return ['event' => $event->load(['activityDefinition', 'participants']), 'created' => true];
+            return ['event' => $event->load(['activityDefinition']), 'created' => true];
         });
     }
 

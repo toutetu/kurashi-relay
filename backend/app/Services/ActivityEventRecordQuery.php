@@ -20,14 +20,9 @@ final class ActivityEventRecordQuery
         return ActivityEvent::query()
             ->with(['activityDefinition'])
             ->where('event_type', 'activity')
+            ->where('actor_member_id', $member->id)
             ->whereBetween('occurred_at', [$startUtc, $endUtc])
             ->whereDoesntHave('cancellation')
-            ->whereHas(
-                'participants',
-                fn ($query) => $query
-                    ->where('family_member_id', $member->id)
-                    ->where('role', 'actor'),
-            )
             ->orderBy('occurred_at')
             ->orderBy('id')
             ->get();

@@ -21,6 +21,7 @@ class ActivityEventFactory extends Factory
             'event_type' => 'activity',
             'occurred_at' => now('UTC'),
             'recorded_by_member_id' => FamilyMember::factory(),
+            'actor_member_id' => fn (array $attributes) => $attributes['recorded_by_member_id'],
             'source' => 'manual',
             'idempotency_key' => fake()->unique()->uuid(),
         ];
