@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\ActivityDefinition;
+use App\Models\ActivityEvent;
 use App\Models\FamilyMember;
 use App\Models\TaskDefinition;
 use App\Models\TaskRecord;
+use Illuminate\Support\Collection;
 
 final class TaskService
 {
@@ -32,6 +34,10 @@ final class TaskService
             ->get()
             ->groupBy('task_definition_id');
 
+        $pairedEventKeys = $this->pairedOshigotoEventKeys(
+            $recordsByTaskId->flatten(1),
+        );
+
         $activityCounts = $this->activityEventRecordQuery
             ->activityCountsByDefinitionForActorOnDate($member, $date);
 
@@ -40,8 +46,10 @@ final class TaskService
         $tasks = $definitions->map(function (TaskDefinition $definition) use (
             $recordsByTaskId,
             $activityCounts,
+            $pairedEventKeys,
             &$coveredActivityDefinitionIds,
         ): array {
+            /** @var Collection<int, TaskRecord> $taskRecords */
             $taskRecords = $recordsByTaskId->get($definition->id, collect());
             $taskRecordCount = $taskRecords->count();
             $activityDefinitionId = $definition->activity_definition_id;
@@ -53,7 +61,15 @@ final class TaskService
                 $coveredActivityDefinitionIds[$activityDefinitionId] = true;
             }
 
-            $count = $taskRecordCount + $activityCount;
+            $orphanTaskRecordCount = $taskRecords
+                ->filter(function (TaskRecord $record) use ($pairedEventKeys): bool {
+                    $eventKey = TaskRecordService::activityEventIdempotencyKey($record->idempotency_key);
+
+                    return ! isset($pairedEventKeys[$eventKey]);
+                })
+                ->count();
+
+            $count = $activityCount + $orphanTaskRecordCount;
             /** @var int|null $lastRecordId 取消用。activity_events は別経路のため task_records のみ */
             $lastRecordId = $taskRecordCount > 0 ? (int) $taskRecords->max('id') : null;
 
@@ -123,5 +139,31 @@ final class TaskService
             'tasks' => $tasks,
             'summary' => $this->rewardCalculator->summary($member, $date),
         ];
+    }
+
+    /**
+     * @param  Collection<int, TaskRecord>  $records
+     * @return array<string, true> idempotency_key => true
+     */
+    private function pairedOshigotoEventKeys(Collection $records): array
+    {
+        if ($records->isEmpty()) {
+            return [];
+        }
+
+        $eventKeys = $records
+            ->map(fn (TaskRecord $record): string => TaskRecordService::activityEventIdempotencyKey(
+                $record->idempotency_key,
+            ))
+            ->unique()
+            ->values()
+            ->all();
+
+        return ActivityEvent::query()
+            ->whereIn('idempotency_key', $eventKeys)
+            ->whereDoesntHave('cancellation')
+            ->pluck('idempotency_key')
+            ->mapWithKeys(fn (string $key): array => [$key => true])
+            ->all();
     }
 }
