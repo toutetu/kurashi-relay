@@ -239,7 +239,10 @@ final class MusumePlanService
         array $valueJson,
         ?int $decidedWithMemberId,
     ): PlanAnswerVersion {
-        $question = PlanQuestion::query()->where('question_key', $questionKey)->firstOrFail();
+        $question = PlanQuestion::query()
+            ->with('activityDefinition')
+            ->where('question_key', $questionKey)
+            ->firstOrFail();
 
         $previous = PlanAnswerVersion::query()
             ->where('daily_plan_id', $plan->id)
@@ -340,7 +343,7 @@ final class MusumePlanService
             'time' => $this->isEmptyScalar($value['time'] ?? null)
                 ? []
                 : [[
-                    'title' => (string) $value['time'],
+                    'title' => $this->titleForTimeQuestion($question),
                     'local_date' => $localDate,
                     'is_all_day' => false,
                     'planned_start_at' => CarbonImmutable::parse(
@@ -357,6 +360,20 @@ final class MusumePlanService
                     'planned_start_at' => null,
                 ]],
             default => [],
+        };
+    }
+
+    private function titleForTimeQuestion(PlanQuestion $question): string
+    {
+        $fromActivity = $question->activityDefinition?->name;
+        if (is_string($fromActivity) && $fromActivity !== '') {
+            return $fromActivity;
+        }
+
+        return match ($question->question_key) {
+            'wake_up_time' => '起床',
+            'bedtime' => '寝る',
+            default => $question->label !== '' ? $question->label : '予定',
         };
     }
 

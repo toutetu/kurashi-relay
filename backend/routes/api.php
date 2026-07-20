@@ -1,23 +1,64 @@
 <?php
 
+use App\Http\Controllers\Api\CalendarConnectionController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\FamilySettingController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\HomeEventController;
 use App\Http\Controllers\Api\Koekake\CompletionController;
 use App\Http\Controllers\Api\Koekake\KoekakeTaskController;
 use App\Http\Controllers\Api\Koekake\MusumeSummaryController;
 use App\Http\Controllers\Api\Koekake\PromptEventController;
 use App\Http\Controllers\Api\Koekake\SnoozeController;
 use App\Http\Controllers\Api\Musume\PlanController;
+use App\Http\Controllers\Api\PlanActualLinkController;
 use App\Http\Controllers\Api\PlannedActivityController;
+use App\Http\Controllers\Api\PushSubscriptionController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RewardController;
+use App\Http\Controllers\Api\ScheduleComparisonController;
+use App\Http\Controllers\Api\SharedReportController;
+use App\Http\Controllers\Api\SupportHandoverController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TaskRecordController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
+Route::get('/shared-reports/{token}', [SharedReportController::class, 'show']);
 
 Route::middleware('family-token')->group(function () {
     Route::get('/dashboard', DashboardController::class);
+
+    Route::post('/home/events', [HomeEventController::class, 'store']);
+    Route::delete('/home/events/{id}', [HomeEventController::class, 'destroy'])->whereNumber('id');
+    Route::get('/home/quick-logs', [HomeEventController::class, 'quickLogs']);
+    Route::get('/home/conditions', [HomeEventController::class, 'showConditions']);
+    Route::put('/home/conditions', [HomeEventController::class, 'upsertConditions']);
+
+    Route::get('/schedule-comparisons', ScheduleComparisonController::class);
+
+    Route::get('/support-handovers', [SupportHandoverController::class, 'index']);
+    Route::post('/support-handovers', [SupportHandoverController::class, 'store']);
+    Route::patch('/support-handovers/{id}', [SupportHandoverController::class, 'update'])->whereNumber('id');
+    Route::delete('/support-handovers/{id}', [SupportHandoverController::class, 'destroy'])->whereNumber('id');
+
+    Route::get('/reports', [ReportController::class, 'index']);
+    Route::post('/reports', [ReportController::class, 'store']);
+    Route::post('/reports/{id}/share', [ReportController::class, 'share'])->whereNumber('id');
+
+    Route::get('/settings/family', [FamilySettingController::class, 'show']);
+    Route::put('/settings/family', [FamilySettingController::class, 'update']);
+
+    Route::get('/calendar-connections', [CalendarConnectionController::class, 'index']);
+    Route::post('/calendar-connections', [CalendarConnectionController::class, 'store']);
+    Route::get('/calendar-connections/oauth/start', [CalendarConnectionController::class, 'oauthStart']);
+    Route::get('/calendar-connections/{id}/calendars', [CalendarConnectionController::class, 'calendars'])->whereNumber('id');
+    Route::patch('/calendar-connections/{id}/calendar', [CalendarConnectionController::class, 'selectCalendar'])->whereNumber('id');
+    Route::post('/calendar-connections/{id}/sync', [CalendarConnectionController::class, 'sync'])->whereNumber('id');
+    Route::delete('/calendar-connections/{id}', [CalendarConnectionController::class, 'destroy'])->whereNumber('id');
+
+    Route::post('/plan-actual-links/suggest', [PlanActualLinkController::class, 'suggest']);
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store']);
 
     Route::get('/tasks', [TaskController::class, 'index']);
     Route::get('/task-records', [TaskRecordController::class, 'index']);

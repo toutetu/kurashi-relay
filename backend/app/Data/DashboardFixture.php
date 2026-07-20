@@ -2,6 +2,10 @@
 
 namespace App\Data;
 
+/**
+ * @deprecated Product Phase 以降は DashboardService が DB/サービスから組み立てる。
+ *             固定ダミーはレガシー参照・テスト用に残すのみ。新規利用禁止。
+ */
 final class DashboardFixture
 {
     /**

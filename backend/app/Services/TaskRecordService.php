@@ -20,6 +20,7 @@ final class TaskRecordService
     public function __construct(
         private readonly RewardCalculator $rewardCalculator,
         private readonly ActivityEventRecordQuery $activityEventRecordQuery,
+        private readonly RewardLedgerService $rewardLedger,
     ) {}
 
     public static function activityEventIdempotencyKey(string $taskRecordIdempotencyKey): string
@@ -144,6 +145,8 @@ final class TaskRecordService
 
             $record->load(['familyMember', 'taskDefinition']);
 
+            $this->rewardLedger->recordEarnForTaskRecord($record);
+
             $revealedReward = $this->maybeGrantReward($member, $record, $recordDate);
 
             return $this->buildStoreResult($record, $recordDate, false, 201, $revealedReward);
@@ -179,6 +182,7 @@ final class TaskRecordService
             }
 
             $this->ensureActivityEventCancellation($record);
+            $this->rewardLedger->recordReversalForTaskRecord($record);
 
             $summary = $this->rewardCalculator->summary(
                 $record->familyMember,

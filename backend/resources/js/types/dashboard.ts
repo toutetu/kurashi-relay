@@ -40,6 +40,7 @@ export interface QuickLog {
   type: QuickLogType;
   label: string;
   count: number;
+  activityDefinitionId?: number | null;
 }
 
 export type Score = 1 | 2 | 3 | 4 | 5;
