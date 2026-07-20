@@ -66,16 +66,16 @@ DB rollbackは不要。
 
 ### 配信・navigation
 
-- [ ] `/` を直接開ける
+- [x] `/` を直接開ける（サーバー: SPA `id="root"`、2026-07-20）
 - [ ] mobile menuを開閉できる
 - [ ] PC sidebarを開閉できる
 - [ ] React Router遷移でfull reloadしない
 - [ ] 戻る・進むが動く
-- [ ] `/records/musume` を直接reloadできる
-- [ ] `/oshigoto/usj` を直接reloadできる
+- [x] `/records/musume` を直接reloadできる（サーバー確認済み）
+- [x] `/oshigoto/usj` を直接reloadできる（サーバー確認済み）
 - [ ] 未知URLでアプリ内404が出る
-- [ ] `/api/health` がJSON
-- [ ] 未知の `/api/*` がHTMLを返さない
+- [x] `/api/health` がJSON
+- [x] 未知の `/api/*` がHTMLを返さない
 
 ### Home / 記録 / Musume / Koekake
 

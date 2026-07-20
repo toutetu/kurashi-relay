@@ -15,11 +15,9 @@ import {
   dashboardTabs,
   type DashboardTab,
 } from "../features/dashboard/hooks/dashboardTab";
-import { useInertiaDashboardTab } from "../features/dashboard/hooks/useInertiaDashboardTab";
 import { useSpaDashboardTab } from "../features/dashboard/hooks/useSpaDashboardTab";
 import { useDashboardQuery } from "../features/dashboard/queries/useDashboardQuery";
 import { MoodPicker } from "../features/mood/mood";
-import { useAppPathContext } from "../navigation/AppPathContext";
 import type { DashboardData } from "../types/dashboard";
 import { createLocalActivity, type LocalActivity } from "../types/local";
 import { formatDate, getTokyoToday } from "../utils/date";
@@ -94,7 +92,7 @@ function HomeDashboard({
   );
 }
 
-function HomeDashboardSpa({ data }: { data: DashboardData }) {
+function HomeDashboardWithTab({ data }: { data: DashboardData }) {
   const [activeTab, selectTab] = useSpaDashboardTab();
 
   return (
@@ -103,28 +101,6 @@ function HomeDashboardSpa({ data }: { data: DashboardData }) {
       activeTab={activeTab}
       selectTab={selectTab}
     />
-  );
-}
-
-function HomeDashboardInertia({ data }: { data: DashboardData }) {
-  const [activeTab, selectTab] = useInertiaDashboardTab();
-
-  return (
-    <HomeDashboard
-      data={data}
-      activeTab={activeTab}
-      selectTab={selectTab}
-    />
-  );
-}
-
-function HomeDashboardRouter({ data }: { data: DashboardData }) {
-  const { mode } = useAppPathContext();
-
-  return mode === "inertia" ? (
-    <HomeDashboardInertia data={data} />
-  ) : (
-    <HomeDashboardSpa data={data} />
   );
 }
 
@@ -175,7 +151,7 @@ export function HomePage() {
         />
       )}
       {query.isSuccess && (
-        <HomeDashboardRouter key={query.data.date} data={query.data} />
+        <HomeDashboardWithTab key={query.data.date} data={query.data} />
       )}
     </div>
   );

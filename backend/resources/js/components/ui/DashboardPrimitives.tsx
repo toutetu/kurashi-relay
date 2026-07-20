@@ -1,9 +1,7 @@
-import { Link as InertiaLink } from "@inertiajs/react";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
-import { useAppPath, useAppPathContext } from "../../navigation/AppPathContext";
 import { Button } from "./Button";
 
 export function QuickActionButton({
@@ -96,24 +94,13 @@ export function SectionLink({
   to: string;
   children?: ReactNode;
 }) {
-  const { mode } = useAppPathContext();
-  const href = useAppPath(to);
   const className =
     "pressable inline-flex min-h-11 items-center gap-1 rounded-lg px-1 text-sm font-bold text-[var(--mother-blue-strong)] hover:underline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]";
-  const content = (
-    <>
+
+  return (
+    <RouterLink to={to} className={className}>
       {children}
       <ChevronRight aria-hidden="true" size={16} />
-    </>
-  );
-
-  return mode === "inertia" ? (
-    <InertiaLink href={href} className={className}>
-      {content}
-    </InertiaLink>
-  ) : (
-    <RouterLink to={to} className={className}>
-      {content}
     </RouterLink>
   );
 }

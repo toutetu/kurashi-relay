@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiGet, apiSend } from "./client";
 import {
-  getInertiaPathPrefix,
-  setInertiaPathPrefix,
-  setInertiaSessionAuth,
-} from "./inertiaAuth";
-import {
   getFamilyToken,
   resetFamilyTokenStateForTests,
   saveFamilyToken,
@@ -26,8 +21,6 @@ function jsonResponse(body: unknown, status = 200) {
 describe("API client family token", () => {
   beforeEach(() => {
     resetFamilyTokenStateForTests();
-    setInertiaSessionAuth(false);
-    setInertiaPathPrefix("/app");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -194,8 +187,6 @@ describe("API client family token", () => {
 describe("API client same-origin default", () => {
   beforeEach(() => {
     resetFamilyTokenStateForTests();
-    setInertiaSessionAuth(false);
-    setInertiaPathPrefix("/app");
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("location", {
@@ -214,59 +205,5 @@ describe("API client same-origin default", () => {
     const [url, request] = fetchMock.mock.calls[0] ?? [];
     expect(url).toBe("/api/dashboard");
     expect(request?.credentials).toBe("same-origin");
-  });
-});
-
-describe("API client inertia session mode", () => {
-  beforeEach(() => {
-    resetFamilyTokenStateForTests();
-    setInertiaSessionAuth(true);
-    setInertiaPathPrefix("/app");
-    fetchMock.mockReset();
-    vi.stubGlobal("fetch", fetchMock);
-    vi.stubGlobal("location", { assign: vi.fn() });
-  });
-
-  it("same-originでcredentialsを付け、相対/apiパスへ送る", async () => {
-    fetchMock.mockImplementation(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ status: "success" }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
-    );
-
-    await apiGet("/api/dashboard");
-
-    const [url, request] = fetchMock.mock.calls[0] ?? [];
-    expect(url).toBe("/api/dashboard");
-    expect(request?.credentials).toBe("same-origin");
-    expect(new Headers(request?.headers).has("X-Family-Token")).toBe(false);
-  });
-
-  it("401ではfamily-tokenページへ遷移し、SPA向け再入力通知は出さない", async () => {
-    const onRequired = vi.fn();
-    const unsubscribe = subscribeFamilyTokenRequired(onRequired);
-    const assign = vi.fn();
-    vi.stubGlobal("location", { assign });
-
-    fetchMock.mockImplementation(() =>
-      Promise.resolve(
-        new Response(
-          JSON.stringify({
-            status: "error",
-            message: "あいことばを確認してください。",
-          }),
-          { status: 401 },
-        ),
-      ),
-    );
-
-    await expect(apiGet("/api/dashboard")).rejects.toMatchObject({ status: 401 });
-
-    expect(assign).toHaveBeenCalledWith(`${getInertiaPathPrefix()}/family-token`);
-    expect(onRequired).not.toHaveBeenCalled();
-    unsubscribe();
   });
 });

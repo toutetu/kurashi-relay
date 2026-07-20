@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { Link as InertiaLink } from "@inertiajs/react";
 import { Link as RouterLink } from "react-router-dom";
 import { ApiError } from "../../../api/client";
-import { useAppPath, useAppPathContext } from "@/navigation/AppPathContext";
 import type { DecidedWith } from "../api/schemas/musumeSchema";
 import type { MusumePlan } from "../api/schemas/musumeSchema";
 import {
@@ -38,8 +36,6 @@ type ItemCategory =
   "today_task" | "today_item" | "bedtime" | "tomorrow_plan" | "tomorrow_item";
 
 export function MusumeHome({ plan, date, previewNow = null }: MusumeHomeProps) {
-  const { mode } = useAppPathContext();
-  const oshigotoPath = useAppPath("/oshigoto");
   const [openSheet, setOpenSheet] = useState<
     OutlookSheetKind | "review" | null
   >(null);
@@ -353,43 +349,23 @@ export function MusumeHome({ plan, date, previewNow = null }: MusumeHomeProps) {
 
       <p className="msm-eyebrow msm-ribbon-line">よるの おたのしみ 🌙</p>
       <section className="msm-stack">
-        {mode === "inertia" ? (
-          <InertiaLink href={oshigotoPath} className="msm-oshigoto-door">
-            <span className="msm-crescent" aria-hidden="true" />
-            <span className="msm-star msm-s1" aria-hidden="true">
-              ✦
-            </span>
-            <span className="msm-star msm-s2" aria-hidden="true">
-              ✧
-            </span>
-            <span className="msm-star msm-s3" aria-hidden="true">
-              ✦
-            </span>
-            <span className="msm-q">よるのハロウィン・ラリー</span>
-            <span className="msm-sub">
-              今日のおしごと、まとめて記録しよう 🧟
-            </span>
-            <span className="msm-go">おしごとへ ›</span>
-          </InertiaLink>
-        ) : (
-          <RouterLink to="/oshigoto" className="msm-oshigoto-door">
-            <span className="msm-crescent" aria-hidden="true" />
-            <span className="msm-star msm-s1" aria-hidden="true">
-              ✦
-            </span>
-            <span className="msm-star msm-s2" aria-hidden="true">
-              ✧
-            </span>
-            <span className="msm-star msm-s3" aria-hidden="true">
-              ✦
-            </span>
-            <span className="msm-q">よるのハロウィン・ラリー</span>
-            <span className="msm-sub">
-              今日のおしごと、まとめて記録しよう 🧟
-            </span>
-            <span className="msm-go">おしごとへ ›</span>
-          </RouterLink>
-        )}
+        <RouterLink to="/oshigoto" className="msm-oshigoto-door">
+          <span className="msm-crescent" aria-hidden="true" />
+          <span className="msm-star msm-s1" aria-hidden="true">
+            ✦
+          </span>
+          <span className="msm-star msm-s2" aria-hidden="true">
+            ✧
+          </span>
+          <span className="msm-star msm-s3" aria-hidden="true">
+            ✦
+          </span>
+          <span className="msm-q">よるのハロウィン・ラリー</span>
+          <span className="msm-sub">
+            今日のおしごと、まとめて記録しよう 🧟
+          </span>
+          <span className="msm-go">おしごとへ ›</span>
+        </RouterLink>
 
         {!summer && (
           <div className="msm-card">
