@@ -26,7 +26,7 @@ import {
 } from "../api/plannedActivities";
 import { ApiError } from "../api/client";
 import { Button } from "../components/ui/Button";
-import { DashboardCard } from "../components/ui/DashboardCard";
+import { formatTime as formatClock, formatTimeRange } from "../utils/date";
 
 function todayJst(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -37,14 +37,17 @@ function todayJst(): string {
   }).format(new Date());
 }
 
-function formatTime(iso: string | null, isAllDay: boolean): string {
+function formatPlanClock(iso: string | null, isAllDay: boolean): string {
   if (isAllDay) return "終日";
-  if (!iso) return "時刻なし";
-  return new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
+  if (!iso) return "--:--";
+  return formatClock(iso);
+}
+
+function formatPlanRange(item: PlannedActivity): string {
+  if (item.is_all_day) return "終日";
+  if (!item.planned_start_at) return "時刻なし";
+  if (!item.planned_end_at) return formatClock(item.planned_start_at);
+  return formatTimeRange(item.planned_start_at, item.planned_end_at);
 }
 
 function sourceLabel(source: string): string {
@@ -206,22 +209,12 @@ export function SchedulePage() {
   const isConnected = connection?.connected === true || connection?.oauth_ready === true;
 
   const grouped = useMemo(() => {
-    const google = items.filter((item) => item.source_type === "google_calendar");
-    const mother = items.filter(
-      (item) =>
-        item.subject === "mother" && item.source_type !== "google_calendar",
-    );
-    const child = items.filter(
-      (item) =>
-        item.subject === "child" && item.source_type !== "google_calendar",
-    );
+    const mother = items.filter((item) => item.subject === "mother");
+    const child = items.filter((item) => item.subject === "child");
     const other = items.filter(
-      (item) =>
-        item.source_type !== "google_calendar" &&
-        item.subject !== "mother" &&
-        item.subject !== "child",
+      (item) => item.subject !== "mother" && item.subject !== "child",
     );
-    return { google, mother, child, other };
+    return { mother, child, other };
   }, [items]);
 
   function handleSubmit(event: FormEvent) {
@@ -252,54 +245,64 @@ export function SchedulePage() {
     });
   }
 
-  function renderList(label: string, list: PlannedActivity[]) {
+  function renderTimeline(emptyLabel: string, list: PlannedActivity[]) {
     if (list.length === 0) {
       return (
         <p className="text-sm text-[var(--muted-text)]">
-          {label}の予定はまだありません。
+          {emptyLabel}の予定はまだありません。
         </p>
       );
     }
 
     return (
-      <ul className="space-y-2">
-        {list.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-start justify-between gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3"
-          >
-            <div>
-              <p className="font-bold text-[var(--ink)]">{item.title}</p>
-              <p className="mt-1 text-sm text-[var(--muted-text)]">
-                {formatTime(item.planned_start_at, item.is_all_day)}
-                {" ・ "}
-                {sourceLabel(item.source_type)}
-              </p>
-            </div>
-            {item.editable ? (
-              <Button
-                variant="ghost"
-                tone="neutral"
-                icon={Trash2}
-                aria-label={`${item.title}を取り消す`}
-                loading={cancelMutation.isPending}
-                onClick={() => cancelMutation.mutate(item.id)}
-              >
-                取消
-              </Button>
-            ) : (
-              <span className="shrink-0 rounded-full bg-[var(--primary-soft)] px-2 py-1 text-xs text-[var(--primary-deep)]">
-                参照のみ
+      <ol className="list-none space-y-0 p-0">
+        {list.map((item, index) => {
+          const isLast = index === list.length - 1;
+          return (
+            <li key={item.id} className="flex gap-3 pb-3 last:pb-1">
+              <time className="w-11 shrink-0 pt-0.5 text-right text-[13.5px] font-extrabold tabular-nums text-[var(--primary-deep)]">
+                {formatPlanClock(item.planned_start_at, item.is_all_day)}
+              </time>
+              <span className="flex w-3.5 shrink-0 flex-col items-center">
+                <span className="mt-1 size-2.5 rounded-full border-[2.5px] border-[var(--primary)] bg-white" />
+                {!isLast && (
+                  <span className="mt-0.5 w-0.5 flex-1 rounded-sm bg-[var(--line)]" />
+                )}
               </span>
-            )}
-          </li>
-        ))}
-      </ul>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-start justify-between gap-2">
+                  <span className="block text-[13.5px] font-bold text-[var(--ink)]">
+                    {item.title}
+                  </span>
+                  {item.editable ? (
+                    <Button
+                      variant="ghost"
+                      tone="neutral"
+                      size="compact"
+                      icon={Trash2}
+                      aria-label={`${item.title}を取り消す`}
+                      loading={cancelMutation.isPending}
+                      onClick={() => cancelMutation.mutate(item.id)}
+                    >
+                      取消
+                    </Button>
+                  ) : null}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] text-[var(--muted)] tabular-nums">
+                  {formatPlanRange(item)}
+                  {" ・ "}
+                  {sourceLabel(item.source_type)}
+                </span>
+              </span>
+            </li>
+          );
+        })}
+      </ol>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5">
       <header>
         <p className="text-sm font-bold text-[var(--muted-text)]">予定</p>
         <h1 className="mt-1 text-2xl font-black">今日の予定</h1>
@@ -314,10 +317,43 @@ export function SchedulePage() {
         </label>
       </header>
 
+      {listQuery.isLoading ? (
+        <p className="text-sm text-[var(--muted-text)]">読み込み中…</p>
+      ) : listQuery.isError ? (
+        <p className="text-sm text-[var(--coral-deep)]" role="alert">
+          予定を読み込めませんでした。
+        </p>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          <DashboardCard
+            title="むすめの予定"
+            icon={UserRound}
+            tone="daughter"
+            density="compact"
+          >
+            {renderTimeline("むすめ", grouped.child)}
+          </DashboardCard>
+          <DashboardCard
+            title="私の予定"
+            icon={CalendarDays}
+            tone="blue"
+            density="compact"
+          >
+            {renderTimeline("私", grouped.mother)}
+          </DashboardCard>
+        </div>
+      )}
+
+      {grouped.other.length > 0 ? (
+        <DashboardCard title="その他" icon={CalendarDays} tone="neutral" density="compact">
+          {renderTimeline("その他", grouped.other)}
+        </DashboardCard>
+      ) : null}
+
       <DashboardCard title="Googleカレンダー" icon={CalendarDays} tone="yellow">
         <p className="text-sm text-[var(--muted-text)]">
           {isConnected
-            ? `接続中${connection?.provider_account_id ? `（${connection.provider_account_id}）` : ""}。取り込みで実予定を planned_activities へ反映します。`
+            ? `接続中${connection?.provider_account_id ? `（${connection.provider_account_id}）` : ""}。取り込んだ予定は右の「私の予定」に表示されます。`
             : oauthConfigured
               ? "まだGoogleに接続していません。「Googleに接続」から連携すると、実カレンダーの予定を取り込めます。"
               : "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET を .env に設定すると、Googleへ接続できます。未設定時の取り込みは確認用サンプルです。"}
@@ -394,7 +430,6 @@ export function SchedulePage() {
             </a>
           </p>
         ) : null}
-        <div className="mt-4">{renderList("カレンダー", grouped.google)}</div>
       </DashboardCard>
 
       <DashboardCard title="予定を追加" icon={CalendarPlus} tone="blue">
@@ -475,28 +510,6 @@ export function SchedulePage() {
           </Button>
         </form>
       </DashboardCard>
-
-      <DashboardCard title="むすめの予定" icon={UserRound} tone="daughter">
-        {listQuery.isLoading ? (
-          <p className="text-sm text-[var(--muted-text)]">読み込み中…</p>
-        ) : listQuery.isError ? (
-          <p className="text-sm text-[var(--coral-deep)]" role="alert">
-            予定を読み込めませんでした。
-          </p>
-        ) : (
-          renderList("むすめ", grouped.child)
-        )}
-      </DashboardCard>
-
-      <DashboardCard title="ママの予定" icon={CalendarDays} tone="blue">
-        {renderList("ママ", grouped.mother)}
-      </DashboardCard>
-
-      {grouped.other.length > 0 ? (
-        <DashboardCard title="その他" icon={CalendarDays} tone="neutral">
-          {renderList("その他", grouped.other)}
-        </DashboardCard>
-      ) : null}
     </div>
   );
 }
