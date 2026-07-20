@@ -15,6 +15,7 @@ import { OshigotoZukanPage } from "./pages/OshigotoZukanPage";
 import { NotFoundPage, PlaceholderPage } from "./pages/PlaceholderPage";
 import { RecordsPage } from "./pages/RecordsPage";
 import { ScheduleComparisonPage } from "./pages/ScheduleComparisonPage";
+import { SchedulePage } from "./pages/SchedulePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SummaryPage } from "./pages/SummaryPage";
 
@@ -27,7 +28,7 @@ export default function App() {
           path="schedule-comparison"
           element={<ScheduleComparisonPage />}
         />
-        <Route path="schedule" element={<PlaceholderPage page="schedule" />} />
+        <Route path="schedule" element={<SchedulePage />} />
         <Route path="records" element={<RecordsPage scope="all" />} />
         <Route path="records/musume" element={<RecordsPage scope="child" />} />
         <Route path="mama-kaji" element={<MamaKajiLayout />}>

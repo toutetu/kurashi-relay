@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Koekake\MusumeSummaryController;
 use App\Http\Controllers\Api\Koekake\PromptEventController;
 use App\Http\Controllers\Api\Koekake\SnoozeController;
 use App\Http\Controllers\Api\Musume\PlanController;
+use App\Http\Controllers\Api\PlannedActivityController;
 use App\Http\Controllers\Api\RewardController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TaskRecordController;
@@ -24,6 +25,12 @@ Route::middleware('family-token')->group(function () {
     Route::delete('/task-records/{id}', [TaskRecordController::class, 'destroy'])->whereNumber('id');
     Route::get('/rewards/summary', [RewardController::class, 'summary']);
     Route::get('/rewards/collections', [RewardController::class, 'collections']);
+
+    Route::get('/planned-activities/options', [PlannedActivityController::class, 'options']);
+    Route::get('/planned-activities', [PlannedActivityController::class, 'index']);
+    Route::post('/planned-activities', [PlannedActivityController::class, 'store']);
+    Route::patch('/planned-activities/{id}', [PlannedActivityController::class, 'update'])->whereNumber('id');
+    Route::delete('/planned-activities/{id}', [PlannedActivityController::class, 'destroy'])->whereNumber('id');
 
     Route::prefix('musume')->group(function () {
         Route::get('/plan', [PlanController::class, 'show']);
