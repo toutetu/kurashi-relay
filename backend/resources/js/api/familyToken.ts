@@ -18,9 +18,19 @@ function bumpAuthGeneration(): void {
 }
 
 function normalizeToken(value: string | null): string | null {
-  // ひらがな・漢字を含むあいことばでも、端末とサーバーで表記ゆれしないよう NFC に揃える。
   const normalized = value?.normalize("NFC").trim() ?? "";
   return normalized.length > 0 ? normalized : null;
+}
+
+/** HTTPヘッダで安全に送れる半角英数字（と一部記号）だけを許可する。 */
+const FAMILY_TOKEN_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+function assertFamilyTokenCharset(value: string): void {
+  if (!FAMILY_TOKEN_PATTERN.test(value)) {
+    throw new Error(
+      "あいことばは半角の英字・数字（と . _ -）で入力してください。",
+    );
+  }
 }
 
 export function getFamilyToken(): string | null {
@@ -44,6 +54,7 @@ export function saveFamilyToken(value: string): string {
   if (normalized === null) {
     throw new Error("あいことばを入力してください。");
   }
+  assertFamilyTokenCharset(normalized);
 
   volatileToken = normalized;
   tokenRequired = false;

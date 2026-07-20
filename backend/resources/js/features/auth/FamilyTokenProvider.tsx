@@ -116,7 +116,7 @@ export function FamilyTokenProvider({ children }: { children: ReactNode }) {
               id="family-token-description"
               className="mt-2 leading-relaxed text-[var(--muted-text)]"
             >
-              家族の記録を守るためのあいことばです。ひらがな・漢字・カタカナでも使えます。この端末だけに保存します。
+              家族の記録を守るためのあいことばです。半角の英字・数字（と . _ -）で入力してください。この端末だけに保存します。
             </p>
 
             <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
@@ -130,7 +130,7 @@ export function FamilyTokenProvider({ children }: { children: ReactNode }) {
                 id="family-aikotoba-input"
                 name="aikotoba"
                 type="text"
-                lang="ja"
+                inputMode="latin"
                 autoComplete="off"
                 autoCapitalize="off"
                 autoCorrect="off"
@@ -143,7 +143,7 @@ export function FamilyTokenProvider({ children }: { children: ReactNode }) {
                   setTokenInput(event.target.value);
                   setInputError(null);
                 }}
-                placeholder="例：あきちゃんのいえ"
+                placeholder="例：akichan-home"
                 className="min-h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-base font-medium text-[var(--text)] caret-[var(--text)] outline-none transition [-webkit-text-security:none] [text-security:none] focus:border-[var(--primary)] focus:ring-3 focus:ring-[var(--primary-soft)]"
               />
               {tokenInput.length > 0 && (
