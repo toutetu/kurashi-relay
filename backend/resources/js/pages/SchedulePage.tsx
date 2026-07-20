@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarPlus, Trash2 } from "lucide-react";
+import { CalendarDays, CalendarPlus, Trash2, UserRound } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import {
   cancelPlannedActivity,
@@ -266,7 +266,7 @@ export function SchedulePage() {
         </form>
       </DashboardCard>
 
-      <DashboardCard title="むすめの予定" tone="daughter">
+      <DashboardCard title="むすめの予定" icon={UserRound} tone="daughter">
         {listQuery.isLoading ? (
           <p className="text-sm text-[var(--muted-text)]">読み込み中…</p>
         ) : listQuery.isError ? (
@@ -278,12 +278,12 @@ export function SchedulePage() {
         )}
       </DashboardCard>
 
-      <DashboardCard title="ママの予定" tone="blue">
+      <DashboardCard title="ママの予定" icon={CalendarDays} tone="blue">
         {renderList("ママ", grouped.mother)}
       </DashboardCard>
 
       {grouped.other.length > 0 ? (
-        <DashboardCard title="その他" tone="neutral">
+        <DashboardCard title="その他" icon={CalendarDays} tone="neutral">
           {renderList("その他", grouped.other)}
         </DashboardCard>
       ) : null}

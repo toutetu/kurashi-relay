@@ -40,6 +40,15 @@ final class EnsureFamilyToken
             return $next($request);
         }
 
+        // 未入力はダイアログ表示のきっかけなので、失敗回数に含めない。
+        // 誤ったトークン送信だけをレート制限する。
+        if ($providedToken === '') {
+            return $this->errorResponse(
+                'あいことばを確認してください。',
+                Response::HTTP_UNAUTHORIZED,
+            );
+        }
+
         $maxAttempts = max(1, (int) config('kurashi.family_token_max_attempts', 5));
         $decaySeconds = max(1, (int) config('kurashi.family_token_decay_seconds', 60));
 
