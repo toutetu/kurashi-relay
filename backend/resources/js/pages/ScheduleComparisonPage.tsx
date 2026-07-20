@@ -24,7 +24,7 @@ export function ScheduleComparisonPage() {
             今日の予定と実績
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#667085]">
-            予定と実績の違いを、支援・待機・回復の時間と一緒に確認できます。
+            私の予定と実績の違いを、支援・待機・回復の時間と一緒に確認できます。
           </p>
         </div>
         <button

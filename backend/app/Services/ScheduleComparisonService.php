@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Models\ActivityEvent;
 use App\Models\PlannedActivity;
 use App\Models\ScheduleImpact;
+use App\Support\FamilyMemberResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 final class ScheduleComparisonService
 {
     /**
+     * 母（私）の予定と実績だけを比較する。
+     *
      * @return array{
      *   comparisons: list<array<string, mixed>>,
      *   summary: array<string, mixed>
@@ -20,10 +23,12 @@ final class ScheduleComparisonService
     {
         $start = CarbonImmutable::parse($date, 'Asia/Tokyo')->startOfDay()->timezone('UTC');
         $end = CarbonImmutable::parse($date, 'Asia/Tokyo')->endOfDay()->timezone('UTC');
+        $motherId = FamilyMemberResolver::motherId();
 
         /** @var Collection<int, PlannedActivity> $plans */
         $plans = PlannedActivity::query()
             ->with('activityDefinition')
+            ->where('subject_member_id', $motherId)
             ->whereDate('local_date', $date)
             ->where('status', '!=', 'cancelled')
             ->orderBy('planned_start_at')
@@ -32,6 +37,7 @@ final class ScheduleComparisonService
         /** @var Collection<int, ActivityEvent> $events */
         $events = ActivityEvent::query()
             ->with(['activityDefinition', 'cancellation'])
+            ->where('recorded_by_member_id', $motherId)
             ->whereBetween('occurred_at', [$start, $end])
             ->whereDoesntHave('cancellation')
             ->orderBy('occurred_at')
