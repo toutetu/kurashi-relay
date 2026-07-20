@@ -22,13 +22,16 @@ final class CalendarConnectionController extends Controller
         CalendarConnectionService $service,
     ): JsonResponse {
         $result = $service->createPlaceholder($request->validated());
+        $oauthReady = $service->isGoogleApiConfigured();
 
         return (new CalendarConnectionResource($result['connection']))
             ->additional([
                 'status' => 'success',
                 'meta' => [
                     'oauth_url' => $result['oauth_url'],
-                    'message' => 'Googleカレンダーは準備中です。表示名だけ保存しました。',
+                    'message' => $oauthReady
+                        ? 'カレンダー接続を保存しました。同期するとGoogleから予定を取り込みます。'
+                        : 'カレンダー接続を保存しました。アクセストークン未設定のため、同期時は確認用サンプルを取り込みます。',
                 ],
             ])
             ->response()
@@ -37,7 +40,18 @@ final class CalendarConnectionController extends Controller
 
     public function sync(int $id, CalendarConnectionService $service): JsonResponse
     {
-        $result = $service->sync($id);
+        $date = request()->query('date');
+        $localDate = is_string($date) && $date !== '' ? $date : null;
+
+        try {
+            $result = $service->sync($id, $localDate);
+        } catch (\RuntimeException $exception) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $exception->getMessage(),
+                'errors' => (object) [],
+            ], 502);
+        }
 
         return response()->json([
             'status' => 'success',

@@ -21,10 +21,11 @@ final class CalendarConnectionResource extends JsonResource
             'id' => $connection->id,
             'provider' => $connection->provider,
             'display_name' => $connection->display_name,
+            'external_calendar_id' => $connection->external_calendar_id,
             'timezone' => $connection->timezone,
             'is_active' => $connection->is_active,
             'last_synced_at' => $connection->last_synced_at?->timezone('Asia/Tokyo')->toIso8601String(),
-            'oauth_ready' => false,
+            'oauth_ready' => (string) config('services.google.calendar_access_token', '') !== '',
         ];
     }
 }

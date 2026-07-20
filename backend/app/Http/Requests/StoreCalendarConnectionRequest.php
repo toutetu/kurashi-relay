@@ -19,6 +19,7 @@ final class StoreCalendarConnectionRequest extends FormRequest
         return [
             'display_name' => ['required', 'string', 'max:120'],
             'timezone' => ['nullable', 'string', 'max:64'],
+            'external_calendar_id' => ['nullable', 'string', 'max:191'],
         ];
     }
 }
