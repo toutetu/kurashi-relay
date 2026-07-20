@@ -32,6 +32,22 @@
 
 ---
 
+## DR-042: 家族共有トークンによるAPI保護を再接続し、Phase Aを完了する(2026-07-20)
+
+- **課題感**: SPA移行中は DR-035 で未認証公開を維持したが、本番APIが公開URLにある以上、
+  個人データの読取・書込を保護しない状態を続けるリスクが大きい。実装は PR `#78` で戻り、
+  あいことばUIも `#79`〜`#81` で整ったのに、恒久文書と WIP が「未実装／別課題」のまま残っていた。
+- **選択肢**: (a) DR-035の未認証公開を継続する / (b) Sanctum等の本格認証へ一気に移る /
+  (c) 家族共有トークン（`X-Family-Token`）を `/api/health` 以外へ再接続し、端末内あいことば入力で運用する。
+- **決定**: (c)。`EnsureFamilyToken` を `routes/api.php` に再適用。未設定は503（fail closed）、
+  不正は401、連続失敗は429。フロントは共通API clientでヘッダ付与し、401時にあいことば必須ダイアログを開く。
+  値は半角英数字専用・平文表示。WIPは `docs/archive/specs/family-token/` へ移す。DR-035の
+  「保護は別課題」は本DRで置き換える（SPA移行当時の事実記録としては残す）。
+- **理由**: 単一家庭ではユーザー個別認証より共有あいことばが運用負荷が低い。SPA同一オリジン配信後も
+  `/api/*` は残るため、health以外の保護が必要。UI先行→環境変数→API保護の順で操作不能期間を避けた。
+
+---
+
 ## DR-041: DB統合WIPとGate 2をクローズし、完了保管へ移す(2026-07-20)
 
 - **課題感**: target schema・Gate 2 tooling・主要書込の `activity_events` 接続・SPA移行まで進んだのに、
@@ -40,7 +56,8 @@
   (c) 実装完了ゲートとローカル検証を根拠に Gate 2 をクローズし、計画・runbookを archive する。
 - **決定**: (c)。記録は `docs/archive/phases/database-unification/`（README・`gate2-close-record.md`）。
   恒久の正本は `docs/data-model.md` / `docs/development-plan.md`。本番追記 refresh は任意で、
-  必要時だけ archive 内 runbook を使う。Phase F・報酬台帳・アクセス保護は別課題として残す。
+  必要時だけ archive 内 runbook を使う。Phase F・報酬台帳は別課題として残す。
+  アクセス保護は当時別課題としたが、DR-042 で家族共有トークンを再接続して完了した。
 - **理由**: DR-031どおり schema/seed 確認後に画面移行へ進んでよく、実際に SPA も完了している。
   進行中WIPを残すと「未完了」誤認とリンク切れが増える。
 

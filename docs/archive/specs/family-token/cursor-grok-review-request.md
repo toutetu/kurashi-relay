@@ -1,7 +1,9 @@
 # Phase A Cursor Grok レビュー依頼
 
-対象: `docs/wip/family-token/family-token-spec.md` に基づくCursor実装完了後の未コミット差分
+対象: `docs/archive/specs/family-token/family-token-spec.md` に基づくCursor実装完了後の未コミット差分
 モデル: `cursor-grok-4.5`
+
+> **完了・保管(2026-07-20)**: 実装は main（PR `#78`〜`#81`）へ反映済み。本依頼書は履歴用。
 
 > **運用更新(DR-033)**: 認証リスクに絞った独立レビューを1周だけ行う。全品質ゲートの再実行と再レビューは行わない。
 
