@@ -45,7 +45,6 @@ class PhaseCdeTargetSchemaTest extends TestCase
             'activity_definitions',
             'activity_events',
             'activity_event_participants',
-            'activity_event_outcomes',
             'activity_event_cancellations',
             'planned_activities',
             'plan_actual_links',
