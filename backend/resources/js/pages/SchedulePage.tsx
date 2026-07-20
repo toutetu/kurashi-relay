@@ -1,6 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, CalendarPlus, Trash2, UserRound } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarPlus,
+  RefreshCcw,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
+import {
+  createCalendarConnection,
+  getCalendarConnections,
+  syncCalendarConnection,
+} from "../api/calendar";
 import {
   cancelPlannedActivity,
   createPlannedActivity,
@@ -55,6 +66,7 @@ export function SchedulePage() {
   const [isAllDay, setIsAllDay] = useState(false);
   const [activityDefinitionId, setActivityDefinitionId] = useState<string>("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const listQuery = useQuery({
     queryKey: ["planned-activities", date],
@@ -64,6 +76,11 @@ export function SchedulePage() {
   const optionsQuery = useQuery({
     queryKey: ["planned-activity-options"],
     queryFn: ({ signal }) => getPlannedActivityOptions(signal),
+  });
+
+  const connectionsQuery = useQuery({
+    queryKey: ["calendar-connections"],
+    queryFn: ({ signal }) => getCalendarConnections(signal),
   });
 
   const createMutation = useMutation({
@@ -87,16 +104,54 @@ export function SchedulePage() {
     },
   });
 
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const existing = connectionsQuery.data ?? (await getCalendarConnections());
+      const connection =
+        existing[0] ??
+        (await createCalendarConnection({
+          display_name: "Googleカレンダー",
+        }));
+      return syncCalendarConnection(connection.id, date);
+    },
+    onSuccess: async (result) => {
+      setSyncMessage(result.message);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["planned-activities", date] }),
+        queryClient.invalidateQueries({ queryKey: ["calendar-connections"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    },
+    onError: (error: unknown) => {
+      setSyncMessage(
+        error instanceof ApiError
+          ? error.message
+          : "カレンダーの取り込みに失敗しました。",
+      );
+    },
+  });
+
   const items = listQuery.data ?? [];
   const options = optionsQuery.data ?? [];
+  const connection = connectionsQuery.data?.[0] ?? null;
 
   const grouped = useMemo(() => {
-    const mother = items.filter((item) => item.subject === "mother");
-    const child = items.filter((item) => item.subject === "child");
-    const other = items.filter(
-      (item) => item.subject !== "mother" && item.subject !== "child",
+    const google = items.filter((item) => item.source_type === "google_calendar");
+    const mother = items.filter(
+      (item) =>
+        item.subject === "mother" && item.source_type !== "google_calendar",
     );
-    return { mother, child, other };
+    const child = items.filter(
+      (item) =>
+        item.subject === "child" && item.source_type !== "google_calendar",
+    );
+    const other = items.filter(
+      (item) =>
+        item.source_type !== "google_calendar" &&
+        item.subject !== "mother" &&
+        item.subject !== "child",
+    );
+    return { google, mother, child, other };
   }, [items]);
 
   function handleSubmit(event: FormEvent) {
@@ -130,7 +185,9 @@ export function SchedulePage() {
   function renderList(label: string, list: PlannedActivity[]) {
     if (list.length === 0) {
       return (
-        <p className="text-sm text-[var(--muted-text)]">{label}の予定はまだありません。</p>
+        <p className="text-sm text-[var(--muted-text)]">
+          {label}の予定はまだありません。
+        </p>
       );
     }
 
@@ -186,6 +243,45 @@ export function SchedulePage() {
           />
         </label>
       </header>
+
+      <DashboardCard title="Googleカレンダー" icon={CalendarDays} tone="yellow">
+        <p className="text-sm text-[var(--muted-text)]">
+          取り込んだ予定は下の一覧とホームの「次の予定」にも出ます。
+          {connection?.oauth_ready
+            ? " Google API トークンが設定されているので、実カレンダーから取得します。"
+            : " いまは確認用サンプルを取り込みます。実カレンダーは .env の GOOGLE_CALENDAR_ACCESS_TOKEN を設定してください。"}
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button
+            icon={RefreshCcw}
+            loading={syncMutation.isPending}
+            onClick={() => {
+              setSyncMessage(null);
+              syncMutation.mutate();
+            }}
+          >
+            {syncMutation.isPending ? "取り込み中…" : "カレンダーから取り込む"}
+          </Button>
+          {connection?.last_synced_at ? (
+            <span className="text-xs text-[var(--muted-text)]">
+              前回:{" "}
+              {new Intl.DateTimeFormat("ja-JP", {
+                timeZone: "Asia/Tokyo",
+                month: "numeric",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }).format(new Date(connection.last_synced_at))}
+            </span>
+          ) : null}
+        </div>
+        {syncMessage ? (
+          <p className="mt-3 text-sm font-bold text-[var(--green)]" role="status">
+            {syncMessage}
+          </p>
+        ) : null}
+        <div className="mt-4">{renderList("カレンダー", grouped.google)}</div>
+      </DashboardCard>
 
       <DashboardCard title="予定を追加" icon={CalendarPlus} tone="blue">
         <form className="space-y-3" onSubmit={handleSubmit}>

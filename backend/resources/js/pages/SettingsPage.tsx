@@ -45,9 +45,9 @@ export function SettingsPage() {
 
   const calendarMutation = useMutation({
     mutationFn: () =>
-      createCalendarConnectionPlaceholder("Googleカレンダー（準備中）"),
+      createCalendarConnectionPlaceholder("Googleカレンダー"),
     onSuccess: () => {
-      setMessage("カレンダー接続の表示名を保存しました（OAuthは未接続）。");
+      setMessage("カレンダー接続を保存しました。予定画面から取り込みできます。");
     },
   });
 
@@ -133,9 +133,11 @@ export function SettingsPage() {
             <CalendarDays aria-hidden="true" size={22} />
           </span>
           <div>
-            <h2 className="font-black">Googleカレンダーは準備中</h2>
+            <h2 className="font-black">Googleカレンダー</h2>
             <p className="mt-1 leading-relaxed text-[var(--muted-text)]">
-              OAuth連携と予定の自動取込はまだありません。表示名だけ先に保存できます。
+              予定画面の「カレンダーから取り込む」で、planned_activities
+              へ取り込みます。OAuth本実装の前は、.env の
+              GOOGLE_CALENDAR_ACCESS_TOKEN があれば実取得、なければ確認用サンプルです。
             </p>
           </div>
         </div>
@@ -146,7 +148,7 @@ export function SettingsPage() {
             disabled={calendarMutation.isPending}
             onClick={() => calendarMutation.mutate()}
           >
-            {calendarMutation.isPending ? "保存中…" : "準備中の接続を登録"}
+            {calendarMutation.isPending ? "保存中…" : "接続を登録"}
           </Button>
         </div>
       </section>
