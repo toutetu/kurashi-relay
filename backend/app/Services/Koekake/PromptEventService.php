@@ -5,7 +5,6 @@ namespace App\Services\Koekake;
 use App\Exceptions\IdempotencyConflictException;
 use App\Models\ActivityEvent;
 use App\Models\ActivityEventCancellation;
-use App\Models\ActivityEventParticipant;
 use App\Models\DailyTask;
 use App\Models\PlanActualLink;
 use App\Models\PromptEvent;
@@ -192,12 +191,14 @@ final class PromptEventService
         $occurredAt = now('UTC');
 
         try {
-            $event = ActivityEvent::query()->create([
+            return ActivityEvent::query()->create([
                 'activity_definition_id' => $activityDefinitionId,
                 'event_type' => 'prompt',
                 'occurred_at' => $occurredAt,
                 'ended_at' => null,
                 'recorded_by_member_id' => $motherId,
+                'actor_member_id' => $motherId,
+                'target_member_id' => $childId,
                 'source' => 'koekake',
                 'idempotency_key' => $eventKey,
             ]);
@@ -214,14 +215,8 @@ final class PromptEventService
                 throw $exception;
             }
 
-            $this->ensurePromptParticipants($recovered, $task);
-
             return $recovered;
         }
-
-        $this->ensurePromptParticipants($event, $task, $motherId, $childId);
-
-        return $event;
     }
 
     private function ensureActivityEventLinked(
@@ -232,7 +227,6 @@ final class PromptEventService
         if ($promptEvent->activity_event_id !== null) {
             $activityEvent = ActivityEvent::query()->find($promptEvent->activity_event_id);
             if ($activityEvent !== null) {
-                $this->ensurePromptParticipants($activityEvent, $task);
                 $this->ensurePlanActualLink($task, $activityEvent);
             }
 
@@ -250,45 +244,6 @@ final class PromptEventService
         }
 
         $this->ensurePlanActualLink($task, $activityEvent);
-    }
-
-    private function ensurePromptParticipants(
-        ActivityEvent $event,
-        DailyTask $task,
-        ?int $motherId = null,
-        ?int $childId = null,
-    ): void {
-        $motherId ??= FamilyMemberResolver::motherId();
-        $childId ??= $task->subject_member_id;
-
-        $this->ensureParticipant($event->id, $motherId, 'actor');
-        $this->ensureParticipant($event->id, $childId, 'target');
-    }
-
-    private function ensureParticipant(int $activityEventId, int $memberId, string $role): void
-    {
-        $exists = ActivityEventParticipant::query()
-            ->where('activity_event_id', $activityEventId)
-            ->where('family_member_id', $memberId)
-            ->where('role', $role)
-            ->exists();
-
-        if ($exists) {
-            return;
-        }
-
-        try {
-            ActivityEventParticipant::query()->create([
-                'activity_event_id' => $activityEventId,
-                'family_member_id' => $memberId,
-                'role' => $role,
-                'created_at' => now('UTC'),
-            ]);
-        } catch (QueryException $exception) {
-            if (! $this->isUniqueViolation($exception)) {
-                throw $exception;
-            }
-        }
     }
 
     private function ensurePlanActualLink(DailyTask $task, ActivityEvent $event): void

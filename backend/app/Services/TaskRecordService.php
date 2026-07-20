@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Exceptions\IdempotencyConflictException;
 use App\Models\ActivityEvent;
 use App\Models\ActivityEventCancellation;
-use App\Models\ActivityEventParticipant;
 use App\Models\FamilyMember;
 use App\Models\RewardCollection;
 use App\Models\TaskDefinition;
@@ -230,65 +229,19 @@ final class TaskRecordService
             ->first();
 
         if ($existing !== null) {
-            $this->ensureActorParticipant($existing, $member->id);
-
             return;
         }
 
         try {
-            $event = ActivityEvent::query()->create([
+            ActivityEvent::query()->create([
                 'activity_definition_id' => $activityDefinitionId,
                 'event_type' => 'activity',
                 'occurred_at' => $record->completed_at,
                 'ended_at' => null,
                 'recorded_by_member_id' => $member->id,
+                'actor_member_id' => $member->id,
                 'source' => 'oshigoto',
                 'idempotency_key' => $eventKey,
-            ]);
-        } catch (QueryException $exception) {
-            if (! $this->isUniqueViolation($exception)) {
-                throw $exception;
-            }
-
-            $recovered = ActivityEvent::query()
-                ->where('idempotency_key', $eventKey)
-                ->first();
-
-            if ($recovered === null) {
-                throw $exception;
-            }
-
-            $this->ensureActorParticipant($recovered, $member->id);
-
-            return;
-        }
-
-        ActivityEventParticipant::query()->create([
-            'activity_event_id' => $event->id,
-            'family_member_id' => $member->id,
-            'role' => 'actor',
-            'created_at' => now('UTC'),
-        ]);
-    }
-
-    private function ensureActorParticipant(ActivityEvent $event, int $memberId): void
-    {
-        $exists = ActivityEventParticipant::query()
-            ->where('activity_event_id', $event->id)
-            ->where('family_member_id', $memberId)
-            ->where('role', 'actor')
-            ->exists();
-
-        if ($exists) {
-            return;
-        }
-
-        try {
-            ActivityEventParticipant::query()->create([
-                'activity_event_id' => $event->id,
-                'family_member_id' => $memberId,
-                'role' => 'actor',
-                'created_at' => now('UTC'),
             ]);
         } catch (QueryException $exception) {
             if (! $this->isUniqueViolation($exception)) {

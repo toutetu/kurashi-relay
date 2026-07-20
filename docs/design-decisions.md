@@ -32,6 +32,17 @@
 
 ---
 
+## DR-048: 人物役割は activity_events の列へ統合し participants を廃止する(2026-07-21)
+
+- **課題感**: `activity_event_participants` は毎回ほぼ `actor` 1行だけで、従属表として重い。
+  単一家庭では多人数参加の正規化メリットが小さく、読み書きが分散する。
+- **選択肢**: (a) participants を維持 / (b) テーブル廃止し `recorded_by` だけで代用 /
+  (c) `activity_events` に `actor_member_id`（必須）と任意の `target` / `supporter` 列を置く。
+- **決定**: (c)。`actor_member_id` は NOT NULL。`target_member_id` / `supporter_member_id` は
+  必要なときだけ埋める。`activity_event_participants` は廃止（DBは refresh 前提）。
+- **理由**: 入力者（`recorded_by`）と行為者（`actor`）の区別は残しつつ、常に1行で完結する。
+  声かけの対象・一緒にした支援者も列で足りる。
+
 ## DR-047: カレンダー接続は母/むすめ別、予定比較は母のみ(2026-07-21)
 
 - **課題感**: むすめと私で別のGoogleカレンダーを持ちたい。予定画面は2列で見たい一方、

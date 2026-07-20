@@ -23,6 +23,9 @@ class ActivityEvent extends Model
         'occurred_at',
         'ended_at',
         'recorded_by_member_id',
+        'actor_member_id',
+        'target_member_id',
+        'supporter_member_id',
         'source',
         'idempotency_key',
     ];
@@ -48,9 +51,19 @@ class ActivityEvent extends Model
         return $this->belongsTo(FamilyMember::class, 'recorded_by_member_id');
     }
 
-    public function participants(): HasMany
+    public function actorMember(): BelongsTo
     {
-        return $this->hasMany(ActivityEventParticipant::class);
+        return $this->belongsTo(FamilyMember::class, 'actor_member_id');
+    }
+
+    public function targetMember(): BelongsTo
+    {
+        return $this->belongsTo(FamilyMember::class, 'target_member_id');
+    }
+
+    public function supporterMember(): BelongsTo
+    {
+        return $this->belongsTo(FamilyMember::class, 'supporter_member_id');
     }
 
     public function cancellation(): HasOne

@@ -4,7 +4,6 @@ namespace Tests\Feature\Database;
 
 use App\Models\ActivityDefinition;
 use App\Models\ActivityEvent;
-use App\Models\ActivityEventParticipant;
 use App\Models\DailyPlan;
 use App\Models\DailyTask;
 use App\Models\FamilyMember;
@@ -44,7 +43,6 @@ class PhaseCdeTargetSchemaTest extends TestCase
         $expectedTables = [
             'activity_definitions',
             'activity_events',
-            'activity_event_participants',
             'activity_event_cancellations',
             'planned_activities',
             'plan_actual_links',
@@ -142,6 +140,7 @@ class PhaseCdeTargetSchemaTest extends TestCase
             'event_type' => 'invalid',
             'occurred_at' => now('UTC'),
             'recorded_by_member_id' => $childId,
+            'actor_member_id' => $childId,
             'source' => 'manual',
             'idempotency_key' => 'schema-test-invalid-event-type',
         ]);
@@ -165,6 +164,7 @@ class PhaseCdeTargetSchemaTest extends TestCase
             'event_type' => 'activity',
             'occurred_at' => now('UTC'),
             'recorded_by_member_id' => $childId,
+            'actor_member_id' => $childId,
             'source' => 'invalid-source',
             'idempotency_key' => 'schema-test-invalid-source',
         ]);
@@ -223,26 +223,6 @@ class PhaseCdeTargetSchemaTest extends TestCase
         DB::table('routine_templates')
             ->where('id', $template->id)
             ->update(['subject_member_id' => null]);
-    }
-
-    public function test_activity_event_participants_reject_invalid_role(): void
-    {
-        if (DB::getDriverName() !== 'pgsql') {
-            $this->markTestSkipped('CHECK制約の拒否検証はPostgreSQLでのみ実施する。');
-
-            return;
-        }
-
-        $event = $this->createSampleActivityEvent();
-
-        $this->expectException(QueryException::class);
-
-        ActivityEventParticipant::query()->create([
-            'activity_event_id' => $event->id,
-            'family_member_id' => FamilyMember::query()->where('role', 'child')->valueOrFail('id'),
-            'role' => 'observer',
-            'created_at' => now('UTC'),
-        ]);
     }
 
     public function test_planned_activities_enforce_source_unique(): void
@@ -523,6 +503,7 @@ class PhaseCdeTargetSchemaTest extends TestCase
             'event_type' => 'activity',
             'occurred_at' => now('UTC'),
             'recorded_by_member_id' => $childId,
+            'actor_member_id' => $childId,
             'source' => 'manual',
             'idempotency_key' => 'schema-test-'.uniqid('', true),
         ]);

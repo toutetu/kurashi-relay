@@ -12,7 +12,6 @@ final class Gate2SchemaVerifier
     private const PHASE_CDE_TABLES = [
         'activity_definitions',
         'activity_events',
-        'activity_event_participants',
         'activity_event_cancellations',
         'planned_activities',
         'plan_actual_links',
@@ -30,10 +29,8 @@ final class Gate2SchemaVerifier
         ],
         'activity_events' => [
             'activity_definition_id', 'event_type', 'occurred_at', 'ended_at',
-            'recorded_by_member_id', 'source', 'idempotency_key',
-        ],
-        'activity_event_participants' => [
-            'activity_event_id', 'family_member_id', 'role',
+            'recorded_by_member_id', 'actor_member_id', 'target_member_id',
+            'supporter_member_id', 'source', 'idempotency_key',
         ],
         'activity_event_cancellations' => [
             'activity_event_id', 'cancelled_at', 'cancelled_by_member_id',
@@ -66,8 +63,9 @@ final class Gate2SchemaVerifier
         ['table' => 'routine_templates', 'column' => 'subject_member_id', 'references' => 'family_members'],
         ['table' => 'activity_events', 'column' => 'activity_definition_id', 'references' => 'activity_definitions'],
         ['table' => 'activity_events', 'column' => 'recorded_by_member_id', 'references' => 'family_members'],
-        ['table' => 'activity_event_participants', 'column' => 'activity_event_id', 'references' => 'activity_events'],
-        ['table' => 'activity_event_participants', 'column' => 'family_member_id', 'references' => 'family_members'],
+        ['table' => 'activity_events', 'column' => 'actor_member_id', 'references' => 'family_members'],
+        ['table' => 'activity_events', 'column' => 'target_member_id', 'references' => 'family_members'],
+        ['table' => 'activity_events', 'column' => 'supporter_member_id', 'references' => 'family_members'],
         ['table' => 'activity_event_cancellations', 'column' => 'activity_event_id', 'references' => 'activity_events'],
         ['table' => 'activity_event_cancellations', 'column' => 'cancelled_by_member_id', 'references' => 'family_members'],
         ['table' => 'planned_activities', 'column' => 'subject_member_id', 'references' => 'family_members'],
@@ -95,7 +93,6 @@ final class Gate2SchemaVerifier
     /** @var list<string> */
     private const REQUIRED_INDEXES = [
         'activity_events_idempotency_key_unique',
-        'activity_event_participants_event_member_role_unique',
         'planned_activities_source_unique',
         'plan_actual_links_unique',
         'reward_transactions_idempotency_key_unique',
@@ -109,7 +106,6 @@ final class Gate2SchemaVerifier
         'activity_events_event_type_check',
         'activity_events_source_check',
         'activity_events_ended_at_order_check',
-        'activity_event_participants_role_check',
         'planned_activities_source_type_check',
         'planned_activities_status_check',
         'planned_activities_time_order_check',
@@ -256,6 +252,7 @@ final class Gate2SchemaVerifier
             ['table' => 'daily_tasks', 'column' => 'subject_member_id'],
             ['table' => 'routine_templates', 'column' => 'slug'],
             ['table' => 'routine_templates', 'column' => 'subject_member_id'],
+            ['table' => 'activity_events', 'column' => 'actor_member_id'],
         ];
 
         foreach ($checks as $check) {
