@@ -16,6 +16,7 @@ import {
   PanelLeftOpen,
   Settings,
   Sparkles,
+  UserRound,
   Users,
   X,
 } from "lucide-react";
@@ -24,40 +25,84 @@ import { useAppPath } from "@/navigation/AppPathContext";
 import { resolveInertiaUrlPrefix } from "@/navigation/inertiaPath";
 import type { SharedPageProps } from "@/inertia/types";
 
-const navigation = [
-  { spaPath: "/", label: "ホーム", icon: Home },
-  { spaPath: "/schedule-comparison", label: "予定と実績", icon: BarChart3 },
-  { spaPath: "/schedule", label: "今日の予定", icon: CalendarDays },
-  { spaPath: "/records", label: "記録", icon: ClipboardPenLine },
-  { spaPath: "/mama-kaji", label: "家事手帖", icon: Cookie },
-  { spaPath: "/child-plan", label: "娘の状態", icon: Heart },
-  { spaPath: "/musume", label: "むすめ", icon: Heart },
-  { spaPath: "/koekake", label: "声かけ", icon: MessageCircleHeart },
-  { spaPath: "/oshigoto", label: "おしごと", icon: Moon },
-  { spaPath: "/summary", label: "今日のまとめ", icon: ListChecks },
-  { spaPath: "/last-war", label: "ラストウォー", icon: Gamepad2 },
-  { spaPath: "/support", label: "支援", icon: Users },
-  { spaPath: "/reports", label: "レポート", icon: FileText },
-  { spaPath: "/settings", label: "設定", icon: Settings },
+type NavItem = {
+  spaPath: string;
+  label: string;
+  icon: typeof Home;
+};
+
+type NavGroup = {
+  label?: string;
+  items: NavItem[];
+};
+
+const navigationGroups: NavGroup[] = [
+  {
+    items: [{ spaPath: "/", label: "ホーム", icon: Home }],
+  },
+  {
+    label: "おしごと系",
+    items: [
+      { spaPath: "/oshigoto", label: "おしごと", icon: Moon },
+      { spaPath: "/musume", label: "なにする？", icon: Heart },
+      { spaPath: "/records/musume", label: "きろく", icon: ClipboardPenLine },
+    ],
+  },
+  {
+    label: "ママのおしごと",
+    items: [
+      { spaPath: "/koekake", label: "声かけ", icon: MessageCircleHeart },
+      { spaPath: "/last-war", label: "ラストウォー", icon: Gamepad2 },
+      { spaPath: "/mama-kaji", label: "家事手帖", icon: Cookie },
+      { spaPath: "/records", label: "記録", icon: ClipboardPenLine },
+      { spaPath: "/schedule", label: "今日の予定", icon: CalendarDays },
+      { spaPath: "/schedule-comparison", label: "予定と実績", icon: BarChart3 },
+      { spaPath: "/child-plan", label: "娘の状態", icon: Heart },
+      { spaPath: "/mama-state", label: "私の状態", icon: UserRound },
+    ],
+  },
+  {
+    label: "管理・報告系",
+    items: [
+      { spaPath: "/summary", label: "今日のまとめ", icon: ListChecks },
+      { spaPath: "/support", label: "支援", icon: Users },
+      { spaPath: "/reports", label: "レポート", icon: FileText },
+    ],
+  },
+  {
+    items: [{ spaPath: "/settings", label: "設定", icon: Settings }],
+  },
+];
+
+const allNavigationItems = navigationGroups.flatMap((group) => group.items);
+
+const mobileNavigationPaths = [
+  "/",
+  "/schedule",
+  "/records/musume",
+  "/mama-kaji",
+  "/child-plan",
 ] as const;
 
-const mobileNavigation = [
-  navigation[0],
-  navigation[2],
-  navigation[3],
-  navigation[4],
-  navigation[5],
-] as const;
+const mobileNavigation = mobileNavigationPaths.map((path) => {
+  const item = allNavigationItems.find((nav) => nav.spaPath === path);
+  if (!item) {
+    throw new Error(`Mobile navigation item not found: ${path}`);
+  }
+  return item;
+});
 
 const pageTitles: Record<string, string> = {
   "/": "ホーム",
   "/schedule-comparison": "今日の予定と実績",
   "/schedule": "今日の予定",
   "/records": "記録",
+  "/records/musume": "きろく",
   "/mama-kaji": "ママの家事手帖",
   "/mama-kaji/zukan": "世界のおやつ図鑑",
   "/child-plan": "娘の状態・今日の作戦",
-  "/musume": "むすめのホーム",
+  "/mama-state": "私の状態",
+  "/musume": "なにする？",
   "/koekake": "声かけリマインダー",
   "/oshigoto": "くらしのおしごと",
   "/oshigoto/zukan": "ゾンビ図鑑",
@@ -96,15 +141,47 @@ function isPathActive(currentPath: string, targetPath: string, pathPrefix: strin
     return currentPath === targetPath || currentPath === `${targetPath}/`;
   }
 
+  // /records は /records/musume でアクティブにしない
+  if (
+    targetPath === "/records" ||
+    targetPath === `${pathPrefix}/records`
+  ) {
+    return currentPath === targetPath || currentPath === `${targetPath}/`;
+  }
+
   return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
 }
 
-type NavigationItemProps = (typeof navigation)[number] & {
+type NavigationItemProps = NavItem & {
   href: string;
   isActive: boolean;
   onClick?: () => void;
   collapsed?: boolean;
 };
+
+function NavigationGroupLabel({
+  label,
+  collapsed = false,
+}: {
+  label: string;
+  collapsed?: boolean;
+}) {
+  if (collapsed) {
+    return (
+      <div
+        className="my-2 h-px w-8 bg-[var(--line)]"
+        role="separator"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return (
+    <p className="px-3 pb-1 pt-4 text-[0.7rem] font-bold tracking-wide text-[var(--muted-text)]">
+      {label}
+    </p>
+  );
+}
 
 function NavigationItem({
   label,
@@ -119,16 +196,18 @@ function NavigationItem({
       href={href}
       onClick={onClick}
       title={collapsed ? label : undefined}
-      className={`pressable flex min-h-11 items-center gap-3 rounded-xl text-sm font-bold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
-        collapsed ? "size-11 justify-center px-0" : "px-3 py-2"
+      className={`pressable flex min-h-11 items-center gap-2 rounded-xl text-sm font-bold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
+        collapsed ? "size-11 justify-center px-0" : "px-2.5 py-2"
       } ${
         isActive
           ? "bg-[var(--primary-soft)] text-[var(--primary-deep)] shadow-sm"
           : "text-[var(--muted-text)] hover:bg-white hover:text-[var(--text)]"
       }`}
     >
-      <Icon aria-hidden="true" size={20} />
-      <span className={collapsed ? "sr-only" : undefined}>{label}</span>
+      <Icon aria-hidden="true" size={20} className="shrink-0" />
+      <span className={collapsed ? "sr-only" : "min-w-0 leading-tight"}>
+        {label}
+      </span>
     </Link>
   );
 }
@@ -285,7 +364,7 @@ export function InertiaAppShell({ children }: InertiaAppShellProps) {
 
       {menuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-[var(--text)]/25 xl:hidden"
+          className="fixed inset-x-0 bottom-0 top-14 z-40 bg-[var(--text)]/25 xl:hidden"
           onClick={() => setMenuOpen(false)}
           aria-hidden="true"
         />
@@ -296,48 +375,78 @@ export function InertiaAppShell({ children }: InertiaAppShellProps) {
         aria-label="メニュー"
         aria-hidden={!menuOpen}
         inert={!menuOpen}
-        className={`fixed bottom-0 left-0 top-14 z-40 w-68 border-r border-[var(--border)] bg-[var(--page-background)] p-4 shadow-xl transition-transform xl:hidden ${
+        className={`fixed bottom-0 left-0 top-14 z-50 w-68 overflow-y-auto overscroll-contain border-r border-[var(--border)] bg-[var(--page-background)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl transition-transform xl:hidden ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <nav className="space-y-1">
-          {navigation.map((item) => {
-            const href = resolvePath(item.spaPath);
-            return (
-              <NavigationItem
-                key={item.spaPath}
-                {...item}
-                href={href}
-                isActive={isPathActive(pathname, href, pathPrefix)}
-                onClick={() => setMenuOpen(false)}
-              />
-            );
-          })}
+          {navigationGroups.map((group, groupIndex) => (
+            <div key={group.label ?? `ungrouped-${groupIndex}`}>
+              {group.label ? <NavigationGroupLabel label={group.label} /> : null}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const href = resolvePath(item.spaPath);
+                  return (
+                    <NavigationItem
+                      key={`${group.label ?? "ungrouped"}-${item.spaPath}`}
+                      {...item}
+                      href={href}
+                      isActive={isPathActive(pathname, href, pathPrefix)}
+                      onClick={() => setMenuOpen(false)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
       </aside>
 
       <div className="mx-auto flex max-w-[1600px]">
         <aside
           className={`sticky top-14 hidden h-[calc(100vh-3.5rem)] shrink-0 border-r border-[var(--border)] bg-[var(--page-background)] transition-[width] xl:flex xl:flex-col ${
-            sidebarOpen ? "w-64 p-5" : "w-20 items-center p-3"
+            sidebarOpen ? "w-[28rem] p-4" : "w-20 items-center p-3"
           }`}
         >
           <nav
             aria-label="メインメニュー"
-            className={`space-y-1 ${sidebarOpen ? "" : "flex flex-col items-center"}`}
+            className={`min-h-0 flex-1 overflow-y-auto ${
+              sidebarOpen ? "space-y-1" : "flex flex-col items-center space-y-1"
+            }`}
           >
-            {navigation.map((item) => {
-              const href = resolvePath(item.spaPath);
-              return (
-                <NavigationItem
-                  key={item.spaPath}
-                  {...item}
-                  href={href}
-                  isActive={isPathActive(pathname, href, pathPrefix)}
-                  collapsed={!sidebarOpen}
-                />
-              );
-            })}
+            {navigationGroups.map((group, groupIndex) => (
+              <div
+                key={group.label ?? `ungrouped-${groupIndex}`}
+                className={sidebarOpen ? undefined : "flex flex-col items-center"}
+              >
+                {group.label ? (
+                  <NavigationGroupLabel
+                    label={group.label}
+                    collapsed={!sidebarOpen}
+                  />
+                ) : null}
+                <div
+                  className={
+                    sidebarOpen
+                      ? "grid grid-cols-2 gap-1"
+                      : "flex flex-col items-center space-y-1"
+                  }
+                >
+                  {group.items.map((item) => {
+                    const href = resolvePath(item.spaPath);
+                    return (
+                      <NavigationItem
+                        key={`${group.label ?? "ungrouped"}-${item.spaPath}`}
+                        {...item}
+                        href={href}
+                        isActive={isPathActive(pathname, href, pathPrefix)}
+                        collapsed={!sidebarOpen}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
           {sidebarOpen && (
             <div className="mt-auto rounded-2xl border border-dashed border-[var(--line)] bg-[var(--primary-soft)] p-4 text-sm text-[var(--primary-deep)]">
@@ -363,7 +472,7 @@ export function InertiaAppShell({ children }: InertiaAppShellProps) {
       >
         {mobileNavigation.map(({ spaPath, label, icon: Icon }) => {
           const href = resolvePath(spaPath);
-          const isFab = spaPath === "/records";
+          const isFab = spaPath === "/records/musume";
           const isActive = isPathActive(pathname, href, pathPrefix);
 
           return (

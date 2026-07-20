@@ -18,6 +18,7 @@ final class TaskRecordResource extends JsonResource
             'id' => $this->id,
             'member' => $this->familyMember->role,
             'task' => $this->taskDefinition->slug,
+            'task_title' => $this->taskDefinition->title,
             'record_date' => $this->record_date->toDateString(),
             'completed_at' => $this->completed_at->timezone('Asia/Tokyo')->toIso8601String(),
             'cancelled_at' => $this->cancelled_at?->timezone('Asia/Tokyo')->toIso8601String(),

@@ -2,7 +2,7 @@
 
 対象: 現在の作業ブランチ。Cursor(composer-2.5)が実施した K0 の差分。
 実装指示書: `docs/koekake-k0-cursor-request.md`
-計画: `docs/koekake-plan-01.md` §4 / 判断: `docs/design-decisions.md` DR-013
+計画: `docs/archive/phases/koekake-plan-01.md` §4 / 判断: `docs/design-decisions.md` DR-013
 
 ## 依頼内容
 

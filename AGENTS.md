@@ -33,9 +33,9 @@
 
 - **1ブランチ = 1デプロイ単位**。main は自動デプロイ(バックエンド→Laravel Cloud、フロント→Render)。
   1マージ = 本番反映なので、1回で出す「意味のかたまり」を1つに絞る。
-- **Inertia Gate 2通過まではバックエンドとフロントを別ブランチ・別PR**にする。
-- **Inertia I1〜I5は将来の例外**として、`backend/resources/js` 等のserver/clientを1つのLaravel deploy単位にできる。
-  ただしDB schema変更、UI redesign、旧Render削除は混ぜない。I6のdeploy設定は専用PRに分ける。
+- **API-first SPA cutover(A4)までは、必要に応じてバックエンドとフロントを別ブランチ・別PR**にできる。
+- **A1以降のSPA配信準備では**、`backend/resources/js` を正本としてLaravel deploy単位にまとめられる。
+  ただしDB schema変更、UI redesign、旧Render削除は混ぜない。本番cutover(A4)とInertia削除(A6)は専用PRに分ける。
 - **必ず最新 main から切る**。他の feature ブランチに相乗りしない(過去にK0がfrontendブランチに乗った失敗例あり)。
 - **命名**: `<type>/<domain>-<topic>`。type = `feat` / `fix` / `chore` / `docs` / `refactor`。
   例: `feat/koekake-api`・`feat/koekake-web`・`chore/k0-migration`・`docs/koekake-plan`。
@@ -109,7 +109,7 @@ Webアプリ「くらしリレー」のPoCです。
 ### バックエンド
 
 - Laravel REST API
-- Gate 2通過後の目標: Laravel + Inertia server-side routes
+- 目標: Laravel同一オリジンでReact SPAを配信し、データは `/api/*` で提供する(DR-034)
 - PHP
 - Laravel API Resource
 - Form Request
@@ -127,16 +127,16 @@ Webアプリ「くらしリレー」のPoCです。
 - lucide-react
 - Vitest
 - React Testing Library
-- Gate 2通過後の目標: Inertia React pages（既存React componentを再利用）
+- 目標: `backend/resources/js` を正本とするReact Router SPA（既存React componentを再利用）
 
 ## 構成
 
-- `backend/`：現行Laravel REST API。DR-030によりLaravel+Inertiaの目標実行基盤にもする
-- `frontend/`：現行の独立React SPA。移行中はUI資産の再利用元とロールバック先にする
+- `backend/`：現行Laravel REST API。DR-034によりSPA配信の実行基盤にもする
+- `frontend/`：移行中のロールバック用ソース。A1以降は凍結し、安定後に削除する
 - `docs/`：仕様書とワイヤーフレーム
 - 1リポジトリのモノレポ
-- Phase C/D1/EでDB target schemaを先に完成させ、その直後からInertia I0〜I7へ段階移行する
-- Inertia移行後もoffline再送・通知・外部clientに必要なJSON APIは残す
+- Phase C/D1/EでDB target schemaを先に完成させ、その直後からAPI-first SPA移行(A0〜A7)へ進む(DR-034)
+- offline再送・通知・外部clientに必要なJSON APIは残す。通常画面も `/api/*` を利用する
 - 第1実装では認証、DB永続化、Google Calendar、本番デプロイを行わない
 
 ## 実装ルール

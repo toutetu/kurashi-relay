@@ -3,8 +3,26 @@
 use App\Http\Controllers\Web\InertiaPageController;
 use App\Http\Controllers\Web\LegacyInertiaRedirectController;
 use App\Http\Controllers\Web\RecordsController;
+use App\Http\Controllers\Web\SpaController;
+use App\Http\Controllers\Web\SpaLegacyRedirectController;
+use App\Support\FrontendMode;
 use App\Support\InertiaPath;
 use Illuminate\Support\Facades\Route;
+
+$frontendMode = FrontendMode::current();
+
+if ($frontendMode === FrontendMode::SPA) {
+    // /app/* bookmarks keep working and land on SPA root URLs with query string preserved.
+    Route::get(InertiaPath::legacyUrlPrefix().'/{path?}', SpaLegacyRedirectController::class)
+        ->where('path', '.*')
+        ->name('spa.legacy');
+
+    Route::match(['get', 'head'], '/{path?}', SpaController::class)
+        ->where('path', '(?!api(?:/|$)|build(?:/|$)|storage(?:/|$)|sanctum(?:/|$)).*')
+        ->name('spa');
+
+    return;
+}
 
 if (InertiaPath::cutover()) {
     Route::middleware(['inertia.enabled'])
@@ -18,9 +36,11 @@ $registerInertiaAppRoutes = function () {
     Route::get('/schedule-comparison', [InertiaPageController::class, 'scheduleComparison'])->name('schedule-comparison');
     Route::get('/schedule', [InertiaPageController::class, 'schedule'])->name('schedule');
     Route::get('/records', [RecordsController::class, 'index'])->name('records.index');
+    Route::get('/records/musume', [RecordsController::class, 'musume'])->name('records.musume');
     Route::get('/mama-kaji', [InertiaPageController::class, 'mamaKaji'])->name('mama-kaji');
     Route::get('/mama-kaji/zukan', [InertiaPageController::class, 'mamaKajiZukan'])->name('mama-kaji.zukan');
     Route::get('/child-plan', [InertiaPageController::class, 'childPlan'])->name('child-plan');
+    Route::get('/mama-state', [InertiaPageController::class, 'mamaState'])->name('mama-state');
     Route::get('/musume', [InertiaPageController::class, 'musume'])->name('musume');
     Route::get('/koekake', [InertiaPageController::class, 'koekake'])->name('koekake');
     Route::get('/oshigoto', [InertiaPageController::class, 'oshigoto'])->name('oshigoto');

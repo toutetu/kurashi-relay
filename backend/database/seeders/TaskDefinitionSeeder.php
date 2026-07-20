@@ -13,11 +13,13 @@ class TaskDefinitionSeeder extends Seeder
      * @var list<array{slug: string, title: string, point_value: int}>
      */
     private const CHILD_TASKS = [
-        ['slug' => 'kigae', 'title' => '自分で着替えた', 'point_value' => 0],
+        ['slug' => 'okita', 'title' => '起きた', 'point_value' => 0],
+        ['slug' => 'kigae', 'title' => '着替えた', 'point_value' => 0],
         ['slug' => 'fuku', 'title' => '脱いだ服をかごに入れた', 'point_value' => 0],
         ['slug' => 'shokki', 'title' => '食器を流しに運んだ', 'point_value' => 0],
         ['slug' => 'kaban', 'title' => 'カバンを棚に置いた', 'point_value' => 0],
         ['slug' => 'suito', 'title' => '水筒を流しに出した', 'point_value' => 0],
+        ['slug' => 'neta', 'title' => '寝た', 'point_value' => 0],
     ];
 
     /**

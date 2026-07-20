@@ -65,6 +65,8 @@ export const musumePlanResponseSchema = z.object({
 
 export const musumeSummaryDecidedWithSchema = z.object({
   today: decidedWithSchema.nullable(),
+  today_item: decidedWithSchema.nullable(),
+  bedtime: decidedWithSchema.nullable(),
   tomorrow_plan: decidedWithSchema.nullable(),
   tomorrow_item: decidedWithSchema.nullable(),
   start: decidedWithSchema.nullable(),
@@ -73,6 +75,8 @@ export const musumeSummaryDecidedWithSchema = z.object({
 export const musumeSummarySchema = z.object({
   mode: musumeModeSchema,
   today_tasks: z.array(z.string()),
+  today_items: z.array(z.string()),
+  bedtime: z.string().nullable(),
   tomorrow_plans: z.array(z.string()),
   tomorrow_items: z.array(z.string()),
   wake_up_time: z.string().nullable(),

@@ -174,16 +174,29 @@ DELETE /api/task-records/{id}
 `type`、`item_slug`、`milestone_number`、`obtained_on` を持つオブジェクトになる。
 同一 `idempotency_key` の再送は同じrecordを返し、`meta.deduplicated` を `true` とする。
 
-# 10. Inertia移行時の契約方針
+# 10. API-first SPA移行時の契約方針
 
-DB target schema完成後、通常Web画面はLaravel+Inertia+Reactへ段階移行する。移行が完了するまで、
-本書の既存REST契約は有効であり、同じreleaseで一括削除しない。
+DR-034により、通常Web画面も既存JSON APIを利用する。Inertia props/formへ移してendpointを廃止する方針は採らない。
 
-Inertia I0で全18 endpointを次へ分類する。
+維持方針:
 
-- 通常画面の初期表示・通常formだけが利用: Inertia props/formへ移し、旧endpointは廃止候補。
-- offline退避・再送、冪等性、Service Worker、通知に必要: 内部JSON APIとして残す。
-- native appまたは外部clientへJSON提供が必要: versionと認証を明示して残す。
+- 本書の既存REST契約は有効であり、移行中にmethod、path、payload、status codeを変えない。
+- 全endpointを維持し、same-origin internal APIとしてLaravelから配信するSPAが利用する。
+- offline退避・再送、冪等性(`idempotency_key`)、Service Worker、通知に必要な契約も維持する。
+- native appまたは外部clientへJSON提供が必要になった場合は、versionと認証を明示して残す。
 
-TanStack Query、Zod schema、API Resourceは一括削除せず、利用client、code reference、accessがなくなった
-対象だけをI7で整理する。Google Calendar APIはLaravelから外部サービスを呼ぶ契約なので、この分類とは別に継続する。
+TanStack Query、Zod schema、API Resourceは一括削除しない。利用client、code reference、accessがなくなった
+対象だけを移行安定後の整理Phaseで扱う。Google Calendar APIはLaravelから外部サービスを呼ぶ契約なので、
+この移行とは別に継続する。
+
+移行手順の正本: `docs/wip/api-first-spa-migration/implementation-plan.md`
+
+# 11. 現行アクセス契約(A3時点の事実)
+
+DR-035により、SPA移行中は最新mainのアクセス動作を変えない。
+
+- API routeは19本。`routes/api.php` にfamily-token middlewareは付いていない。
+- `7a8391b` 以降、未認証のGET/writeが通るruntimeである（staleな401期待テストで上書きしない）。
+- Sanctum、session/CSRF追加、`EnsureFamilyToken`のAPI再接続は本移行では行わない。
+- アクセス保護の再設計は別課題とする。詳細は
+  `docs/wip/api-first-spa-migration/access-contract-a3.md` を参照する。

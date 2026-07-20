@@ -6,25 +6,63 @@ import {
   requireFamilyToken,
 } from "./familyToken";
 
-const defaultApiBaseUrl =
-  typeof window === "undefined"
-    ? "http://localhost:8000"
-    : `${window.location.protocol}//${window.location.hostname}:8000`;
-
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL ?? defaultApiBaseUrl;
-
-export const API_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
-
-function resolveApiUrl(path: string): string {
-  if (isInertiaSessionAuth()) {
-    return path.startsWith("/") ? path : `/${path}`;
+function resolveDefaultApiBaseUrl(): string {
+  if (typeof window !== "undefined" && typeof window.location?.origin === "string") {
+    return window.location.origin;
   }
 
-  return `${API_BASE_URL}${path}`;
+  // Non-browser contexts fall back to relative same-origin paths.
+  return "";
+}
+
+function resolveConfiguredApiBaseUrl(): string {
+  const envApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const rawBaseUrl =
+    typeof envApiBaseUrl === "string" && envApiBaseUrl.length > 0
+      ? envApiBaseUrl
+      : resolveDefaultApiBaseUrl();
+
+  return rawBaseUrl.replace(/\/+$/, "");
+}
+
+/** Current API base. Prefer resolveConfiguredApiBaseUrl() semantics at call time. */
+export const API_BASE_URL = resolveConfiguredApiBaseUrl();
+
+function normalizeApiPath(path: string): string {
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
+function isSameOriginApiBase(): boolean {
+  if (isInertiaSessionAuth()) {
+    return true;
+  }
+
+  const apiBaseUrl = resolveConfiguredApiBaseUrl();
+
+  if (apiBaseUrl === "") {
+    return true;
+  }
+
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return apiBaseUrl === window.location.origin;
+}
+
+function resolveApiUrl(path: string): string {
+  const normalizedPath = normalizeApiPath(path);
+
+  if (isSameOriginApiBase()) {
+    return normalizedPath;
+  }
+
+  return `${resolveConfiguredApiBaseUrl()}${normalizedPath}`;
 }
 
 function resolveFetchInit(init: RequestInit = {}): RequestInit {
-  if (!isInertiaSessionAuth()) {
+  if (!isSameOriginApiBase()) {
+    // Keep Render rollback cross-origin behavior unchanged.
     return init;
   }
 

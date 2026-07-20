@@ -14,6 +14,19 @@ final class RecordsController extends Controller
 {
     public function index(RecordsIndexRequest $request, TaskService $service): Response
     {
+        return $this->renderRecords($request, $service, 'all');
+    }
+
+    public function musume(RecordsIndexRequest $request, TaskService $service): Response
+    {
+        return $this->renderRecords($request, $service, 'child');
+    }
+
+    private function renderRecords(
+        RecordsIndexRequest $request,
+        TaskService $service,
+        string $scope,
+    ): Response {
         $date = $request->resolvedDate();
 
         return Inertia::render('Records/Index', [
@@ -21,6 +34,7 @@ final class RecordsController extends Controller
             'today' => now(config('kurashi.timezone'))->toDateString(),
             'child' => $service->listForMember($this->findMember('child'), $date),
             'mother' => $service->listForMember($this->findMember('mother'), $date),
+            'scope' => $scope,
         ]);
     }
 

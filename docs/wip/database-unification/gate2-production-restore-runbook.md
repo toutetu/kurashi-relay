@@ -29,7 +29,7 @@
 4. `php artisan migrate:status` で migration 状態を確認する。
 5. テーブル別件数が backup 記録と一致することを確認する。
 6. `/api/health` と `gate2:smoke` 相当の最小スモーク（health / dashboard read / task-record write / replay / cancel）を実行する。
-7. 結果を Gate 記録へ追記する。Inertia 開始は行わない。
+7. 結果を Gate 記録へ追記する。画面移行(API-first SPA)は開始しない。
 
 ## restore コマンド例（PostgreSQL）
 

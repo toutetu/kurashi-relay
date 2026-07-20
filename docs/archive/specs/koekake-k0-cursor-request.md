@@ -1,7 +1,7 @@
 # K0 実装依頼(Cursor) — マイグレーション統合とDBリセット準備
 
 - 作成: Fable / 2026-07-17
-- 参照: `docs/koekake-plan-01.md` §4 / `docs/design-decisions.md` DR-013
+- 参照: `docs/archive/phases/koekake-plan-01.md` §4 / `docs/design-decisions.md` DR-013
 - 使用モデル: **composer-2.5(fast: false)**。難所は無い想定。
 - ブランチ: 現在の作業ブランチのままでよい(バックエンドのみの小変更)。
 

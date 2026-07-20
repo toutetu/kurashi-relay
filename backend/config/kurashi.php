@@ -8,6 +8,11 @@ return [
 
     'family_token_decay_seconds' => (int) env('FAMILY_TOKEN_DECAY_SECONDS', 60),
 
+    'frontend' => [
+        // Allowed: inertia | spa. Invalid values must fail explicitly (see FrontendMode).
+        'mode' => env('FRONTEND_MODE', 'inertia'),
+    ],
+
     'inertia' => [
         'enabled' => filter_var(env('INERTIA_ENABLED', false), FILTER_VALIDATE_BOOL),
         'cutover' => filter_var(env('INERTIA_CUTOVER', false), FILTER_VALIDATE_BOOL),

@@ -15,36 +15,79 @@ import {
   PanelLeftOpen,
   Settings,
   Sparkles,
+  UserRound,
   Users,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
-const navigation = [
-  { to: "/", label: "ホーム", icon: Home },
-  { to: "/schedule-comparison", label: "予定と実績", icon: BarChart3 },
-  { to: "/schedule", label: "今日の予定", icon: CalendarDays },
-  { to: "/records", label: "記録", icon: ClipboardPenLine },
-  { to: "/mama-kaji", label: "家事手帖", icon: Cookie },
-  { to: "/child-plan", label: "娘の状態", icon: Heart },
-  { to: "/musume", label: "むすめ", icon: Heart },
-  { to: "/koekake", label: "声かけ", icon: MessageCircleHeart },
-  { to: "/oshigoto", label: "おしごと", icon: Moon },
-  { to: "/summary", label: "今日のまとめ", icon: ListChecks },
-  { to: "/last-war", label: "ラストウォー", icon: Gamepad2 },
-  { to: "/support", label: "支援", icon: Users },
-  { to: "/reports", label: "レポート", icon: FileText },
-  { to: "/settings", label: "設定", icon: Settings },
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof Home;
+};
+
+type NavGroup = {
+  label?: string;
+  items: NavItem[];
+};
+
+const navigationGroups: NavGroup[] = [
+  {
+    items: [{ to: "/", label: "ホーム", icon: Home }],
+  },
+  {
+    label: "おしごと系",
+    items: [
+      { to: "/oshigoto", label: "おしごと", icon: Moon },
+      { to: "/musume", label: "なにする？", icon: Heart },
+      { to: "/records/musume", label: "きろく", icon: ClipboardPenLine },
+    ],
+  },
+  {
+    label: "ママのおしごと",
+    items: [
+      { to: "/koekake", label: "声かけ", icon: MessageCircleHeart },
+      { to: "/last-war", label: "ラストウォー", icon: Gamepad2 },
+      { to: "/mama-kaji", label: "家事手帖", icon: Cookie },
+      { to: "/records", label: "記録", icon: ClipboardPenLine },
+      { to: "/schedule", label: "今日の予定", icon: CalendarDays },
+      { to: "/schedule-comparison", label: "予定と実績", icon: BarChart3 },
+      { to: "/child-plan", label: "娘の状態", icon: Heart },
+      { to: "/mama-state", label: "私の状態", icon: UserRound },
+    ],
+  },
+  {
+    label: "管理・報告系",
+    items: [
+      { to: "/summary", label: "今日のまとめ", icon: ListChecks },
+      { to: "/support", label: "支援", icon: Users },
+      { to: "/reports", label: "レポート", icon: FileText },
+    ],
+  },
+  {
+    items: [{ to: "/settings", label: "設定", icon: Settings }],
+  },
 ];
 
-const mobileNavigation = [
-  navigation[0],
-  navigation[2],
-  navigation[3],
-  navigation[4],
-  navigation[5],
+const allNavigationItems = navigationGroups.flatMap((group) => group.items);
+
+const mobileNavigationPaths = [
+  "/",
+  "/schedule",
+  "/records/musume",
+  "/mama-kaji",
+  "/child-plan",
 ] as const;
+
+const mobileNavigation = mobileNavigationPaths.map((path) => {
+  const item = allNavigationItems.find((nav) => nav.to === path);
+  if (!item) {
+    throw new Error(`Mobile navigation item not found: ${path}`);
+  }
+  return item;
+});
 
 const SIDEBAR_STORAGE_KEY = "kurashi-relay:sidebar-open";
 
@@ -53,10 +96,12 @@ const pageTitles: Record<string, string> = {
   "/schedule-comparison": "今日の予定と実績",
   "/schedule": "今日の予定",
   "/records": "記録",
+  "/records/musume": "きろく",
   "/mama-kaji": "ママの家事手帖",
   "/mama-kaji/zukan": "世界のおやつ図鑑",
   "/child-plan": "娘の状態・今日の作戦",
-  "/musume": "むすめのホーム",
+  "/mama-state": "私の状態",
+  "/musume": "なにする？",
   "/koekake": "声かけリマインダー",
   "/oshigoto": "くらしのおしごと",
   "/oshigoto/zukan": "ゾンビ図鑑",
@@ -76,27 +121,51 @@ function readSidebarOpen(): boolean {
   }
 }
 
+function NavigationGroupLabel({
+  label,
+  collapsed = false,
+}: {
+  label: string;
+  collapsed?: boolean;
+}) {
+  if (collapsed) {
+    return (
+      <div
+        className="my-2 h-px w-8 bg-[var(--line)]"
+        role="separator"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return (
+    <p className="px-3 pb-1 pt-4 text-[0.7rem] font-bold tracking-wide text-[var(--muted-text)]">
+      {label}
+    </p>
+  );
+}
+
 function NavigationItem({
   to,
   label,
   icon: Icon,
   onClick,
   collapsed = false,
-}: (typeof navigation)[number] & {
+}: NavItem & {
   onClick?: () => void;
   collapsed?: boolean;
 }) {
   return (
     <NavLink
       to={to}
-      end={to === "/"}
+      end={to === "/" || to === "/records"}
       onClick={onClick}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `pressable flex min-h-11 items-center gap-3 rounded-xl text-sm font-bold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
+        `pressable flex min-h-11 items-center gap-2 rounded-xl text-sm font-bold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
           collapsed
             ? "size-11 justify-center px-0"
-            : "px-3 py-2"
+            : "px-2.5 py-2"
         } ${
           isActive
             ? "bg-[var(--primary-soft)] text-[var(--primary-deep)] shadow-sm"
@@ -104,8 +173,10 @@ function NavigationItem({
         }`
       }
     >
-      <Icon aria-hidden="true" size={20} />
-      <span className={collapsed ? "sr-only" : undefined}>{label}</span>
+      <Icon aria-hidden="true" size={20} className="shrink-0" />
+      <span className={collapsed ? "sr-only" : "min-w-0 leading-tight"}>
+        {label}
+      </span>
     </NavLink>
   );
 }
@@ -257,7 +328,7 @@ export function AppShell() {
 
       {menuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-[var(--text)]/25 xl:hidden"
+          className="fixed inset-x-0 bottom-0 top-14 z-40 bg-[var(--text)]/25 xl:hidden"
           onClick={() => setMenuOpen(false)}
           aria-hidden="true"
         />
@@ -268,17 +339,24 @@ export function AppShell() {
         aria-label="メニュー"
         aria-hidden={!menuOpen}
         inert={!menuOpen}
-        className={`fixed bottom-0 left-0 top-14 z-40 w-68 border-r border-[var(--border)] bg-[var(--page-background)] p-4 shadow-xl transition-transform xl:hidden ${
+        className={`fixed bottom-0 left-0 top-14 z-50 w-68 overflow-y-auto overscroll-contain border-r border-[var(--border)] bg-[var(--page-background)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl transition-transform xl:hidden ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <nav className="space-y-1">
-          {navigation.map((item) => (
-            <NavigationItem
-              key={item.to}
-              {...item}
-              onClick={() => setMenuOpen(false)}
-            />
+          {navigationGroups.map((group, groupIndex) => (
+            <div key={group.label ?? `ungrouped-${groupIndex}`}>
+              {group.label ? <NavigationGroupLabel label={group.label} /> : null}
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <NavigationItem
+                    key={`${group.label ?? "ungrouped"}-${item.to}`}
+                    {...item}
+                    onClick={() => setMenuOpen(false)}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
       </aside>
@@ -286,19 +364,42 @@ export function AppShell() {
       <div className="mx-auto flex max-w-[1600px]">
         <aside
           className={`sticky top-14 hidden h-[calc(100vh-3.5rem)] shrink-0 border-r border-[var(--border)] bg-[var(--page-background)] transition-[width] xl:flex xl:flex-col ${
-            sidebarOpen ? "w-64 p-5" : "w-20 items-center p-3"
+            sidebarOpen ? "w-[28rem] p-4" : "w-20 items-center p-3"
           }`}
         >
           <nav
             aria-label="メインメニュー"
-            className={`space-y-1 ${sidebarOpen ? "" : "flex flex-col items-center"}`}
+            className={`min-h-0 flex-1 overflow-y-auto ${
+              sidebarOpen ? "space-y-1" : "flex flex-col items-center space-y-1"
+            }`}
           >
-            {navigation.map((item) => (
-              <NavigationItem
-                key={item.to}
-                {...item}
-                collapsed={!sidebarOpen}
-              />
+            {navigationGroups.map((group, groupIndex) => (
+              <div
+                key={group.label ?? `ungrouped-${groupIndex}`}
+                className={sidebarOpen ? undefined : "flex flex-col items-center"}
+              >
+                {group.label ? (
+                  <NavigationGroupLabel
+                    label={group.label}
+                    collapsed={!sidebarOpen}
+                  />
+                ) : null}
+                <div
+                  className={
+                    sidebarOpen
+                      ? "grid grid-cols-2 gap-1"
+                      : "flex flex-col items-center space-y-1"
+                  }
+                >
+                  {group.items.map((item) => (
+                    <NavigationItem
+                      key={`${group.label ?? "ungrouped"}-${item.to}`}
+                      {...item}
+                      collapsed={!sidebarOpen}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
           {sidebarOpen && (
@@ -324,7 +425,7 @@ export function AppShell() {
         className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-end border-t border-[var(--border)] bg-white/97 px-1 pb-[env(safe-area-inset-bottom)] pt-1.5 shadow-[0_-8px_28px_rgba(40,51,74,0.08)] xl:hidden"
       >
         {mobileNavigation.map(({ to, label, icon: Icon }) => {
-          const isFab = to === "/records";
+          const isFab = to === "/records/musume";
           return (
             <NavLink
               key={to}

@@ -18,6 +18,7 @@ Route::get('/health', HealthController::class);
 Route::get('/dashboard', DashboardController::class);
 
 Route::get('/tasks', [TaskController::class, 'index']);
+Route::get('/task-records', [TaskRecordController::class, 'index']);
 Route::post('/task-records', [TaskRecordController::class, 'store']);
 Route::delete('/task-records/{id}', [TaskRecordController::class, 'destroy'])->whereNumber('id');
 Route::get('/rewards/summary', [RewardController::class, 'summary']);

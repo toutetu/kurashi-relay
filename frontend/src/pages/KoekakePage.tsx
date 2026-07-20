@@ -268,6 +268,9 @@ export function KoekakePage() {
                 task={task}
                 onPrompt={handleCardPrompt}
                 onSnooze={handleCardSnooze}
+                onCompletion={(selectedTask, status) =>
+                  void handleDetailCompletion(selectedTask.id, status)
+                }
                 onOpenDetail={setDetailTask}
                 isPromptPending={
                   createPrompt.isPending &&
@@ -277,6 +280,10 @@ export function KoekakePage() {
                 isSnoozePending={
                   snoozeMutation.isPending &&
                   snoozeMutation.variables?.taskId === task.id
+                }
+                isCompletionPending={
+                  completionMutation.isPending &&
+                  completionMutation.variables?.taskId === task.id
                 }
               />
             ))
@@ -308,13 +315,9 @@ export function KoekakePage() {
           onSnoozeNoneToday={(taskId) =>
             void handleDetailSnooze(taskId, { none_today: true })
           }
-          onCompletion={(taskId, status) =>
-            void handleDetailCompletion(taskId, status)
-          }
           pendingPrompt={createPrompt.isPending}
           pendingCancel={isTaskCancelPending(detailTask.id)}
           pendingSnooze={snoozeMutation.isPending}
-          pendingCompletion={completionMutation.isPending}
         />
       )}
     </div>

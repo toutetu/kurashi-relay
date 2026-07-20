@@ -4,7 +4,7 @@
 - 作成: Fable(設計・レビュー担当)
 - 実装: Cursor composer-2.5(fast: false)。難所のみ Codex 上位。
 - 参照:
-  - 計画: `docs/koekake-plan-01.md` §5(K1)
+  - 計画: `docs/archive/phases/koekake-plan-01.md` §5(K1)
   - 基本設計: `docs/archive/requirements/くらしリレイ_基本設計_v0.2.md` §5〜§9
   - 要件: `docs/archive/requirements/くらしリレイ_要件定義_v0.4.md` FR-M08〜M13
   - データの持ち方の参照元: `docs/archive/requirements/くらしリレイ_娘の自主活動記録_Fable用設計書_v0.1.docx`

@@ -32,7 +32,7 @@
 
 ---
 
-## DR-034: 活動実績は activity_events の存在で表し、activity_event_outcomes を廃止する(2026-07-20)
+## DR-036: 活動実績は activity_events の存在で表し、activity_event_outcomes を廃止する(2026-07-20)
 
 - **課題感**: 娘の活動に `completed` / `partial` / `deferred` / `unknown` の結果行を持つと、
   「起きた事実」と「状態ラベル」が混ざり、起床のような瞬間の出来事でも結果テーブルが必要になる。
@@ -46,6 +46,45 @@
   移行中は `completion_events` / `daily_tasks.status` を同一トランザクションで二重書き込みしてよい。
 - **理由**: 「イベントがある＝起きた」が直感的で、未完了・不明の偽実績を作らない。
   DR-027のうち結果従属表の部分を改訂する。詳細は `docs/data-model.md`。
+
+---
+
+## DR-035: SPA移行中は現行APIアクセス動作を維持し、保護再設計は別課題とする(2026-07-20)
+
+- **課題感**: DR-024/DR-029は家族共有トークンで個人データAPIを保護する方針だったが、
+  `7a8391b` 以降の最新mainではAPI routeへfamily-token middlewareが付いていない。
+  SPA移行中にstale testや旧middlewareを根拠に保護を独断再有効化すると、認証再設計と画面配信切替が混線する。
+- **選択肢**: (a) A3/A4でfamily-tokenやSanctumを同時に戻す / (b) SPA移行を止めて先に保護だけ直す /
+  (c) 現行の未認証動作を事実として固定し、保護再設計は専用DR・専用PRの別課題にする。
+- **決定**: (c)。SPA移行中はSanctum、session/CSRF追加、`EnsureFamilyToken`のAPI再接続、
+  `X-Family-Token`必須化の復活を行わない。公開範囲とリスクは記録するが、このPhaseで解決したと扱わない。
+  詳細な現状snapshotは `docs/wip/api-first-spa-migration/access-contract-a3.md` を正とする。
+- **理由**: 画面配信方式の切替と認証境界の再設計を同時に変えると、障害原因とロールバック対象を分離できない。
+  ユーザーがA4前の保護完了を必須と判断した場合は、本移行を停止して別課題を先に完了する。
+
+---
+
+## DR-034: Inertia中心方針をやめ、API-first React SPAをLaravel同一オリジンで配信する(2026-07-20)
+
+- **課題感**: DR-030では通常画面をInertia props/formへ移すハイブリッド構成を将来方針としたが、実装が進むと
+  Inertiaはrouteとasset配信の器に留まり、実データの取得・更新はTanStack Queryと既存JSON APIのままだった。
+  その一方で `frontend/src` と `backend/resources/js` の二重ソース、Inertia専用wrapper、文書上の
+  「Gate 2未通過・Inertia未着手」記述が残り、保守負担と方針の食い違いが大きくなった。
+- **選択肢**: (a) DR-030どおりInertia props/formへ寄せ続ける / (b) 独立SPA+別デプロイへ戻す /
+  (c) React Router + TanStack Query + Laravel JSON APIのまま、SPAをLaravel Cloudから同一オリジン配信し、
+  React正本を `backend/resources/js` へ一本化する。
+- **決定**: (c)。Inertiaを廃止し、通常画面のデータ取得・更新は既存 `/api/*` に統一する。
+  独立React SPAとLaravel APIの2デプロイへ恒久的に戻さず、SPAをLaravelから配信する。
+  DR-030は当時の判断として残すが、将来方針は本DRが置き換える。移行手順の正本は
+  `docs/wip/api-first-spa-migration/implementation-plan.md` とする。
+- **理由**:
+  - テスト過重はDR-033とCursor中心実装で解消済みであり、Inertiaへ寄せてJSON契約テストを減らす主因は薄れた。
+  - 現Inertiaはprops/formをほぼ使わず、APIを全件維持しているため、Inertia固有の利点が小さい。
+  - React source二重化の方が保守負担になった。
+  - client主導のoffline再送・冪等処理(`idempotency_key`、localStorage退避)を維持するには、
+    API-firstのまま同一オリジン化する方が自然である。
+
+---
 
 ## DR-033: 個人利用の機能追加は動作確認1回で完了し、作業文書と古いDRをアーカイブする(2026-07-19)
 
@@ -110,7 +149,10 @@
   この決定はDR-017の「Inertiaへ戻さない」を将来方針について置き換えるが、移行開始ゲートまでは現行の
   SPA+REST、別ブランチ・別PR、Render+Laravel Cloudの運用を維持する。DB refreshの扱いはDR-031に従う。
 
-詳細は `docs/wip/inertia-migration/implementation-plan.md` を参照する。
+> **更新(DR-034)**: 将来の画面通信方針はInertia中心からAPI-first React SPA(同一オリジン配信)へ置き換えた。
+> DR-030は当時の判断として残す。旧Inertia移行計画は
+> `docs/archive/phases/inertia-migration/implementation-plan.md` に保管し、進行中の正本は
+> `docs/wip/api-first-spa-migration/implementation-plan.md` とする。
 
 ---
 
@@ -128,6 +170,9 @@
 - **理由**: データが少ない現在は、互換移行の安全装置をすべて実装する費用が、保護対象の実データ量と
   釣り合わない。DB構造と業務ルールを先に正しくし、画面と書込経路をInertia側で新正本へ接続する方が速い。
   一方、無断削除を許す決定ではないため、refresh実行はバックアップと個別確認を条件とする。
+
+> **更新(DR-034)**: DB refreshを待たずスキーマ完成後に進む判断は維持する。到達先の画面通信方針だけを
+> Inertia中心からAPI-first React SPA(同一オリジン配信)へ置き換える。書込経路の正本は既存 `/api/*` とする。
 
 ---
 
@@ -157,7 +202,7 @@
   (c) 通常利用を妨げる問題だけ先に直し、回避可能な非致命不具合は再現条件とテスト案を残して機能完成後に直す。
 - **決定**: (c)。保存不能、通常操作でのデータ消失、時刻の大幅な誤り、破壊的DB操作、重大な情報漏えいなどは
   機能開発を止めて直す。それ以外のH1〜H3/M1〜M3、実端末・日跨ぎ・連打等の観測課題は
-  `docs/wip/phase5-followup-fixes.md` とPhase 8ランブックに残し、Gate 0を妨げない。
+  `docs/archive/phases/phase5-followup-fixes.md` とPhase 8ランブックに残し、Gate 0を妨げない。
   すでに実装・検証済みの安全な改善はPRへ出し、未実装の根治策だけを後回しにする。
 - **理由**: 通常の単発・順番どおりの操作、冪等保存、取消、ポイント、夏休み導線は本番で確認済みである。
   利用人数と操作パターンを考えると、既知の並行・通信境界リスクは回避可能で、機能不足のほうが日常利用への影響が大きい。
@@ -229,6 +274,10 @@
 - **理由**: 単一家庭で必要なのはテナント分離ではなく、公開URLから家庭データを守る最小のアクセス制御である。
   本格アカウントより実装・運用が軽く、将来端末単位の失効が必要になった場合だけSanctum等へ移行できる。
   実装順は `docs/wip/database-unification/implementation-plan.md` Phase A。
+
+> **更新(DR-035)**: `7a8391b` 以降、現行runtimeのAPI routeにはfamily-token middlewareが付いていない。
+> SPA移行中はこの動作を維持し、保護の再設計は別課題とする。現状記録は
+> `docs/wip/api-first-spa-migration/access-contract-a3.md` を参照する。
 
 ## DR-023: 3系統を活動マスタ・予定・実績の共通軸で接続し、変更履歴を追記保存する(2026-07-18)
 
