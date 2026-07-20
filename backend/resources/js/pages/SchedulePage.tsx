@@ -414,7 +414,7 @@ export function SchedulePage() {
         <p className="text-sm text-[var(--muted-text)]">
           私とむすめで別のGoogleカレンダーを接続できます。同じGoogleアカウント内の別カレンダーでも、別アカウントでもOKです。
           {!oauthConfigured
-            ? " 先に .env の GOOGLE_CLIENT_ID / SECRET を設定してください。"
+            ? " 先に環境変数へ GOOGLE_CLIENT_ID / SECRET / REDIRECT_URI を設定してください。"
             : null}
         </p>
 
@@ -515,8 +515,21 @@ export function SchedulePage() {
                     icon={RefreshCcw}
                     size="compact"
                     loading={syncMutation.isPending}
+                    disabled={!oauthConfigured || !connected}
                     onClick={() => {
                       setSyncMessage(null);
+                      if (!oauthConfigured) {
+                        setSyncMessage(
+                          "先に環境変数へ GOOGLE_CLIENT_ID / SECRET / REDIRECT_URI を設定してください。",
+                        );
+                        return;
+                      }
+                      if (!connected) {
+                        setSyncMessage(
+                          "先に「Googleに接続」を押して連携してください。",
+                        );
+                        return;
+                      }
                       syncMutation.mutate(slot.role);
                     }}
                   >
