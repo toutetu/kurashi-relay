@@ -1,8 +1,8 @@
-# Inertia移行 実装計画
+﻿# Inertia移行 実装計画
 
 > **DR-034で中止(2026-07-20)**  
 > 本計画は進行中の正本ではない。Inertia中心ハイブリッド構成への移行方針はDR-034で置き換えられ、
-> 以降の作業正本は `docs/wip/api-first-spa-migration/implementation-plan.md` とする。
+> 以降の作業正本は `docs/archive/phases/api-first-spa-migration/implementation-plan.md` とする。
 > 本文は当時の判断と実装経緯を残す履歴として保管する。
 
 更新日: 2026-07-19

@@ -246,7 +246,7 @@ DR-026の「DB統合を追加画面より優先する」方針は維持し、ア
 5. Phase D1の共通出来事・人物参加・結果・取消・予定接続schema
 6. Phase Eの回答履歴・予定接続schema
 7. Gate 2: migration/seed確認と、Gate 1で決めた管理下refreshの実行可否確認
-8. ~~Inertia I0〜I7~~ → DR-034で中止。以降は API-first SPA A0〜A7（`docs/wip/api-first-spa-migration/implementation-plan.md`）。旧計画: `docs/archive/phases/inertia-migration/implementation-plan.md`
+8. ~~Inertia I0〜I7~~ → DR-034で中止。以降は API-first SPA A0〜A7（`docs/archive/phases/api-first-spa-migration/implementation-plan.md`）。旧計画: `docs/archive/phases/inertia-migration/implementation-plan.md`
 9. 支援者向けレポートMVP
 
 Phase Aはフロントの401対応・ヘッダ付与を先に公開し、`FAMILY_TOKEN` 設定後にバックエンド保護を
@@ -531,7 +531,7 @@ Phase Dは一括リリースにせず、次の順で分ける。
 7. `ops/database-refresh`（refreshを選び、バックアップ後にユーザーが実行を明示承認した場合だけ）
 
 D2〜D5のbackfill/dual-write/timeline PRはデータ保持を選ぶ場合だけ追加する。
-Gate 2通過後の画面移行PR単位は `docs/wip/api-first-spa-migration/implementation-plan.md` を正とする(DR-034)。
+Gate 2通過後の画面移行PR単位は `docs/archive/phases/api-first-spa-migration/implementation-plan.md` を正とする(DR-034)。
 
 ## 10. DB変更のリスク確認候補
 
