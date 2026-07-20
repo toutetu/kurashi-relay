@@ -32,6 +32,20 @@
 
 ---
 
+## DR-038: API-first SPA移行(A0〜A8)を完了し、最終構成を確定する(2026-07-20)
+
+- **課題感**: DR-034でInertia中心方針をやめAPI-firstへ切り替えたが、移行完了後も恒久文書が
+  「進行中」「frontend/を残す」「Renderをrollback先」のまま残り、実装と文書が再びずれる。
+- **選択肢**: (a) WIPを残したまま運用する / (b) 恒久文書だけ更新してWIPは放置する /
+  (c) 最終構成・cutover結果・認証判断・rollbackを恒久文書へ蒸留し、WIPをarchiveする。
+- **決定**: (c)。最終構成は Laravel Cloud 同一オリジンSPA（`backend/resources/js` / Vite entry
+  `main.tsx` / SPA catch-all）。API 19本・未認証公開(DR-035)を維持。Inertiaと旧 `frontend/` は削除済み。
+  Render Auto-Deployは停止済み（service削除は任意）。完了記録は
+  `docs/archive/phases/api-first-spa-migration/`。
+- **理由**: 移行手順書は進行中正本ではなく履歴であり、日常作業は恒久文書だけを見ればよい状態にする。
+
+---
+
 ## DR-037: きろく一覧は activity_events を正本として読む(2026-07-20)
 
 - **課題感**: 声かけ完了は `activity_events` に保存されるが、きろく・おしごと件数は `task_records` だけを
@@ -71,7 +85,7 @@
   (c) 現行の未認証動作を事実として固定し、保護再設計は専用DR・専用PRの別課題にする。
 - **決定**: (c)。SPA移行中はSanctum、session/CSRF追加、`EnsureFamilyToken`のAPI再接続、
   `X-Family-Token`必須化の復活を行わない。公開範囲とリスクは記録するが、このPhaseで解決したと扱わない。
-  詳細な現状snapshotは `docs/wip/api-first-spa-migration/access-contract-a3.md` を正とする。
+  詳細な現状snapshotは `docs/archive/phases/api-first-spa-migration/access-contract-a3.md` を正とする。
 - **理由**: 画面配信方式の切替と認証境界の再設計を同時に変えると、障害原因とロールバック対象を分離できない。
   ユーザーがA4前の保護完了を必須と判断した場合は、本移行を停止して別課題を先に完了する。
 
@@ -89,7 +103,7 @@
 - **決定**: (c)。Inertiaを廃止し、通常画面のデータ取得・更新は既存 `/api/*` に統一する。
   独立React SPAとLaravel APIの2デプロイへ恒久的に戻さず、SPAをLaravelから配信する。
   DR-030は当時の判断として残すが、将来方針は本DRが置き換える。移行手順の正本は
-  `docs/wip/api-first-spa-migration/implementation-plan.md` とする。
+  `docs/archive/phases/api-first-spa-migration/implementation-plan.md` とする。
 - **理由**:
   - テスト過重はDR-033とCursor中心実装で解消済みであり、Inertiaへ寄せてJSON契約テストを減らす主因は薄れた。
   - 現Inertiaはprops/formをほぼ使わず、APIを全件維持しているため、Inertia固有の利点が小さい。
@@ -164,8 +178,8 @@
 
 > **更新(DR-034)**: 将来の画面通信方針はInertia中心からAPI-first React SPA(同一オリジン配信)へ置き換えた。
 > DR-030は当時の判断として残す。旧Inertia移行計画は
-> `docs/archive/phases/inertia-migration/implementation-plan.md` に保管し、進行中の正本は
-> `docs/wip/api-first-spa-migration/implementation-plan.md` とする。
+> `docs/archive/phases/inertia-migration/implementation-plan.md` に保管し、完了記録は
+> `docs/archive/phases/api-first-spa-migration/` とする。
 
 ---
 
@@ -290,7 +304,7 @@
 
 > **更新(DR-035)**: `7a8391b` 以降、現行runtimeのAPI routeにはfamily-token middlewareが付いていない。
 > SPA移行中はこの動作を維持し、保護の再設計は別課題とする。現状記録は
-> `docs/wip/api-first-spa-migration/access-contract-a3.md` を参照する。
+> `docs/archive/phases/api-first-spa-migration/access-contract-a3.md` を参照する。
 
 ## DR-023: 3系統を活動マスタ・予定・実績の共通軸で接続し、変更履歴を追記保存する(2026-07-18)
 

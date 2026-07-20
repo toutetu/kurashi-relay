@@ -134,7 +134,7 @@
 - Tailwind CSS
 - モノレポ
 - TanStack Query、Zod、API Resourceは一括削除せず、用途がなくなった対象だけ整理する
-- 移行手順の正本: `docs/wip/api-first-spa-migration/implementation-plan.md`
+- 移行完了記録: `docs/archive/phases/api-first-spa-migration/`
 
 # 9. デザイン
 

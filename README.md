@@ -10,7 +10,7 @@ React Router + TanStack Query + Laravel JSON API のSPAを、Laravel Cloudから
 
 実装済みの機能、未実装領域、今後の開発順序は [くらしリレー 実装計画](docs/development-plan.md) を参照してください。
 今後「次に何を実装するか」を判断するときは、この文書を全体ロードマップの正とします。
-画面配信移行の詳細は [API-first SPA移行 実装計画](docs/wip/api-first-spa-migration/implementation-plan.md) を参照してください。
+画面配信移行の完了記録は [API-first SPA移行](docs/archive/phases/api-first-spa-migration/) を参照してください。
 
 ## 構成
 
