@@ -28,6 +28,7 @@ export function SettingsPage() {
   const [dayType, setDayType] =
     useState<FamilySettings["day_type"]>("weekday");
   const [message, setMessage] = useState<string | null>(null);
+  const [oauthFallbackUrl, setOauthFallbackUrl] = useState<string | null>(null);
 
   const settingsQuery = useQuery({
     queryKey: ["family-settings"],
@@ -62,9 +63,17 @@ export function SettingsPage() {
       return startGoogleCalendarOAuth(connection.id);
     },
     onSuccess: (oauthUrl) => {
-      window.location.assign(oauthUrl);
+      setMessage(
+        "Googleの認可画面へ移動します。開かない場合は表示されたリンクを押してください。",
+      );
+      window.setTimeout(() => {
+        window.location.assign(oauthUrl);
+      }, 50);
+      // fallback: keep URL in message via temporary link below
+      setOauthFallbackUrl(oauthUrl);
     },
     onError: (error: unknown) => {
+      setOauthFallbackUrl(null);
       setMessage(
         error instanceof ApiError
           ? error.message
@@ -182,6 +191,7 @@ export function SettingsPage() {
             disabled={connectMutation.isPending || !oauthConfigured || isConnected}
             onClick={() => {
               setMessage(null);
+              setOauthFallbackUrl(null);
               connectMutation.mutate();
             }}
           >
@@ -192,6 +202,16 @@ export function SettingsPage() {
                 : "Googleに接続"}
           </Button>
         </div>
+        {oauthFallbackUrl ? (
+          <p className="mt-3 text-sm">
+            <a
+              href={oauthFallbackUrl}
+              className="font-bold text-[var(--primary-deep)] underline"
+            >
+              Googleの認可画面を開く
+            </a>
+          </p>
+        ) : null}
       </section>
 
       {message && (

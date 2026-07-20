@@ -39,7 +39,7 @@ const syncSchema = z.object({
 const oauthStartSchema = z.object({
   status: z.literal("success"),
   data: z.object({
-    oauth_url: z.string().url(),
+    oauth_url: z.string().min(1),
   }),
 });
 

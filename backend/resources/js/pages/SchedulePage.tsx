@@ -73,6 +73,7 @@ export function SchedulePage() {
   const [activityDefinitionId, setActivityDefinitionId] = useState<string>("");
   const [formError, setFormError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [oauthFallbackUrl, setOauthFallbackUrl] = useState<string | null>(null);
 
   const listQuery = useQuery({
     queryKey: ["planned-activities", date],
@@ -136,9 +137,17 @@ export function SchedulePage() {
       return startGoogleCalendarOAuth(connection.id);
     },
     onSuccess: (oauthUrl) => {
-      window.location.assign(oauthUrl);
+      setOauthFallbackUrl(oauthUrl);
+      setSyncMessage(
+        "Googleの認可画面へ移動します。開かない場合は下のリンクを押してください。",
+      );
+      // 非同期後の外部遷移がブラウザに止められることがあるため、両方用意する。
+      window.setTimeout(() => {
+        window.location.assign(oauthUrl);
+      }, 50);
     },
     onError: (error: unknown) => {
+      setOauthFallbackUrl(null);
       setSyncMessage(
         error instanceof ApiError
           ? error.message
@@ -318,9 +327,10 @@ export function SchedulePage() {
             <Button
               icon={Link2}
               loading={connectMutation.isPending}
-              disabled={!oauthConfigured && !isConnected}
+              disabled={!oauthConfigured}
               onClick={() => {
                 setSyncMessage(null);
+                setOauthFallbackUrl(null);
                 connectMutation.mutate();
               }}
             >
@@ -365,13 +375,23 @@ export function SchedulePage() {
         {syncMessage ? (
           <p
             className={`mt-3 text-sm font-bold ${
-              syncMessage.includes("失敗")
+              syncMessage.includes("失敗") || syncMessage.includes("エラー")
                 ? "text-[var(--coral-deep)]"
                 : "text-[var(--green)]"
             }`}
             role="status"
           >
             {syncMessage}
+          </p>
+        ) : null}
+        {oauthFallbackUrl ? (
+          <p className="mt-2 text-sm">
+            <a
+              href={oauthFallbackUrl}
+              className="font-bold text-[var(--primary-deep)] underline"
+            >
+              Googleの認可画面を開く
+            </a>
           </p>
         ) : null}
         <div className="mt-4">{renderList("カレンダー", grouped.google)}</div>
