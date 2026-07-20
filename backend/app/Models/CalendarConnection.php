@@ -15,6 +15,7 @@ class CalendarConnection extends Model
         'external_calendar_id',
         'provider_account_id',
         'display_name',
+        'subject_role',
         'timezone',
         'refresh_token_encrypted',
         'sync_token_encrypted',

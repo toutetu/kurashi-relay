@@ -60,7 +60,10 @@ export function SettingsPage() {
       const connection =
         bundle.connections[0] ??
         (await createCalendarConnection({ display_name: "Googleカレンダー" }));
-      return startGoogleCalendarOAuth(connection.id);
+      return startGoogleCalendarOAuth({
+        connectionId: connection.id,
+        subjectRole: connection.subject_role ?? "mother",
+      });
     },
     onSuccess: (oauthUrl) => {
       setMessage(

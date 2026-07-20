@@ -28,16 +28,24 @@ final class CalendarConnectionService
     {
         return CalendarConnection::query()
             ->where('is_active', true)
+            ->orderByRaw("CASE subject_role WHEN 'child' THEN 0 WHEN 'mother' THEN 1 ELSE 2 END")
             ->orderBy('id')
             ->get();
     }
 
     /**
-     * @param  array{display_name: string, timezone?: string|null, external_calendar_id?: string|null}  $input
+     * @param  array{
+     *   display_name: string,
+     *   timezone?: string|null,
+     *   external_calendar_id?: string|null,
+     *   subject_role?: string|null
+     * }  $input
      * @return array{connection: CalendarConnection, oauth_url: string|null}
      */
     public function createPlaceholder(array $input): array
     {
+        $subjectRole = ($input['subject_role'] ?? 'mother') === 'child' ? 'child' : 'mother';
+
         $connection = CalendarConnection::query()->create([
             'provider' => 'google',
             'external_calendar_id' => $input['external_calendar_id']
@@ -45,6 +53,7 @@ final class CalendarConnectionService
                 ?? 'primary',
             'provider_account_id' => null,
             'display_name' => $input['display_name'],
+            'subject_role' => $subjectRole,
             'timezone' => $input['timezone'] ?? 'Asia/Tokyo',
             'refresh_token_encrypted' => null,
             'sync_token_encrypted' => null,
@@ -62,7 +71,7 @@ final class CalendarConnectionService
     /**
      * @return array{oauth_url: string, state: string}
      */
-    public function beginOAuth(?int $connectionId = null): array
+    public function beginOAuth(?int $connectionId = null, ?string $subjectRole = null): array
     {
         if (! $this->oauthClient->isConfigured()) {
             throw new RuntimeException(
@@ -70,9 +79,18 @@ final class CalendarConnectionService
             );
         }
 
+        $resolvedRole = $subjectRole === 'child' ? 'child' : 'mother';
+        if ($connectionId !== null) {
+            $existing = CalendarConnection::query()->find($connectionId);
+            if ($existing !== null) {
+                $resolvedRole = $existing->subject_role === 'child' ? 'child' : 'mother';
+            }
+        }
+
         $state = $this->oauthClient->newState();
         Cache::put($this->oauthStateKey($state), [
             'connection_id' => $connectionId,
+            'subject_role' => $resolvedRole,
             'created_at' => now('UTC')->toIso8601String(),
         ], self::OAUTH_STATE_TTL_SECONDS);
 
@@ -89,6 +107,7 @@ final class CalendarConnectionService
             throw new RuntimeException('OAuthの状態が無効か期限切れです。もう一度接続してください。');
         }
 
+        $subjectRole = ($payload['subject_role'] ?? 'mother') === 'child' ? 'child' : 'mother';
         $tokens = $this->oauthClient->exchangeAuthorizationCode($code);
         $calendar = $this->oauthClient->fetchPrimaryCalendar($tokens['access_token']);
         $email = $this->oauthClient->fetchAccountEmail($tokens['access_token']);
@@ -101,21 +120,28 @@ final class CalendarConnectionService
         if ($connection === null) {
             $connection = CalendarConnection::query()
                 ->where('provider', 'google')
-                ->where('external_calendar_id', $calendar['id'])
-                ->first();
-        }
-
-        if ($connection === null && is_string($email) && $email !== '') {
-            $connection = CalendarConnection::query()
-                ->where('provider', 'google')
-                ->where('provider_account_id', $email)
+                ->where('subject_role', $subjectRole)
+                ->where('is_active', true)
+                ->orderByDesc('id')
                 ->first();
         }
 
         if ($connection === null) {
             $connection = new CalendarConnection([
                 'provider' => 'google',
+                'subject_role' => $subjectRole,
             ]);
+        }
+
+        $conflict = CalendarConnection::query()
+            ->where('provider', 'google')
+            ->where('external_calendar_id', $calendar['id'])
+            ->when($connection->id !== null, fn ($q) => $q->where('id', '!=', $connection->id))
+            ->first();
+        if ($conflict !== null && $conflict->subject_role !== $subjectRole) {
+            throw new RuntimeException(
+                'このカレンダーはすでに別の対象（'.($conflict->subject_role === 'child' ? 'むすめ' : '私').'）に接続されています。別のカレンダーを選んでください。',
+            );
         }
 
         $existingRefresh = $this->decryptRefreshToken($connection);
@@ -126,10 +152,13 @@ final class CalendarConnectionService
             );
         }
 
+        $defaultName = $subjectRole === 'child' ? 'むすめのGoogleカレンダー' : '私のGoogleカレンダー';
+
         $connection->fill([
             'external_calendar_id' => $calendar['id'],
             'provider_account_id' => $email,
-            'display_name' => $calendar['summary'],
+            'display_name' => $calendar['summary'] !== '' ? $calendar['summary'] : $defaultName,
+            'subject_role' => $subjectRole,
             'timezone' => $calendar['timeZone'] ?? 'Asia/Tokyo',
             'refresh_token_encrypted' => Crypt::encryptString($refreshToken),
             'token_expires_at' => isset($tokens['expires_in'])
@@ -149,6 +178,49 @@ final class CalendarConnectionService
         $connection->sync_token_encrypted = null;
         $connection->token_expires_at = null;
         $connection->is_active = false;
+        $connection->save();
+
+        return $connection;
+    }
+
+    /**
+     * @return list<array{id: string, summary: string, primary: bool, access_role: string|null}>
+     */
+    public function listGoogleCalendars(int $id): array
+    {
+        $connection = CalendarConnection::query()->findOrFail($id);
+        $accessToken = $this->resolveAccessToken($connection);
+        if ($accessToken === null) {
+            throw new RuntimeException('先にGoogleへ接続してください。');
+        }
+
+        return $this->googleClient->listCalendars($accessToken);
+    }
+
+    /**
+     * @param  array{external_calendar_id: string, display_name?: string|null}  $input
+     */
+    public function selectCalendar(int $id, array $input): CalendarConnection
+    {
+        $connection = CalendarConnection::query()->findOrFail($id);
+        $calendarId = $input['external_calendar_id'];
+
+        $conflict = CalendarConnection::query()
+            ->where('provider', 'google')
+            ->where('external_calendar_id', $calendarId)
+            ->where('id', '!=', $connection->id)
+            ->where('is_active', true)
+            ->first();
+        if ($conflict !== null) {
+            throw new RuntimeException(
+                'このカレンダーはすでに別の接続で使われています。',
+            );
+        }
+
+        $connection->external_calendar_id = $calendarId;
+        if (isset($input['display_name']) && is_string($input['display_name']) && $input['display_name'] !== '') {
+            $connection->display_name = $input['display_name'];
+        }
         $connection->save();
 
         return $connection;
@@ -205,9 +277,10 @@ final class CalendarConnectionService
         $connection->last_synced_at = now('UTC');
         $connection->save();
 
+        $who = $connection->subject_role === 'child' ? 'むすめ' : '私';
         $total = $counts['imported'] + $counts['updated'] + $counts['cancelled'];
         $message = $mode === 'google_api'
-            ? "Googleカレンダーから {$total} 件を取り込みました。"
+            ? "{$who}のGoogleカレンダーから {$total} 件を取り込みました。"
             : "Google未接続のため、確認用サンプルを {$total} 件取り込みました。「Googleに接続」から実カレンダーを連携してください。";
 
         return [

@@ -24,6 +24,7 @@ final class CalendarConnectionResource extends JsonResource
             'id' => $connection->id,
             'provider' => $connection->provider,
             'display_name' => $connection->display_name,
+            'subject_role' => $connection->subject_role === 'child' ? 'child' : 'mother',
             'external_calendar_id' => $connection->external_calendar_id,
             'provider_account_id' => $connection->provider_account_id,
             'timezone' => $connection->timezone,

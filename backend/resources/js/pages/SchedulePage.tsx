@@ -14,6 +14,8 @@ import {
   createCalendarConnection,
   disconnectCalendarConnection,
   getCalendarConnections,
+  listGoogleCalendars,
+  selectGoogleCalendar,
   startGoogleCalendarOAuth,
   syncCalendarConnection,
 } from "../api/calendar";
@@ -128,23 +130,31 @@ export function SchedulePage() {
   });
 
   const connectMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (subjectRole: "mother" | "child") => {
       const bundle =
         connectionsQuery.data ?? (await getCalendarConnections());
-      const existing = bundle.connections[0];
+      const existing = bundle.connections.find(
+        (item) => (item.subject_role ?? "mother") === subjectRole,
+      );
       const connection =
         existing ??
         (await createCalendarConnection({
-          display_name: "Googleカレンダー",
+          display_name:
+            subjectRole === "child"
+              ? "むすめのGoogleカレンダー"
+              : "私のGoogleカレンダー",
+          subject_role: subjectRole,
         }));
-      return startGoogleCalendarOAuth(connection.id);
+      return startGoogleCalendarOAuth({
+        connectionId: connection.id,
+        subjectRole,
+      });
     },
     onSuccess: (oauthUrl) => {
       setOauthFallbackUrl(oauthUrl);
       setSyncMessage(
         "Googleの認可画面へ移動します。開かない場合は下のリンクを押してください。",
       );
-      // 非同期後の外部遷移がブラウザに止められることがあるため、両方用意する。
       window.setTimeout(() => {
         window.location.assign(oauthUrl);
       }, 50);
@@ -175,13 +185,19 @@ export function SchedulePage() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (subjectRole: "mother" | "child") => {
       const bundle =
         connectionsQuery.data ?? (await getCalendarConnections());
       const connection =
-        bundle.connections[0] ??
+        bundle.connections.find(
+          (item) => (item.subject_role ?? "mother") === subjectRole,
+        ) ??
         (await createCalendarConnection({
-          display_name: "Googleカレンダー",
+          display_name:
+            subjectRole === "child"
+              ? "むすめのGoogleカレンダー"
+              : "私のGoogleカレンダー",
+          subject_role: subjectRole,
         }));
       return syncCalendarConnection(connection.id, date);
     },
@@ -202,11 +218,51 @@ export function SchedulePage() {
     },
   });
 
+  const selectCalendarMutation = useMutation({
+    mutationFn: async (input: {
+      connectionId: number;
+      external_calendar_id: string;
+      display_name: string;
+    }) =>
+      selectGoogleCalendar(input.connectionId, {
+        external_calendar_id: input.external_calendar_id,
+        display_name: input.display_name,
+      }),
+    onSuccess: async () => {
+      setSyncMessage("取り込むカレンダーを切り替えました。取り込みを実行できます。");
+      await queryClient.invalidateQueries({ queryKey: ["calendar-connections"] });
+    },
+    onError: (error: unknown) => {
+      setSyncMessage(
+        error instanceof ApiError
+          ? error.message
+          : "カレンダーの切り替えに失敗しました。",
+      );
+    },
+  });
+
   const items = listQuery.data ?? [];
   const options = optionsQuery.data ?? [];
-  const connection = connectionsQuery.data?.connections[0] ?? null;
   const oauthConfigured = connectionsQuery.data?.oauthConfigured ?? false;
-  const isConnected = connection?.connected === true || connection?.oauth_ready === true;
+  const motherConnection =
+    connectionsQuery.data?.connections.find(
+      (item) => (item.subject_role ?? "mother") === "mother",
+    ) ?? null;
+  const childConnection =
+    connectionsQuery.data?.connections.find(
+      (item) => item.subject_role === "child",
+    ) ?? null;
+
+  const motherCalendarsQuery = useQuery({
+    queryKey: ["google-calendars", motherConnection?.id],
+    queryFn: ({ signal }) => listGoogleCalendars(motherConnection!.id, signal),
+    enabled: motherConnection?.connected === true || motherConnection?.oauth_ready === true,
+  });
+  const childCalendarsQuery = useQuery({
+    queryKey: ["google-calendars", childConnection?.id],
+    queryFn: ({ signal }) => listGoogleCalendars(childConnection!.id, signal),
+    enabled: childConnection?.connected === true || childConnection?.oauth_ready === true,
+  });
 
   const grouped = useMemo(() => {
     const mother = items.filter((item) => item.subject === "mother");
@@ -352,62 +408,134 @@ export function SchedulePage() {
 
       <DashboardCard title="Googleカレンダー" icon={CalendarDays} tone="yellow">
         <p className="text-sm text-[var(--muted-text)]">
-          {isConnected
-            ? `接続中${connection?.provider_account_id ? `（${connection.provider_account_id}）` : ""}。取り込んだ予定は右の「私の予定」に表示されます。`
-            : oauthConfigured
-              ? "まだGoogleに接続していません。「Googleに接続」から連携すると、実カレンダーの予定を取り込めます。"
-              : "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET を .env に設定すると、Googleへ接続できます。未設定時の取り込みは確認用サンプルです。"}
+          私とむすめで別のGoogleカレンダーを接続できます。同じGoogleアカウント内の別カレンダーでも、別アカウントでもOKです。
+          {!oauthConfigured
+            ? " 先に .env の GOOGLE_CLIENT_ID / SECRET を設定してください。"
+            : null}
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {!isConnected ? (
-            <Button
-              icon={Link2}
-              loading={connectMutation.isPending}
-              disabled={!oauthConfigured}
-              onClick={() => {
-                setSyncMessage(null);
-                setOauthFallbackUrl(null);
-                connectMutation.mutate();
-              }}
-            >
-              {connectMutation.isPending ? "接続準備中…" : "Googleに接続"}
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              tone="neutral"
-              icon={Unlink}
-              loading={disconnectMutation.isPending}
-              onClick={() => {
-                if (connection) disconnectMutation.mutate(connection.id);
-              }}
-            >
-              接続を解除
-            </Button>
-          )}
-          <Button
-            icon={RefreshCcw}
-            loading={syncMutation.isPending}
-            onClick={() => {
-              setSyncMessage(null);
-              syncMutation.mutate();
-            }}
-          >
-            {syncMutation.isPending ? "取り込み中…" : "カレンダーから取り込む"}
-          </Button>
-          {connection?.last_synced_at ? (
-            <span className="text-xs text-[var(--muted-text)]">
-              前回:{" "}
-              {new Intl.DateTimeFormat("ja-JP", {
-                timeZone: "Asia/Tokyo",
-                month: "numeric",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }).format(new Date(connection.last_synced_at))}
-            </span>
-          ) : null}
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {(
+            [
+              {
+                role: "child" as const,
+                label: "むすめのカレンダー",
+                connection: childConnection,
+                calendars: childCalendarsQuery.data ?? [],
+                targetHint: "左の「むすめの予定」",
+              },
+              {
+                role: "mother" as const,
+                label: "私のカレンダー",
+                connection: motherConnection,
+                calendars: motherCalendarsQuery.data ?? [],
+                targetHint: "右の「私の予定」",
+              },
+            ] as const
+          ).map((slot) => {
+            const connected =
+              slot.connection?.connected === true ||
+              slot.connection?.oauth_ready === true;
+            return (
+              <div
+                key={slot.role}
+                className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3"
+              >
+                <p className="font-bold text-[var(--ink)]">{slot.label}</p>
+                <p className="mt-1 text-xs text-[var(--muted-text)]">
+                  {connected
+                    ? `接続中${slot.connection?.provider_account_id ? `（${slot.connection.provider_account_id}）` : ""}。取込先は${slot.targetHint}。`
+                    : `未接続。接続すると${slot.targetHint}へ取り込めます。`}
+                </p>
+
+                {connected && slot.calendars.length > 0 ? (
+                  <label className="mt-3 block text-sm">
+                    <span className="font-bold">取り込むカレンダー</span>
+                    <select
+                      className="mt-1 w-full rounded-xl border border-[var(--line)] px-3 py-2"
+                      value={slot.connection?.external_calendar_id ?? ""}
+                      onChange={(event) => {
+                        const selected = slot.calendars.find(
+                          (calendar) => calendar.id === event.target.value,
+                        );
+                        if (!selected || !slot.connection) return;
+                        selectCalendarMutation.mutate({
+                          connectionId: slot.connection.id,
+                          external_calendar_id: selected.id,
+                          display_name: selected.summary,
+                        });
+                      }}
+                    >
+                      {slot.calendars.map((calendar) => (
+                        <option key={calendar.id} value={calendar.id}>
+                          {calendar.summary}
+                          {calendar.primary ? "（メイン）" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {!connected ? (
+                    <Button
+                      icon={Link2}
+                      size="compact"
+                      loading={connectMutation.isPending}
+                      disabled={!oauthConfigured}
+                      onClick={() => {
+                        setSyncMessage(null);
+                        setOauthFallbackUrl(null);
+                        connectMutation.mutate(slot.role);
+                      }}
+                    >
+                      Googleに接続
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      tone="neutral"
+                      size="compact"
+                      icon={Unlink}
+                      loading={disconnectMutation.isPending}
+                      onClick={() => {
+                        if (slot.connection) {
+                          disconnectMutation.mutate(slot.connection.id);
+                        }
+                      }}
+                    >
+                      解除
+                    </Button>
+                  )}
+                  <Button
+                    icon={RefreshCcw}
+                    size="compact"
+                    loading={syncMutation.isPending}
+                    onClick={() => {
+                      setSyncMessage(null);
+                      syncMutation.mutate(slot.role);
+                    }}
+                  >
+                    取り込む
+                  </Button>
+                </div>
+                {slot.connection?.last_synced_at ? (
+                  <p className="mt-2 text-xs text-[var(--muted-text)]">
+                    前回:{" "}
+                    {new Intl.DateTimeFormat("ja-JP", {
+                      timeZone: "Asia/Tokyo",
+                      month: "numeric",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).format(new Date(slot.connection.last_synced_at))}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
+
         {syncMessage ? (
           <p
             className={`mt-3 text-sm font-bold ${

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SelectCalendarRequest;
 use App\Http\Requests\StoreCalendarConnectionRequest;
 use App\Http\Resources\CalendarConnectionResource;
 use App\Services\CalendarConnectionService;
@@ -48,9 +49,11 @@ final class CalendarConnectionController extends Controller
     {
         $connectionId = request()->query('connection_id');
         $id = is_numeric($connectionId) ? (int) $connectionId : null;
+        $subject = request()->query('subject_role');
+        $subjectRole = is_string($subject) ? $subject : null;
 
         try {
-            $result = $service->beginOAuth($id);
+            $result = $service->beginOAuth($id, $subjectRole);
         } catch (RuntimeException $exception) {
             return response()->json([
                 'status' => 'error',
@@ -65,6 +68,49 @@ final class CalendarConnectionController extends Controller
                 'oauth_url' => $result['oauth_url'],
             ],
         ]);
+    }
+
+    public function calendars(int $id, CalendarConnectionService $service): JsonResponse
+    {
+        try {
+            $calendars = $service->listGoogleCalendars($id);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $exception->getMessage(),
+                'errors' => (object) [],
+            ], 502);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $calendars,
+        ]);
+    }
+
+    public function selectCalendar(
+        int $id,
+        SelectCalendarRequest $request,
+        CalendarConnectionService $service,
+    ): JsonResponse {
+        try {
+            $connection = $service->selectCalendar($id, $request->validated());
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $exception->getMessage(),
+                'errors' => (object) [],
+            ], 422);
+        }
+
+        return (new CalendarConnectionResource($connection))
+            ->additional([
+                'status' => 'success',
+                'meta' => [
+                    'message' => '取り込むカレンダーを更新しました。',
+                ],
+            ])
+            ->response();
     }
 
     public function sync(int $id, CalendarConnectionService $service): JsonResponse

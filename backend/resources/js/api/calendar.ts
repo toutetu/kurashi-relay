@@ -5,6 +5,7 @@ const connectionSchema = z.object({
   id: z.number(),
   provider: z.string(),
   display_name: z.string(),
+  subject_role: z.enum(["mother", "child"]).optional().default("mother"),
   external_calendar_id: z.string().nullable().optional(),
   provider_account_id: z.string().nullable().optional(),
   timezone: z.string(),
@@ -43,8 +44,21 @@ const oauthStartSchema = z.object({
   }),
 });
 
+const googleCalendarSchema = z.object({
+  id: z.string(),
+  summary: z.string(),
+  primary: z.boolean(),
+  access_role: z.string().nullable().optional(),
+});
+
+const calendarsSchema = z.object({
+  status: z.literal("success"),
+  data: z.array(googleCalendarSchema),
+});
+
 export type CalendarConnection = z.infer<typeof connectionSchema>;
 export type CalendarSyncResult = z.infer<typeof syncSchema>["data"];
+export type GoogleCalendarOption = z.infer<typeof googleCalendarSchema>;
 
 export async function getCalendarConnections(signal?: AbortSignal) {
   const response = await apiGet<unknown>("/api/calendar-connections", signal);
@@ -63,6 +77,7 @@ export async function getCalendarConnections(signal?: AbortSignal) {
 export async function createCalendarConnection(input: {
   display_name: string;
   external_calendar_id?: string;
+  subject_role?: "mother" | "child";
 }) {
   const response = await apiSend<unknown>("/api/calendar-connections", "POST", input);
   const parsed = z
@@ -76,11 +91,18 @@ export async function createCalendarConnection(input: {
   return parsed.data.data;
 }
 
-export async function startGoogleCalendarOAuth(connectionId?: number) {
-  const search =
-    connectionId !== undefined
-      ? `?connection_id=${encodeURIComponent(String(connectionId))}`
-      : "";
+export async function startGoogleCalendarOAuth(options?: {
+  connectionId?: number;
+  subjectRole?: "mother" | "child";
+}) {
+  const params = new URLSearchParams();
+  if (options?.connectionId !== undefined) {
+    params.set("connection_id", String(options.connectionId));
+  }
+  if (options?.subjectRole) {
+    params.set("subject_role", options.subjectRole);
+  }
+  const search = params.toString() ? `?${params.toString()}` : "";
   const response = await apiGet<unknown>(
     `/api/calendar-connections/oauth/start${search}`,
   );
@@ -89,6 +111,38 @@ export async function startGoogleCalendarOAuth(connectionId?: number) {
     throw new ApiError("Google接続URLの形式が正しくありません。", 200);
   }
   return parsed.data.data.oauth_url;
+}
+
+export async function listGoogleCalendars(connectionId: number, signal?: AbortSignal) {
+  const response = await apiGet<unknown>(
+    `/api/calendar-connections/${connectionId}/calendars`,
+    signal,
+  );
+  const parsed = calendarsSchema.safeParse(response);
+  if (!parsed.success) {
+    throw new ApiError("カレンダー一覧の形式が正しくありません。", 200);
+  }
+  return parsed.data.data;
+}
+
+export async function selectGoogleCalendar(
+  connectionId: number,
+  input: { external_calendar_id: string; display_name?: string },
+) {
+  const response = await apiSend<unknown>(
+    `/api/calendar-connections/${connectionId}/calendar`,
+    "PATCH",
+    input,
+  );
+  const parsed = z
+    .object({ status: z.literal("success"), data: connectionSchema })
+    .safeParse(response);
+  if (!parsed.success) {
+    const alt = z.object({ data: connectionSchema }).safeParse(response);
+    if (alt.success) return alt.data.data;
+    throw new ApiError("カレンダー選択の結果形式が正しくありません。", 200);
+  }
+  return parsed.data.data;
 }
 
 export async function syncCalendarConnection(id: number, date?: string) {

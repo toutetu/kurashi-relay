@@ -52,6 +52,8 @@ Route::middleware('family-token')->group(function () {
     Route::get('/calendar-connections', [CalendarConnectionController::class, 'index']);
     Route::post('/calendar-connections', [CalendarConnectionController::class, 'store']);
     Route::get('/calendar-connections/oauth/start', [CalendarConnectionController::class, 'oauthStart']);
+    Route::get('/calendar-connections/{id}/calendars', [CalendarConnectionController::class, 'calendars'])->whereNumber('id');
+    Route::patch('/calendar-connections/{id}/calendar', [CalendarConnectionController::class, 'selectCalendar'])->whereNumber('id');
     Route::post('/calendar-connections/{id}/sync', [CalendarConnectionController::class, 'sync'])->whereNumber('id');
     Route::delete('/calendar-connections/{id}', [CalendarConnectionController::class, 'destroy'])->whereNumber('id');
 

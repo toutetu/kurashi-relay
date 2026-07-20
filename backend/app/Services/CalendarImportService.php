@@ -23,7 +23,9 @@ final class CalendarImportService
     public function importGoogleEvents(CalendarConnection $connection, array $events): array
     {
         $counts = ['imported' => 0, 'updated' => 0, 'cancelled' => 0];
-        $subjectMemberId = FamilyMemberResolver::motherId();
+        $subjectMemberId = $connection->subject_role === 'child'
+            ? FamilyMemberResolver::childId()
+            : FamilyMemberResolver::motherId();
 
         DB::transaction(function () use ($connection, $events, $subjectMemberId, &$counts): void {
             foreach ($events as $payload) {
