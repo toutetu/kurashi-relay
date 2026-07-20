@@ -2,9 +2,9 @@
 
 母と娘の生活、予定と実績、支援、待機・拘束、回復を見えるようにし、家族・学校・支援機関との役割分担につなげるWebアプリのPoCです。
 
-現在はLaravel REST APIとRender上の独立React SPAを接続して運用しています。方針はDR-034により、
-React Router + TanStack Query + Laravel JSON API のまま、SPAをLaravel Cloudから同一オリジン配信する計画です。
-現行構成は移行完了まで維持します。
+React Router + TanStack Query + Laravel JSON API のSPAを、Laravel Cloudから同一オリジンで配信します(DR-034)。
+
+本番URL: https://kurashi-relay-production-olnfy0.laravel.cloud/
 
 ## 現在の実装計画
 
@@ -16,17 +16,15 @@ React Router + TanStack Query + Laravel JSON API のまま、SPAをLaravel Cloud
 
 ```text
 kurashi-relay/
-├─ backend/      Laravel 12 REST API
-├─ frontend/     React + TypeScript + Vite SPA
+├─ backend/      Laravel 12 REST API + React SPA（resources/js）
 ├─ docs/         企画・設計・API契約・ワイヤーフレーム
 └─ scripts/
 ```
 
-開発時は次の2プロセスを起動します。
+開発時は backend だけで起動します（Vite が SPA を配信）。
 
 ```text
-React SPA  http://localhost:5173
-Laravel   http://localhost:8000
+Laravel + Vite SPA  http://localhost:8000
 ```
 
 ## 必要な環境
@@ -36,31 +34,25 @@ Laravel   http://localhost:8000
 - Node.js 20.19以上、または22.12以上
 - npm 11以上
 
-## バックエンド
+## バックエンド / SPA
 
 ```bash
 cd backend
 composer install
 cp .env.example .env
 php artisan key:generate
+npm install
+npm run build
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Windows PowerShellでは `cp` の代わりに次を使用できます。
-
-```powershell
-Copy-Item .env.example .env
-```
-
-第1実装は固定データをServiceから返し、DBへ保存しません。
-
-## フロントエンド
+開発中のホットリロードは次でも可です。
 
 ```bash
-cd frontend
-npm install
-cp .env.example .env
+cd backend
 npm run dev
+# 別ターミナル
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
 Windows PowerShellでは `cp` の代わりに次を使用できます。
@@ -94,11 +86,10 @@ Windows PowerShellではPintを次のように実行できます。
 php vendor/bin/pint --test
 ```
 
-### React
+### React SPA（backend/resources/js）
 
 ```bash
-cd frontend
-npm run lint
+cd backend
 npm run typecheck
 npm run test
 npm run build
