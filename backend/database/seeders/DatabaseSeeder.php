@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             KoekakeSeeder::class,
             PlanQuestionSeeder::class,
             RewardRuleSeeder::class,
+            MusumeHistoricalPlanSeeder::class,
         ]);
     }
 }
