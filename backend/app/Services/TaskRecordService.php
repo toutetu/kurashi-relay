@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Exceptions\IdempotencyConflictException;
+use App\Models\ActivityEvent;
+use App\Models\ActivityEventCancellation;
+use App\Models\ActivityEventParticipant;
 use App\Models\FamilyMember;
 use App\Models\RewardCollection;
 use App\Models\TaskDefinition;
@@ -10,6 +13,7 @@ use App\Models\TaskRecord;
 use App\Models\TaskRecordOperation;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 final class TaskRecordService
 {
@@ -17,6 +21,11 @@ final class TaskRecordService
         private readonly RewardCalculator $rewardCalculator,
         private readonly ActivityEventRecordQuery $activityEventRecordQuery,
     ) {}
+
+    public static function activityEventIdempotencyKey(string $taskRecordIdempotencyKey): string
+    {
+        return "oshigoto:{$taskRecordIdempotencyKey}";
+    }
 
     /**
      * きろくタイムラインは activity_events（event_type=activity）を正本とする(DR-036)。
@@ -85,6 +94,7 @@ final class TaskRecordService
                 }
 
                 $record = $existingOperation->taskRecord;
+                $this->ensureActivityEvent($member, $taskDefinition, $record, $idempotencyKey);
 
                 return $this->buildStoreResult(
                     $record,
@@ -115,6 +125,8 @@ final class TaskRecordService
                             'record_date' => $recordDate,
                             'task_record_id' => $record->id,
                         ]);
+
+                        $this->ensureActivityEvent($member, $taskDefinition, $record, $idempotencyKey);
 
                         return $record;
                     },
@@ -166,6 +178,8 @@ final class TaskRecordService
                 $record->refresh()->load(['familyMember', 'taskDefinition']);
             }
 
+            $this->ensureActivityEventCancellation($record);
+
             $summary = $this->rewardCalculator->summary(
                 $record->familyMember,
                 $record->record_date->toDateString(),
@@ -189,6 +203,122 @@ final class TaskRecordService
             ->orderBy('milestone_number')
             ->get()
             ->all();
+    }
+
+    private function ensureActivityEvent(
+        FamilyMember $member,
+        TaskDefinition $taskDefinition,
+        TaskRecord $record,
+        string $idempotencyKey,
+    ): void {
+        $activityDefinitionId = $taskDefinition->activity_definition_id;
+
+        if ($activityDefinitionId === null) {
+            throw ValidationException::withMessages([
+                'task' => ['活動定義が紐づいていないため、実績を保存できません。'],
+            ]);
+        }
+
+        $eventKey = self::activityEventIdempotencyKey($idempotencyKey);
+
+        $existing = ActivityEvent::query()
+            ->where('idempotency_key', $eventKey)
+            ->first();
+
+        if ($existing !== null) {
+            $this->ensureActorParticipant($existing, $member->id);
+
+            return;
+        }
+
+        try {
+            $event = ActivityEvent::query()->create([
+                'activity_definition_id' => $activityDefinitionId,
+                'event_type' => 'activity',
+                'occurred_at' => $record->completed_at,
+                'ended_at' => null,
+                'recorded_by_member_id' => $member->id,
+                'source' => 'oshigoto',
+                'idempotency_key' => $eventKey,
+            ]);
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueViolation($exception)) {
+                throw $exception;
+            }
+
+            $recovered = ActivityEvent::query()
+                ->where('idempotency_key', $eventKey)
+                ->first();
+
+            if ($recovered === null) {
+                throw $exception;
+            }
+
+            $this->ensureActorParticipant($recovered, $member->id);
+
+            return;
+        }
+
+        ActivityEventParticipant::query()->create([
+            'activity_event_id' => $event->id,
+            'family_member_id' => $member->id,
+            'role' => 'actor',
+            'created_at' => now('UTC'),
+        ]);
+    }
+
+    private function ensureActorParticipant(ActivityEvent $event, int $memberId): void
+    {
+        $exists = ActivityEventParticipant::query()
+            ->where('activity_event_id', $event->id)
+            ->where('family_member_id', $memberId)
+            ->where('role', 'actor')
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        try {
+            ActivityEventParticipant::query()->create([
+                'activity_event_id' => $event->id,
+                'family_member_id' => $memberId,
+                'role' => 'actor',
+                'created_at' => now('UTC'),
+            ]);
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueViolation($exception)) {
+                throw $exception;
+            }
+        }
+    }
+
+    private function ensureActivityEventCancellation(TaskRecord $record): void
+    {
+        $event = ActivityEvent::query()
+            ->where('idempotency_key', self::activityEventIdempotencyKey($record->idempotency_key))
+            ->first();
+
+        if ($event === null) {
+            return;
+        }
+
+        if ($event->cancellation()->exists()) {
+            return;
+        }
+
+        try {
+            ActivityEventCancellation::query()->create([
+                'activity_event_id' => $event->id,
+                'cancelled_at' => $record->cancelled_at ?? now('UTC'),
+                'cancelled_by_member_id' => $record->family_member_id,
+                'created_at' => now('UTC'),
+            ]);
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueViolation($exception)) {
+                throw $exception;
+            }
+        }
     }
 
     private function matchesPayload(
@@ -271,6 +401,7 @@ final class TaskRecordService
             }
 
             $record = $existingOperation->taskRecord;
+            $this->ensureActivityEvent($member, $taskDefinition, $record, $idempotencyKey);
 
             return $this->buildStoreResult(
                 $record,
@@ -326,6 +457,8 @@ final class TaskRecordService
 
             $winner = $operation->taskRecord;
         }
+
+        $this->ensureActivityEvent($member, $taskDefinition, $winner, $idempotencyKey);
 
         return $this->buildStoreResult(
             $winner,
