@@ -1,7 +1,8 @@
 import { RefreshCcw } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import type { Member } from "../../../api/schemas/oshigotoSchema";
-import { useRecordsTasksQuery } from "../queries/useRecordsTasksQuery";
+import { aggregateRecordsToCountedTasks } from "../aggregateRecordsToCountedTasks";
+import { useRecordsTimelineQuery } from "../queries/useRecordsTimelineQuery";
 import { RecordsMemberList } from "./RecordsMemberList";
 
 type MemberRecordsSectionProps = {
@@ -15,7 +16,10 @@ export function MemberRecordsSection({
   date,
   title,
 }: MemberRecordsSectionProps) {
-  const query = useRecordsTasksQuery(member, date);
+  // 回数ビューも時系列 API と同じ正本から集計し、合計と行のずれを防ぐ
+  const query = useRecordsTimelineQuery(member, date);
+  const countedTasks = aggregateRecordsToCountedTasks(query.data?.records ?? []);
+  const todayDoneCount = countedTasks.reduce((sum, task) => sum + task.count, 0);
 
   return (
     <section aria-label={title} className="space-y-3">
@@ -56,8 +60,8 @@ export function MemberRecordsSection({
 
       {query.isSuccess && (
         <RecordsMemberList
-          tasks={query.data.tasks}
-          todayDoneCount={query.data.summary.today_done_count}
+          tasks={countedTasks}
+          todayDoneCount={todayDoneCount}
         />
       )}
     </section>
