@@ -32,6 +32,43 @@
 
 ---
 
+## DR-045: Product Phase 1-2の最小スタブをAPI接続する(2026-07-20)
+
+- **課題感**: 予定編集・予定実績比較・支援引き継ぎ・レポート・設定・カレンダー/通知/共有の
+  UIとDBが揃いつつも、画面はプレースホルダや固定値のままで「説明できる状態」に届かない。
+- **選択肢**: (a) 各機能を別PRで完璧実装する / (b) MVPとしてAPI+画面を一気に接続し、
+  Calendar OAuth・通知配信・PDFはスタブにする / (c) 文書だけ先に完了扱いする。
+- **決定**: (b)。Home events / schedule-comparisons / support-handovers / reports /
+  family settings を family-token 配下で接続。共有URLは `GET /api/shared-reports/{token}` を
+  ミドルウェア外に置く。Calendar接続は display_name 保存のみ（oauth_url null、sync no-op）。
+  自動対応は時間重なり候補のみ。報酬は TaskRecord 完了/取消で reward_transactions へ earn/reversal。
+- **理由**: Product Phase の完了条件は「実データで差を見せ、引き継ぎとレポート範囲を守る」こと。
+  OAuth・配信本実装は Phase 2 後半でよい。
+
+## DR-044: 家族設定に日種別を置き、レポート除外方針と共有する(2026-07-20)
+
+- **課題感**: 平日/休日/長期休暇で見え方を変えたいが、設定の置き場がなく画面ローカルに散る恐れがある。
+  レポートのラストウォー除外も設定と連動させたい。
+- **選択肢**: (a) フロントlocalStorageのみ / (b) `family_settings` 単一行テーブル /
+  (c) ユーザー個別設定テーブルを先に作る。
+- **決定**: (b)。`day_type`（weekday/holiday/long_vacation）と `report_exclude_last_war` を保持。
+  SettingsPage から PUT `/api/settings/family`。
+- **理由**: 単一家庭PoCでは家族単位の1行で足り、レポート生成時に同じ方針を読める。
+
+## DR-043: 支援引き継ぎと支援者向けレポートの境界を固定する(2026-07-20)
+
+- **課題感**: 支援の担当・条件・完了条件・差し戻しを残したい一方、外部レポートに
+  ラストウォー詳細や推測と発言の混同を載せたくない。
+- **選択肢**: (a) ダッシュボード固定文だけで済ませる / (b) `support_handovers` と
+  `report_snapshots` を正本にし、情報源区分と excludes_last_war を必須化する /
+  (c) 自由記述メモだけにする。
+- **決定**: (b)。handover は source_kind（child_statement / mother_confirmed /
+  mother_observation / mother_assumption）を必須。レポート payload は生成時点スナップショットで、
+  ラストウォー関連を除外。共有は share_token + 期限。
+- **理由**: 「せめない設計」と外部説明の最小範囲をDB制約と生成ロジックで守るため。
+
+---
+
 ## DR-042: 家族共有トークンによるAPI保護を再接続し、Phase Aを完了する(2026-07-20)
 
 - **課題感**: SPA移行中は DR-035 で未認証公開を維持したが、本番APIが公開URLにある以上、
