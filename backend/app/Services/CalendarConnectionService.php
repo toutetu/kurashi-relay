@@ -46,11 +46,30 @@ final class CalendarConnectionService
     {
         $subjectRole = ($input['subject_role'] ?? 'mother') === 'child' ? 'child' : 'mother';
 
+        $existing = CalendarConnection::query()
+            ->where('provider', 'google')
+            ->where('subject_role', $subjectRole)
+            ->where('is_active', true)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($existing !== null) {
+            if (($input['display_name'] ?? '') !== '') {
+                $existing->display_name = $input['display_name'];
+                $existing->save();
+            }
+
+            return [
+                'connection' => $existing,
+                'oauth_url' => null,
+            ];
+        }
+
+        // 接続前は calendar id を入れない。母/むすめで同じ 'primary' を入れると
+        // UNIQUE(provider, external_calendar_id) に衝突する。
         $connection = CalendarConnection::query()->create([
             'provider' => 'google',
-            'external_calendar_id' => $input['external_calendar_id']
-                ?? config('services.google.calendar_id')
-                ?? 'primary',
+            'external_calendar_id' => $input['external_calendar_id'] ?? null,
             'provider_account_id' => null,
             'display_name' => $input['display_name'],
             'subject_role' => $subjectRole,
