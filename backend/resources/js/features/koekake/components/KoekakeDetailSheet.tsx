@@ -2,22 +2,11 @@ import { X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "../../../components/ui/Button";
 import type {
-  CompletionStatus,
   KoekakeTaskDetail,
   KoekakeTaskSummary,
   PromptSource,
 } from "../../../api/schemas/koekakeSchema";
 import { formatDateTime, formatTime } from "../../../utils/date";
-import { COMPLETION_STATUS_LABELS } from "../utils";
-
-const COMPLETION_OPTIONS: CompletionStatus[] = [
-  "completed",
-  "partial",
-  "together",
-  "parent_done",
-  "deferred",
-  "unknown",
-];
 
 type KoekakeDetailSheetProps = {
   taskId: number;
@@ -32,10 +21,8 @@ type KoekakeDetailSheetProps = {
   ) => void;
   onSnooze: (taskId: number, minutes: 5 | 10 | 15) => void;
   onSnoozeNoneToday: (taskId: number) => void;
-  onCompletion: (taskId: number, status: CompletionStatus) => void;
   pendingPrompt?: boolean;
   pendingSnooze?: boolean;
-  pendingCompletion?: boolean;
   pendingCancel?: boolean;
 };
 
@@ -48,10 +35,8 @@ export function KoekakeDetailSheet({
   onPromptWithText,
   onSnooze,
   onSnoozeNoneToday,
-  onCompletion,
   pendingPrompt = false,
   pendingSnooze = false,
-  pendingCompletion = false,
   pendingCancel = false,
 }: KoekakeDetailSheetProps) {
   const promptPending = pendingPrompt || pendingCancel;
@@ -300,34 +285,6 @@ export function KoekakeDetailSheet({
                 次回通知: {formatDateTime(summary.next_remind_at)}
               </p>
             )}
-          </section>
-
-          <section className="mt-6" aria-labelledby={`${titleId}-completion`}>
-            <h3
-              id={`${titleId}-completion`}
-              className="text-sm font-black text-[var(--text)]"
-            >
-              行動結果
-            </h3>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {COMPLETION_OPTIONS.map((status) => {
-                const selected = summary.completion?.status === status;
-                return (
-                  <Button
-                    key={status}
-                    type="button"
-                    size="compact"
-                    variant={selected ? "solid" : "outline"}
-                    tone="blue"
-                    loading={pendingCompletion}
-                    aria-pressed={selected}
-                    onClick={() => onCompletion(taskId, status)}
-                  >
-                    {COMPLETION_STATUS_LABELS[status]}
-                  </Button>
-                );
-              })}
-            </div>
           </section>
         </div>
       </section>
