@@ -8,13 +8,19 @@ use App\Http\Resources\CalendarConnectionResource;
 use App\Services\CalendarConnectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use RuntimeException;
 
 final class CalendarConnectionController extends Controller
 {
     public function index(CalendarConnectionService $service): AnonymousResourceCollection
     {
         return CalendarConnectionResource::collection($service->list())
-            ->additional(['status' => 'success']);
+            ->additional([
+                'status' => 'success',
+                'meta' => [
+                    'oauth_configured' => $service->isOAuthConfigured(),
+                ],
+            ]);
     }
 
     public function store(
@@ -22,20 +28,43 @@ final class CalendarConnectionController extends Controller
         CalendarConnectionService $service,
     ): JsonResponse {
         $result = $service->createPlaceholder($request->validated());
-        $oauthReady = $service->isGoogleApiConfigured();
 
         return (new CalendarConnectionResource($result['connection']))
             ->additional([
                 'status' => 'success',
                 'meta' => [
                     'oauth_url' => $result['oauth_url'],
-                    'message' => $oauthReady
-                        ? 'カレンダー接続を保存しました。同期するとGoogleから予定を取り込みます。'
-                        : 'カレンダー接続を保存しました。アクセストークン未設定のため、同期時は確認用サンプルを取り込みます。',
+                    'oauth_configured' => $service->isOAuthConfigured(),
+                    'message' => $service->isOAuthConfigured()
+                        ? 'カレンダー接続を保存しました。Googleに接続すると実予定を取り込めます。'
+                        : 'カレンダー接続を保存しました。GOOGLE_CLIENT_ID / SECRET 設定後にGoogleへ接続できます。',
                 ],
             ])
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function oauthStart(CalendarConnectionService $service): JsonResponse
+    {
+        $connectionId = request()->query('connection_id');
+        $id = is_numeric($connectionId) ? (int) $connectionId : null;
+
+        try {
+            $result = $service->beginOAuth($id);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $exception->getMessage(),
+                'errors' => (object) [],
+            ], 503);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'oauth_url' => $result['oauth_url'],
+            ],
+        ]);
     }
 
     public function sync(int $id, CalendarConnectionService $service): JsonResponse
@@ -45,7 +74,7 @@ final class CalendarConnectionController extends Controller
 
         try {
             $result = $service->sync($id, $localDate);
-        } catch (\RuntimeException $exception) {
+        } catch (RuntimeException $exception) {
             return response()->json([
                 'status' => 'error',
                 'message' => $exception->getMessage(),
@@ -57,5 +86,19 @@ final class CalendarConnectionController extends Controller
             'status' => 'success',
             'data' => $result,
         ]);
+    }
+
+    public function destroy(int $id, CalendarConnectionService $service): JsonResponse
+    {
+        $connection = $service->disconnect($id);
+
+        return (new CalendarConnectionResource($connection))
+            ->additional([
+                'status' => 'success',
+                'meta' => [
+                    'message' => 'Googleカレンダー接続を解除しました。',
+                ],
+            ])
+            ->response();
     }
 }

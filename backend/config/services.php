@@ -36,7 +36,10 @@ return [
     ],
 
     'google' => [
-        // OAuth本実装までの暫定: 短期アクセストークンを .env に置くと実カレンダーを取得する。
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
+        // 開発用フォールバック（OAuth未使用時のみ）
         'calendar_access_token' => env('GOOGLE_CALENDAR_ACCESS_TOKEN'),
         'calendar_id' => env('GOOGLE_CALENDAR_ID', 'primary'),
     ],
