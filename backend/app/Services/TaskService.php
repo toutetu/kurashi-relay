@@ -10,6 +10,7 @@ final class TaskService
 {
     public function __construct(
         private readonly RewardCalculator $rewardCalculator,
+        private readonly ActivityEventRecordQuery $activityEventRecordQuery,
     ) {}
 
     /**
@@ -30,11 +31,18 @@ final class TaskService
             ->get()
             ->groupBy('task_definition_id');
 
-        $tasks = $definitions->map(function (TaskDefinition $definition) use ($recordsByTaskId): array {
+        $activityCounts = $this->activityEventRecordQuery
+            ->activityCountsByDefinitionForActorOnDate($member, $date);
+
+        $tasks = $definitions->map(function (TaskDefinition $definition) use ($recordsByTaskId, $activityCounts): array {
             $taskRecords = $recordsByTaskId->get($definition->id, collect());
-            $count = $taskRecords->count();
-            /** @var int|null $lastRecordId */
-            $lastRecordId = $count > 0 ? (int) $taskRecords->max('id') : null;
+            $taskRecordCount = $taskRecords->count();
+            $activityCount = $definition->activity_definition_id !== null
+                ? (int) ($activityCounts[$definition->activity_definition_id] ?? 0)
+                : 0;
+            $count = $taskRecordCount + $activityCount;
+            /** @var int|null $lastRecordId 取消用。activity_events は別経路のため task_records のみ */
+            $lastRecordId = $taskRecordCount > 0 ? (int) $taskRecords->max('id') : null;
 
             return [
                 'slug' => $definition->slug,

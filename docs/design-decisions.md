@@ -32,6 +32,19 @@
 
 ---
 
+## DR-037: きろく一覧は activity_events を正本として読む(2026-07-20)
+
+- **課題感**: 声かけ完了は `activity_events` に保存されるが、きろく・おしごと件数は `task_records` だけを
+  見ていたため、完了しても画面に出なかった。
+- **選択肢**: (a) 完了時に `task_records` へ二重書き込みする / (b) 一覧・件数 API を `activity_events` 基準に切り替える /
+  (c) ホーム dashboard まで同時に DB 連動化する。
+- **決定**: (b)。`GET /api/task-records` は当該日の `event_type=activity` かつ参加者 `actor` のイベントを返す。
+  `GET /api/tasks` の件数と `today_done_count` は `task_records` に加え、同じ条件の `activity_events` を合算する。
+  おしごと取消用の `last_record_id` は `task_records` のみとする。dashboard のフィクスチャ連動は別課題。
+- **理由**: DR-036の正本と読み経路を一致させ、互換二重書きより移行が明確になる。
+
+---
+
 ## DR-036: 活動実績は activity_events の存在で表し、activity_event_outcomes を廃止する(2026-07-20)
 
 - **課題感**: 娘の活動に `completed` / `partial` / `deferred` / `unknown` の結果行を持つと、

@@ -13,7 +13,7 @@ final class TaskRecordListResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        /** @var array{date: string, member: string, records: list<TaskRecord>} $payload */
+        /** @var array{date: string, member: string, records: list<array<string, mixed>|TaskRecord>} $payload */
         $payload = $this->resource;
 
         return [

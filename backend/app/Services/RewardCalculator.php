@@ -9,6 +9,10 @@ use App\Models\TaskRecord;
 
 final class RewardCalculator
 {
+    public function __construct(
+        private readonly ActivityEventRecordQuery $activityEventRecordQuery,
+    ) {}
+
     public function summary(FamilyMember $member, string $date): array
     {
         $stampSize = (int) config('kurashi.stamp_size', 10);
@@ -17,11 +21,13 @@ final class RewardCalculator
         $lifetimeCount = $activeRecordCount + $gaugeAdjustment;
         $gaugeCount = (($lifetimeCount % $stampSize) + $stampSize) % $stampSize;
         $fullCount = intdiv($lifetimeCount - $gaugeCount, $stampSize);
-        $todayDoneCount = TaskRecord::query()
+        $todayTaskRecordCount = TaskRecord::query()
             ->where('family_member_id', $member->id)
             ->whereNull('cancelled_at')
             ->whereDate('record_date', $date)
             ->count();
+        $todayDoneCount = $todayTaskRecordCount
+            + $this->activityEventRecordQuery->activityCountForActorOnDate($member, $date);
         $collectionsCount = RewardCollection::query()
             ->where('family_member_id', $member->id)
             ->count();
