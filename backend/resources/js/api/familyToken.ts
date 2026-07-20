@@ -18,7 +18,8 @@ function bumpAuthGeneration(): void {
 }
 
 function normalizeToken(value: string | null): string | null {
-  const normalized = value?.trim() ?? "";
+  // ひらがな・漢字を含むあいことばでも、端末とサーバーで表記ゆれしないよう NFC に揃える。
+  const normalized = value?.normalize("NFC").trim() ?? "";
   return normalized.length > 0 ? normalized : null;
 }
 
