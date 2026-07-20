@@ -32,6 +32,22 @@
 
 ---
 
+## DR-040: 声かけ書込を activity_events へ接続する(2026-07-20)
+
+- **課題感**: 声かけ完了は `activity_events` に残るが、声かけ POST は `prompt_events` のみで、
+  共通出来事・人物参加の正本とずれていた。
+- **選択肢**: (a) `prompt_events` を正本のまま維持する / (b) `activity_events` のみに寄せて
+  `prompt_events` を廃止する / (c) 声かけ1回ごとに `activity_events`（`event_type=prompt`）と
+  参加行を作り、`prompt_events` は固有情報として `activity_event_id` で接続する。
+- **決定**: (c)。母=`actor`・娘=`target`、`source=koekake`、冪等キーは
+  `koekake-prompt:{idempotency_key}`。予定がある場合は `plan_actual_links` も作る。
+  取消は `prompt_events.cancelled_at` と `activity_event_cancellations` を同一TXで追記する。
+  `prompt_count` / `latest_prompt_at` キャッシュ更新は当面維持する。
+- **理由**: DR-027/036の共通出来事軸と Gate 1 の人物役割規則に揃えつつ、既存API応答と
+  一覧キャッシュを壊さない。
+
+---
+
 ## DR-039: おしごと書込を activity_events へ接続し、件数は events+孤児 records で数える(2026-07-20)
 
 - **課題感**: きろく一覧は `activity_events` 正本(DR-036/037)なのに、おしごと POST は `task_records`
