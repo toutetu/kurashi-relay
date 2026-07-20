@@ -31,11 +31,11 @@
 
 ## ブランチ運用
 
-- **1ブランチ = 1デプロイ単位**。main は自動デプロイ(バックエンド→Laravel Cloud、フロント→Render)。
+- **1ブランチ = 1デプロイ単位**。main は自動デプロイ(Laravel Cloud)。
   1マージ = 本番反映なので、1回で出す「意味のかたまり」を1つに絞る。
 - **API-first SPA cutover(A4)までは、必要に応じてバックエンドとフロントを別ブランチ・別PR**にできる。
 - **A1以降のSPA配信準備では**、`backend/resources/js` を正本としてLaravel deploy単位にまとめられる。
-  ただしDB schema変更、UI redesign、旧Render削除は混ぜない。本番cutover(A4)とInertia削除(A6)は専用PRに分ける。
+  ただしDB schema変更、UI redesignは混ぜない。本番cutover(A4)・Inertia削除(A6)・旧frontend削除(A7)は専用PRに分ける。
 - **必ず最新 main から切る**。他の feature ブランチに相乗りしない(過去にK0がfrontendブランチに乗った失敗例あり)。
 - **命名**: `<type>/<domain>-<topic>`。type = `feat` / `fix` / `chore` / `docs` / `refactor`。
   例: `feat/koekake-api`・`feat/koekake-web`・`chore/k0-migration`・`docs/koekake-plan`。
@@ -131,8 +131,7 @@ Webアプリ「くらしリレー」のPoCです。
 
 ## 構成
 
-- `backend/`：現行Laravel REST API。DR-034によりSPA配信の実行基盤にもする
-- `frontend/`：移行中のロールバック用ソース。A1以降は凍結し、安定後に削除する
+- `backend/`：Laravel REST API と React SPA（`resources/js` 正本）。Laravel Cloud から同一オリジン配信(DR-034)
 - `docs/`：仕様書とワイヤーフレーム
 - 1リポジトリのモノレポ
 - Phase C/D1/EでDB target schemaを先に完成させ、その直後からAPI-first SPA移行(A0〜A7)へ進む(DR-034)
