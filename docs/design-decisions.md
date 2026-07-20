@@ -32,6 +32,20 @@
 
 ---
 
+## DR-041: DB統合WIPとGate 2をクローズし、完了保管へ移す(2026-07-20)
+
+- **課題感**: target schema・Gate 2 tooling・主要書込の `activity_events` 接続・SPA移行まで進んだのに、
+  `docs/wip/database-unification` が進行中のまま残り、Gate 2 未クローズに見える。
+- **選択肢**: (a) WIPを残して本番 refresh 記録が揃うまで待つ / (b) 文書だけ消し証跡を残さない /
+  (c) 実装完了ゲートとローカル検証を根拠に Gate 2 をクローズし、計画・runbookを archive する。
+- **決定**: (c)。記録は `docs/archive/phases/database-unification/`（README・`gate2-close-record.md`）。
+  恒久の正本は `docs/data-model.md` / `docs/development-plan.md`。本番追記 refresh は任意で、
+  必要時だけ archive 内 runbook を使う。Phase F・報酬台帳・アクセス保護は別課題として残す。
+- **理由**: DR-031どおり schema/seed 確認後に画面移行へ進んでよく、実際に SPA も完了している。
+  進行中WIPを残すと「未完了」誤認とリンク切れが増える。
+
+---
+
 ## DR-040: 声かけ書込を activity_events へ接続する(2026-07-20)
 
 - **課題感**: 声かけ完了は `activity_events` に残るが、声かけ POST は `prompt_events` のみで、
@@ -185,7 +199,8 @@
 - **理由**: 現在のデータ量では完全な互換移行より、復元可能性を確保して正しい箱を早く作る方が目的に合う。
   一方、refreshを無断削除にせず、全量backupと実行直前確認を分離することで、文書上の方針決定と実際の破壊的操作を
   混同しない。役割を画面から自動決定すれば1タップ操作を保ち、入力者と実行者も混同しない。詳細な操作表と
-  実行ゲートは `docs/wip/database-unification/implementation-plan.md` の8.1を正とする。
+  実行ゲートは `docs/archive/phases/database-unification/implementation-plan.md` の8.1を正とする。
+  Gate 2 クローズ後の保管先は同ディレクトリ（DR-041）。
 
 ---
 
@@ -312,7 +327,7 @@
 - **理由**: 最大の懸念は同じ活動と完了が別体系に存在することであり、先に共通軸を作ると、その後の予定・レポート・
   Google Calendarが同じ正本を利用できる。夏休み対応の本番 `migrate:fresh` は実施済みなので再実行せず、
   残る書き込み確認だけを先頭の短いゲートとして扱う。詳細は
-  `docs/wip/database-unification/execution-brief.md`。
+  `docs/archive/phases/database-unification/execution-brief.md`。
 
 ## DR-025: routine_templatesに名称から独立したslugを追加する(2026-07-18)
 
@@ -336,7 +351,8 @@
   入力する。失敗には401とRate Limitを適用し、環境変数の差し替えでローテーション可能にする。
 - **理由**: 単一家庭で必要なのはテナント分離ではなく、公開URLから家庭データを守る最小のアクセス制御である。
   本格アカウントより実装・運用が軽く、将来端末単位の失効が必要になった場合だけSanctum等へ移行できる。
-  実装順は `docs/wip/database-unification/implementation-plan.md` Phase A。
+  実装順は `docs/archive/phases/database-unification/implementation-plan.md` Phase A。
+  現行のアクセス保護方針は DR-035。
 
 > **更新(DR-035)**: `7a8391b` 以降、現行runtimeのAPI routeにはfamily-token middlewareが付いていない。
 > SPA移行中はこの動作を維持し、保護の再設計は別課題とする。現状記録は
@@ -357,7 +373,8 @@
 - **理由**: 「何の活動か」を一度だけ定義し、予定元が違っても同じ予定・実績比較を使える。
   声かけと完了を混ぜない既存原則を守りながら、ポイントや支援量を同じ活動へ関連付けられる。
   一括置換はせず、追加・バックフィル・新旧比較・読取切替・旧書込停止の段階移行とする。
-  詳細は `docs/data-model.md` と `docs/wip/database-unification/implementation-plan.md`。
+  詳細は `docs/data-model.md` と `docs/archive/phases/database-unification/implementation-plan.md`。
+  Gate 2 / WIP クローズは DR-041。
 
 ## DR-022: 運用開始後のスキーマ変更は差分ALTERで行い、CREATE書き換え方針(DR-013)を終了する(2026-07-18)
 
