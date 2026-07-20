@@ -128,8 +128,9 @@ export function FamilyTokenProvider({ children }: { children: ReactNode }) {
               </label>
               <input
                 id="family-token-input"
-                type="password"
+                type="text"
                 autoComplete="off"
+                inputMode="text"
                 autoFocus
                 value={tokenInput}
                 onChange={(event) => {
