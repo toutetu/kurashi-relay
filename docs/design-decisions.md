@@ -32,6 +32,23 @@
 
 ---
 
+## DR-039: おしごと書込を activity_events へ接続し、件数は events+孤児 records で数える(2026-07-20)
+
+- **課題感**: きろく一覧は `activity_events` 正本(DR-036/037)なのに、おしごと POST は `task_records`
+  だけを書いていたため、新規タップがタイムラインに出なかった。一方で DR-037 の
+  `task_records + activity_events` 合算のまま二重書きすると件数が二重になる。
+- **選択肢**: (a) 一覧だけ `task_records` に戻す / (b) おしごとも `activity_events` のみ書き、
+  `task_records` を即やめる / (c) `activity_events` を正本として二重書きし、件数は
+  `activity_events` + 対応イベントが無い孤児 `task_records` だけを数える。
+- **決定**: (c)。POST は同一トランザクションで `task_records`（報酬・取消互換）と
+  `activity_events`（`source=oshigoto`、冪等キー `oshigoto:{idempotency_key}`）+ `actor` 参加者を作る。
+  DELETE は `task_records.cancelled_at` に加え `activity_event_cancellations` を追記する。
+  `last_record_id` は従来どおり `task_records` のみ。DR-037 の暫定合算は本DRで置き換える。
+- **理由**: タイムラインと書込を一致させつつ、報酬集計と取消 API を壊さない。孤児加算で
+  移行前の `task_records` のみ行と koekake 由来イベントも過不足なく数える。
+
+---
+
 ## DR-038: API-first SPA移行(A0〜A8)を完了し、最終構成を確定する(2026-07-20)
 
 - **課題感**: DR-034でInertia中心方針をやめAPI-firstへ切り替えたが、移行完了後も恒久文書が
@@ -56,6 +73,9 @@
   `GET /api/tasks` の件数と `today_done_count` は `task_records` に加え、同じ条件の `activity_events` を合算する。
   おしごと取消用の `last_record_id` は `task_records` のみとする。dashboard のフィクスチャ連動は別課題。
 - **理由**: DR-036の正本と読み経路を一致させ、互換二重書きより移行が明確になる。
+
+> **更新(DR-039)**: おしごと書込が `activity_events` へ接続されたため、件数の暫定合算は
+> `activity_events` + 対応イベントが無い孤児 `task_records` に置き換えた。`last_record_id` は本DRのまま。
 
 ---
 
