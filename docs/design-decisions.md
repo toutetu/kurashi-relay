@@ -32,6 +32,20 @@
 
 ---
 
+## DR-046: GoogleカレンダーはOAuthで接続し、予定正本へ材料化する(2026-07-21)
+
+- **課題感**: 予定画面で実カレンダーを見たいが、アクセストークン直書きは期限切れと漏洩リスクが大きい。
+  一方で OAuth なしでは確認が進まない。
+- **選択肢**: (a) 環境変数の短期トークンだけ使う / (b) Google OAuth で refresh_token を暗号化保存し、
+  sync で Calendar API → `calendar_event_versions` → `planned_activities` へ材料化する /
+  (c) サードパーティ同期サービスに任せる。
+- **決定**: (b)。`GOOGLE_CLIENT_ID` / `SECRET` で認可開始、callback は
+  `/calendar/oauth/callback`。スコープは `calendar.readonly`。未接続時のローカル確認用サンプル取込は残す。
+- **理由**: データモデル（DR-023）どおり Calendar 版履歴と予定正本を分離できる。単一家庭でも
+  refresh_token の暗号化保存で運用が現実的。OAuth未設定環境ではサンプルで UI 確認を止めない。
+
+---
+
 ## DR-045: Product Phase 1-2の最小スタブをAPI接続する(2026-07-20)
 
 - **課題感**: 予定編集・予定実績比較・支援引き継ぎ・レポート・設定・カレンダー/通知/共有の

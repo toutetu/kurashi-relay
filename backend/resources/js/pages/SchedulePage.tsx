@@ -2,14 +2,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarDays,
   CalendarPlus,
+  Link2,
   RefreshCcw,
   Trash2,
+  Unlink,
   UserRound,
 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   createCalendarConnection,
+  disconnectCalendarConnection,
   getCalendarConnections,
+  startGoogleCalendarOAuth,
   syncCalendarConnection,
 } from "../api/calendar";
 import {
@@ -59,6 +64,7 @@ function sourceLabel(source: string): string {
 
 export function SchedulePage() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [date, setDate] = useState(todayJst);
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState<"mother" | "child">("child");
@@ -83,6 +89,19 @@ export function SchedulePage() {
     queryFn: ({ signal }) => getCalendarConnections(signal),
   });
 
+  useEffect(() => {
+    const status = searchParams.get("calendar");
+    if (status === "connected") {
+      setSyncMessage("Googleカレンダーに接続しました。取り込みを実行できます。");
+      void queryClient.invalidateQueries({ queryKey: ["calendar-connections"] });
+      setSearchParams({}, { replace: true });
+    } else if (status === "error") {
+      const reason = searchParams.get("reason") ?? "unknown";
+      setSyncMessage(`Google接続に失敗しました（${reason}）。もう一度お試しください。`);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, queryClient]);
+
   const createMutation = useMutation({
     mutationFn: createPlannedActivity,
     onSuccess: async () => {
@@ -104,11 +123,51 @@ export function SchedulePage() {
     },
   });
 
+  const connectMutation = useMutation({
+    mutationFn: async () => {
+      const bundle =
+        connectionsQuery.data ?? (await getCalendarConnections());
+      const existing = bundle.connections[0];
+      const connection =
+        existing ??
+        (await createCalendarConnection({
+          display_name: "Googleカレンダー",
+        }));
+      return startGoogleCalendarOAuth(connection.id);
+    },
+    onSuccess: (oauthUrl) => {
+      window.location.assign(oauthUrl);
+    },
+    onError: (error: unknown) => {
+      setSyncMessage(
+        error instanceof ApiError
+          ? error.message
+          : "Google接続の開始に失敗しました。",
+      );
+    },
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: async (id: number) => disconnectCalendarConnection(id),
+    onSuccess: async () => {
+      setSyncMessage("Googleカレンダー接続を解除しました。");
+      await queryClient.invalidateQueries({ queryKey: ["calendar-connections"] });
+    },
+    onError: (error: unknown) => {
+      setSyncMessage(
+        error instanceof ApiError
+          ? error.message
+          : "接続の解除に失敗しました。",
+      );
+    },
+  });
+
   const syncMutation = useMutation({
     mutationFn: async () => {
-      const existing = connectionsQuery.data ?? (await getCalendarConnections());
+      const bundle =
+        connectionsQuery.data ?? (await getCalendarConnections());
       const connection =
-        existing[0] ??
+        bundle.connections[0] ??
         (await createCalendarConnection({
           display_name: "Googleカレンダー",
         }));
@@ -133,7 +192,9 @@ export function SchedulePage() {
 
   const items = listQuery.data ?? [];
   const options = optionsQuery.data ?? [];
-  const connection = connectionsQuery.data?.[0] ?? null;
+  const connection = connectionsQuery.data?.connections[0] ?? null;
+  const oauthConfigured = connectionsQuery.data?.oauthConfigured ?? false;
+  const isConnected = connection?.connected === true || connection?.oauth_ready === true;
 
   const grouped = useMemo(() => {
     const google = items.filter((item) => item.source_type === "google_calendar");
@@ -246,12 +307,38 @@ export function SchedulePage() {
 
       <DashboardCard title="Googleカレンダー" icon={CalendarDays} tone="yellow">
         <p className="text-sm text-[var(--muted-text)]">
-          取り込んだ予定は下の一覧とホームの「次の予定」にも出ます。
-          {connection?.oauth_ready
-            ? " Google API トークンが設定されているので、実カレンダーから取得します。"
-            : " いまは確認用サンプルを取り込みます。実カレンダーは .env の GOOGLE_CALENDAR_ACCESS_TOKEN を設定してください。"}
+          {isConnected
+            ? `接続中${connection?.provider_account_id ? `（${connection.provider_account_id}）` : ""}。取り込みで実予定を planned_activities へ反映します。`
+            : oauthConfigured
+              ? "まだGoogleに接続していません。「Googleに接続」から連携すると、実カレンダーの予定を取り込めます。"
+              : "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET を .env に設定すると、Googleへ接続できます。未設定時の取り込みは確認用サンプルです。"}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
+          {!isConnected ? (
+            <Button
+              icon={Link2}
+              loading={connectMutation.isPending}
+              disabled={!oauthConfigured && !isConnected}
+              onClick={() => {
+                setSyncMessage(null);
+                connectMutation.mutate();
+              }}
+            >
+              {connectMutation.isPending ? "接続準備中…" : "Googleに接続"}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              tone="neutral"
+              icon={Unlink}
+              loading={disconnectMutation.isPending}
+              onClick={() => {
+                if (connection) disconnectMutation.mutate(connection.id);
+              }}
+            >
+              接続を解除
+            </Button>
+          )}
           <Button
             icon={RefreshCcw}
             loading={syncMutation.isPending}
@@ -276,7 +363,14 @@ export function SchedulePage() {
           ) : null}
         </div>
         {syncMessage ? (
-          <p className="mt-3 text-sm font-bold text-[var(--green)]" role="status">
+          <p
+            className={`mt-3 text-sm font-bold ${
+              syncMessage.includes("失敗")
+                ? "text-[var(--coral-deep)]"
+                : "text-[var(--green)]"
+            }`}
+            role="status"
+          >
             {syncMessage}
           </p>
         ) : null}

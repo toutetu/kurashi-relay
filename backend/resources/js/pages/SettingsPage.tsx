@@ -1,12 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import { CalendarDays, KeyRound, Link2, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
-  createCalendarConnectionPlaceholder,
+  createCalendarConnection,
+  getCalendarConnections,
+  startGoogleCalendarOAuth,
+} from "../api/calendar";
+import {
   getFamilySettings,
   updateFamilySettings,
   type FamilySettings,
 } from "../api/settings";
+import { ApiError } from "../api/client";
 import { Button } from "../components/ui/Button";
 import { useFamilyToken } from "../features/auth/FamilyTokenProvider";
 
@@ -29,6 +34,11 @@ export function SettingsPage() {
     queryFn: ({ signal }) => getFamilySettings(signal),
   });
 
+  const calendarQuery = useQuery({
+    queryKey: ["calendar-connections"],
+    queryFn: ({ signal }) => getCalendarConnections(signal),
+  });
+
   useEffect(() => {
     if (settingsQuery.data) {
       setDayType(settingsQuery.data.day_type);
@@ -43,13 +53,30 @@ export function SettingsPage() {
     },
   });
 
-  const calendarMutation = useMutation({
-    mutationFn: () =>
-      createCalendarConnectionPlaceholder("Googleカレンダー"),
-    onSuccess: () => {
-      setMessage("カレンダー接続を保存しました。予定画面から取り込みできます。");
+  const connectMutation = useMutation({
+    mutationFn: async () => {
+      const bundle = calendarQuery.data ?? (await getCalendarConnections());
+      const connection =
+        bundle.connections[0] ??
+        (await createCalendarConnection({ display_name: "Googleカレンダー" }));
+      return startGoogleCalendarOAuth(connection.id);
+    },
+    onSuccess: (oauthUrl) => {
+      window.location.assign(oauthUrl);
+    },
+    onError: (error: unknown) => {
+      setMessage(
+        error instanceof ApiError
+          ? error.message
+          : "Google接続の開始に失敗しました。",
+      );
     },
   });
+
+  const connection = calendarQuery.data?.connections[0] ?? null;
+  const isConnected =
+    connection?.connected === true || connection?.oauth_ready === true;
+  const oauthConfigured = calendarQuery.data?.oauthConfigured ?? false;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -135,20 +162,34 @@ export function SettingsPage() {
           <div>
             <h2 className="font-black">Googleカレンダー</h2>
             <p className="mt-1 leading-relaxed text-[var(--muted-text)]">
-              予定画面の「カレンダーから取り込む」で、planned_activities
-              へ取り込みます。OAuth本実装の前は、.env の
-              GOOGLE_CALENDAR_ACCESS_TOKEN があれば実取得、なければ確認用サンプルです。
+              Googleアカウントで接続し、予定画面から取り込みます。トークンは暗号化して保存します。
+            </p>
+            <p className="mt-2 text-sm" role="status">
+              状態：
+              <strong>
+                {isConnected
+                  ? `接続済み${connection?.provider_account_id ? `（${connection.provider_account_id}）` : ""}`
+                  : oauthConfigured
+                    ? "未接続"
+                    : "OAuth未設定（.env を確認）"}
+              </strong>
             </p>
           </div>
         </div>
         <div className="mt-4">
           <Button
-            variant="ghost"
-            tone="neutral"
-            disabled={calendarMutation.isPending}
-            onClick={() => calendarMutation.mutate()}
+            icon={Link2}
+            disabled={connectMutation.isPending || !oauthConfigured || isConnected}
+            onClick={() => {
+              setMessage(null);
+              connectMutation.mutate();
+            }}
           >
-            {calendarMutation.isPending ? "保存中…" : "接続を登録"}
+            {connectMutation.isPending
+              ? "接続準備中…"
+              : isConnected
+                ? "接続済み"
+                : "Googleに接続"}
           </Button>
         </div>
       </section>
