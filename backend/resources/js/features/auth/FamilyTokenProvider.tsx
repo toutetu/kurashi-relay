@@ -121,19 +121,22 @@ export function FamilyTokenProvider({ children }: { children: ReactNode }) {
 
             <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
               <label
-                className="block text-sm font-bold"
-                htmlFor="family-token-input"
+                className="block text-sm font-bold text-[var(--text)]"
+                htmlFor="family-aikotoba-input"
               >
                 あいことば
               </label>
               <input
-                id="family-token-input"
+                id="family-aikotoba-input"
+                name="aikotoba"
                 type="text"
                 lang="ja"
                 autoComplete="off"
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}
+                data-1p-ignore="true"
+                data-lpignore="true"
                 autoFocus
                 value={tokenInput}
                 onChange={(event) => {
@@ -141,8 +144,14 @@ export function FamilyTokenProvider({ children }: { children: ReactNode }) {
                   setInputError(null);
                 }}
                 placeholder="例：あきちゃんのいえ"
-                className="min-h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-4 text-base outline-none transition focus:border-[var(--primary)] focus:ring-3 focus:ring-[var(--primary-soft)]"
+                className="min-h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-base font-medium text-[var(--text)] caret-[var(--text)] outline-none transition [-webkit-text-security:none] [text-security:none] focus:border-[var(--primary)] focus:ring-3 focus:ring-[var(--primary-soft)]"
               />
+              {tokenInput.length > 0 && (
+                <p className="break-all text-sm text-[var(--muted-text)]">
+                  入力中:{" "}
+                  <span className="font-bold text-[var(--text)]">{tokenInput}</span>
+                </p>
+              )}
               {inputError && (
                 <p
                   role="alert"
