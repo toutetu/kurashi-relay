@@ -5,7 +5,7 @@
 
 対象: そのセッションの担当AIによる実装、DB変更の独立レビュー1周
 
-親計画: `docs/wip/database-unification/implementation-plan.md`
+親計画: `docs/archive/phases/database-unification/implementation-plan.md`
 
 > **運用更新(DR-033)**: 本文中の旧テスト・全品質ゲート・反復レビュー条件より `AGENTS.md` を優先する。
 > 各機能は動作確認1回で完了し、DBスキーマ・データ変更だけ独立レビューを1周行う。
