@@ -68,6 +68,9 @@ function sourceLabel(source: string): string {
   }
 }
 
+/** 手入力の「予定を追加」UI。いったん非表示（コードは残す）。 */
+const SHOW_MANUAL_SCHEDULE_FORM = false;
+
 export function SchedulePage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -561,6 +564,7 @@ export function SchedulePage() {
         ) : null}
       </DashboardCard>
 
+      {SHOW_MANUAL_SCHEDULE_FORM ? (
       <DashboardCard title="予定を追加" icon={CalendarPlus} tone="blue">
         <form className="space-y-3" onSubmit={handleSubmit}>
           <label className="block text-sm">
@@ -639,6 +643,7 @@ export function SchedulePage() {
           </Button>
         </form>
       </DashboardCard>
+      ) : null}
     </div>
   );
 }
