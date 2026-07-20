@@ -27,6 +27,7 @@ import {
   type PlannedActivity,
 } from "../api/plannedActivities";
 import { ApiError } from "../api/client";
+import { DashboardCard } from "../components/ui/DashboardCard";
 import { Button } from "../components/ui/Button";
 import { formatTime as formatClock, formatTimeRange } from "../utils/date";
 
