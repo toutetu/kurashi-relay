@@ -88,7 +88,7 @@ export async function skipHomePlan(plannedActivityId: number) {
     })
     .safeParse(response);
   if (!parsed.success) {
-    throw new ApiError("予定の「実施せず」の保存形式が正しくありません。", 200);
+    throw new ApiError("予定の「中止」の保存形式が正しくありません。", 200);
   }
   return parsed.data.data;
 }

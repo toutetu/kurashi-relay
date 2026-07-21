@@ -5,6 +5,7 @@ import { KajiProgressHero } from "../features/mamakaji/components/KajiProgressHe
 import { KajiTaskRow } from "../features/mamakaji/components/KajiTaskRow";
 import { MamaKajiPageShell } from "../features/mamakaji/components/MamaKajiPageShell";
 import { MamaKajiTabs } from "../features/mamakaji/components/MamaKajiTabs";
+import { NanashiNoteDialog } from "../features/mamakaji/components/NanashiNoteDialog";
 import { PointsChip } from "../features/mamakaji/components/PointsChip";
 import { SweetRevealModal } from "../features/mamakaji/components/SweetRevealModal";
 import { useMamaKaji } from "../features/mamakaji/context/MamaKajiContext";
@@ -78,8 +79,11 @@ export function MamaKajiPage() {
     syncText,
     saveError,
   } = useMamaKajiTasks();
-  const [cheer, setCheer] = useState<{ taskId: string } | null>(null);
+  const [cheer, setCheer] = useState<{ taskId: string; note?: string } | null>(
+    null,
+  );
   const [dropTick, setDropTick] = useState(0);
+  const [nanashiOpen, setNanashiOpen] = useState(false);
 
   const tasks: KajiTask[] = (data?.tasks ?? []).map((apiTask, index) => {
     const visual = INITIAL_KAJI.find((task) => task.id === apiTask.slug);
@@ -113,10 +117,19 @@ export function MamaKajiPage() {
           culture: "詳しいお話は、これからのお楽しみ。",
         });
 
-  const handleIncrementTask = (id: string) => {
-    incrementTask(id);
-    setCheer({ taskId: id });
+  const handleIncrementTask = (id: string, note?: string) => {
+    if (id === "nanashi" && note === undefined) {
+      setNanashiOpen(true);
+      return;
+    }
+    incrementTask(id, note ?? null);
+    setCheer({ taskId: id, ...(note ? { note } : {}) });
     setDropTick((tick) => tick + 1);
+  };
+
+  const handleNanashiConfirm = (note: string) => {
+    setNanashiOpen(false);
+    handleIncrementTask("nanashi", note);
   };
 
   const handleCloseReveal = () => {
@@ -127,6 +140,17 @@ export function MamaKajiPage() {
   };
 
   const carryover = revealed !== null ? (data?.summary.gauge_count ?? 0) : 0;
+  const cheerTask = cheer
+    ? (() => {
+        const base = tasks.find((item) => item.id === cheer.taskId);
+        if (!base) return null;
+        if (!cheer.note) return base;
+        return {
+          ...base,
+          praise: `${cheer.note}、おつかれさま！`,
+        };
+      })()
+    : null;
 
   return (
     <>
@@ -221,20 +245,22 @@ export function MamaKajiPage() {
         </p>
       </MamaKajiPageShell>
 
-      {cheer && !revealed && (() => {
-        const cheerTask = tasks.find((item) => item.id === cheer.taskId);
-        if (!cheerTask) return null;
-        return (
-          <KajiCheerOverlay
-            key={`${cheer.taskId}-${dropTick}`}
-            task={cheerTask}
-            count={count}
-            dropTick={dropTick}
-            onUndo={() => decrementTask(cheer.taskId)}
-            onClose={() => setCheer(null)}
-          />
-        );
-      })()}
+      {cheer && !revealed && cheerTask && (
+        <KajiCheerOverlay
+          key={`${cheer.taskId}-${dropTick}`}
+          task={cheerTask}
+          count={count}
+          dropTick={dropTick}
+          onUndo={() => decrementTask(cheer.taskId)}
+          onClose={() => setCheer(null)}
+        />
+      )}
+
+      <NanashiNoteDialog
+        open={nanashiOpen}
+        onCancel={() => setNanashiOpen(false)}
+        onConfirm={handleNanashiConfirm}
+      />
 
       {revealed && (
         <SweetRevealModal

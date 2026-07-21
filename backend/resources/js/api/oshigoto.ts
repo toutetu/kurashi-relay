@@ -15,6 +15,7 @@ export type CreateTaskRecordInput = {
   date?: string;
   idempotency_key: string;
   source: "web";
+  note?: string;
 };
 
 export async function getTasks(

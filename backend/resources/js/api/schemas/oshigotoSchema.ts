@@ -57,6 +57,7 @@ export const taskRecordSchema = z.object({
   record_date: z.string(),
   completed_at: z.string(),
   cancelled_at: z.string().nullable(),
+  note: z.string().nullable().optional(),
 });
 
 export const taskRecordsDataSchema = z.object({

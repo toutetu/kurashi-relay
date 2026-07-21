@@ -102,7 +102,7 @@ function PlanActionButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`pressable inline-flex min-h-5 items-center justify-center rounded-md border px-1 py-px text-[9px] font-bold leading-none transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
+      className={`pressable inline-flex min-h-11 items-center justify-center rounded-xl border px-3 py-2 text-sm font-bold leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
     >
       {label}
     </button>
@@ -135,7 +135,7 @@ function PlanBlock({
     plan.outcome === "done"
       ? "記録済み"
       : plan.outcome === "skipped"
-        ? "実施せず"
+        ? "中止"
         : null;
 
   const saveDetail = async () => {
@@ -189,7 +189,7 @@ function PlanBlock({
         </ul>
       )}
       {recordable && (
-        <div className="mt-2 flex flex-wrap gap-0.5">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           <PlanActionButton
             label="開始"
             tone="primary"
@@ -197,12 +197,12 @@ function PlanBlock({
             onClick={() => void handlers!.onStart(plan)}
           />
           <PlanActionButton
-            label="予定通り完了"
+            label="計画通り"
             disabled={busy}
             onClick={() => void handlers!.onCompleteAsPlanned(plan)}
           />
           <PlanActionButton
-            label="実施せず"
+            label="中止"
             tone="danger"
             disabled={busy}
             onClick={() => void handlers!.onSkip(plan)}
@@ -350,9 +350,9 @@ function ActualBlock({
                 }}
                 disabled={busy}
                 aria-label={`${actual.title}を修正`}
-                className="pressable inline-flex min-h-6 items-center justify-center gap-0.5 rounded-md border border-[var(--line)] bg-white px-1.5 py-0.5 text-[10px] font-bold text-[var(--muted)] transition hover:bg-[var(--neutral-soft)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50"
+                className="pressable inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-bold text-[var(--muted)] transition hover:bg-[var(--neutral-soft)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50"
               >
-                <Pencil aria-hidden="true" size={10} />
+                <Pencil aria-hidden="true" size={16} />
                 修正
               </button>
               <button
@@ -360,9 +360,9 @@ function ActualBlock({
                 onClick={() => void handlers.onDelete(actual)}
                 disabled={busy}
                 aria-label={`${actual.title}を削除`}
-                className="pressable inline-flex min-h-6 items-center justify-center gap-0.5 rounded-md border border-[color-mix(in_srgb,var(--coral)_35%,var(--line))] bg-white px-1.5 py-0.5 text-[10px] font-bold text-[var(--coral)] transition hover:bg-[var(--coral-soft)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50"
+                className="pressable inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[color-mix(in_srgb,var(--coral)_35%,var(--line))] bg-white px-3 py-2 text-sm font-bold text-[var(--coral)] transition hover:bg-[var(--coral-soft)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50"
               >
-                <Trash2 aria-hidden="true" size={10} />
+                <Trash2 aria-hidden="true" size={16} />
                 削除
               </button>
             </div>

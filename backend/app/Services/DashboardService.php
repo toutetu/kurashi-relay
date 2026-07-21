@@ -122,6 +122,7 @@ final class DashboardService
                     'status' => $plan->status === 'cancelled' ? 'cancelled' : 'planned',
                     'outcome' => $outcome,
                     'recordable' => $isMother && $outcome === null,
+                    'subjectRole' => $isMother ? 'mother' : 'child',
                 ];
             })
             ->all();

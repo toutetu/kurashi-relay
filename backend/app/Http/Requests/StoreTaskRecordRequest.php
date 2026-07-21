@@ -25,6 +25,7 @@ final class StoreTaskRecordRequest extends MemberRequest
             'date' => ['nullable', 'date_format:Y-m-d'],
             'idempotency_key' => ['required', 'string', 'min:8', 'max:64'],
             'source' => ['nullable', 'string', 'max:20'],
+            'note' => ['nullable', 'string', 'max:200'],
         ]);
     }
 

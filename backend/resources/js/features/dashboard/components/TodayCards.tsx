@@ -95,11 +95,12 @@ function PlanRow({
   const settled = plan.outcome === "done" || plan.outcome === "skipped";
   const recordable =
     plan.recordable === true && actions !== undefined && !settled;
+  const isChildPlan = plan.subjectRole === "child";
   const outcomeLabel =
     plan.outcome === "done"
       ? "記録済み"
       : plan.outcome === "skipped"
-        ? "実施せず"
+        ? "中止"
         : null;
 
   const saveDetail = async () => {
@@ -129,35 +130,61 @@ function PlanRow({
     }
   };
 
+  const timeClass = settled
+    ? "text-[var(--muted)]"
+    : isChildPlan
+      ? "text-[var(--cat-blue-deep)]"
+      : "text-[var(--primary-deep)]";
+  const titleClass = settled
+    ? "text-[var(--muted)]"
+    : isChildPlan
+      ? "text-[var(--cat-blue-deep)]"
+      : "text-[var(--ink)]";
+  const rangeClass = isChildPlan
+    ? "text-[color-mix(in_srgb,var(--cat-blue-deep)_72%,var(--muted))]"
+    : "text-[var(--muted)]";
+  const dotClass = settled
+    ? "border-[var(--muted)]"
+    : running
+      ? "border-[var(--green)]"
+      : isChildPlan
+        ? "border-[var(--cat-blue-deep)]"
+        : "border-[var(--primary)]";
+
   return (
-    <li
-      className={`pb-3 last:pb-1 ${settled ? "opacity-55" : ""}`}
-    >
-      <div className={`flex gap-2 sm:gap-3 ${settled ? "grayscale" : ""}`}>
-        <time className="w-11 shrink-0 pt-0.5 text-right text-[13.5px] font-extrabold tabular-nums text-[var(--primary-deep)]">
+    <li className={`pb-3 last:pb-1 ${settled ? "opacity-55" : ""}`}>
+      <div
+        className={`flex gap-2 sm:gap-3 ${settled ? "grayscale" : ""} ${
+          isChildPlan
+            ? "rounded-xl border border-[color-mix(in_srgb,var(--cat-blue)_35%,var(--line))] bg-[var(--cat-blue-soft)] px-2 py-1.5 sm:px-2.5"
+            : ""
+        }`}
+      >
+        <time
+          className={`w-11 shrink-0 pt-0.5 text-right text-[13.5px] font-extrabold tabular-nums ${timeClass}`}
+        >
           {formatTime(plan.startAt)}
         </time>
         <span className="flex w-3.5 shrink-0 flex-col items-center">
           <span
-            className={`mt-1 size-2.5 rounded-full border-[2.5px] bg-white ${
-              settled
-                ? "border-[var(--muted)]"
-                : running
-                  ? "border-[var(--green)]"
-                  : "border-[var(--primary)]"
-            }`}
+            className={`mt-1 size-2.5 rounded-full border-[2.5px] bg-white ${dotClass}`}
           />
           {!isLast && (
-            <span className="mt-0.5 w-0.5 flex-1 rounded-sm bg-[var(--line)]" />
+            <span
+              className={`mt-0.5 w-0.5 flex-1 rounded-sm ${
+                isChildPlan ? "bg-[color-mix(in_srgb,var(--cat-blue)_45%,white)]" : "bg-[var(--line)]"
+              }`}
+            />
           )}
         </span>
         <span className="min-w-0 flex-1">
-          <span
-            className={`block text-[13.5px] font-bold ${
-              settled ? "text-[var(--muted)]" : "text-[var(--ink)]"
-            }`}
-          >
+          <span className={`block text-[13.5px] font-bold ${titleClass}`}>
             {plan.title}
+            {isChildPlan && !settled && (
+              <span className="ml-1.5 text-[10px] font-bold text-[var(--cat-blue)]">
+                むすめ
+              </span>
+            )}
             {running && !settled && (
               <span className="ml-1.5 text-[10px] font-bold text-[var(--green)]">
                 進行中
@@ -169,7 +196,7 @@ function PlanRow({
               </span>
             )}
           </span>
-          <span className="mt-0.5 block text-[11.5px] text-[var(--muted)] tabular-nums">
+          <span className={`mt-0.5 block text-[11.5px] tabular-nums ${rangeClass}`}>
             {formatTimeRange(plan.startAt, plan.endAt)}
           </span>
         </span>
@@ -182,12 +209,12 @@ function PlanRow({
               onClick={() => void actions.onStart(plan)}
             />
             <PlanActionButton
-              label="予定通り完了"
+              label="計画通り"
               disabled={busy}
               onClick={() => void actions.onCompleteAsPlanned(plan)}
             />
             <PlanActionButton
-              label="実施せず"
+              label="中止"
               tone="danger"
               disabled={busy}
               onClick={() => void actions.onSkip(plan)}

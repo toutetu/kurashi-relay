@@ -10,6 +10,7 @@ use App\Models\RewardCollection;
 use App\Models\TaskDefinition;
 use App\Models\TaskRecord;
 use App\Models\TaskRecordOperation;
+use Database\Support\ActivityDefinitionCatalog;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -46,8 +47,14 @@ final class TaskRecordService
      */
     public function listForMember(FamilyMember $member, string $recordDate): array
     {
+        $calendarKey = ActivityDefinitionCatalog::calendarActivityDefinitionKey();
         $events = $this->activityEventRecordQuery
-            ->activityEventsForActorOnDate($member, $recordDate);
+            ->activityEventsForActorOnDate($member, $recordDate)
+            // 記録画面ではカレンダー予定の実施ログを出さない（予定画面・予定と実績で見る）
+            ->reject(
+                fn (ActivityEvent $event): bool => $event->activityDefinition?->activity_key === $calendarKey,
+            )
+            ->values();
 
         return [
             'date' => $recordDate,
@@ -75,8 +82,9 @@ final class TaskRecordService
         string $recordDate,
         string $idempotencyKey,
         string $source,
+        ?string $note = null,
     ): array {
-        return DB::transaction(function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $source): array {
+        return DB::transaction(function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $source, $note): array {
             FamilyMember::query()->whereKey($member->id)->lockForUpdate()->first();
 
             $existingOperation = TaskRecordOperation::query()
@@ -107,7 +115,7 @@ final class TaskRecordService
 
             try {
                 $record = DB::transaction(
-                    function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $source): TaskRecord {
+                    function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $source, $note): TaskRecord {
                         $record = TaskRecord::query()->create([
                             'family_member_id' => $member->id,
                             'task_definition_id' => $taskDefinition->id,
@@ -116,6 +124,7 @@ final class TaskRecordService
                             'source' => $source,
                             'idempotency_key' => $idempotencyKey,
                             'granted_point_value' => $taskDefinition->point_value,
+                            'note' => $note,
                         ]);
 
                         TaskRecordOperation::query()->create([
