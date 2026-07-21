@@ -23,14 +23,6 @@ return new class extends Migration
             $table->foreignId('actor_member_id')
                 ->constrained('family_members')
                 ->restrictOnDelete();
-            $table->foreignId('target_member_id')
-                ->nullable()
-                ->constrained('family_members')
-                ->restrictOnDelete();
-            $table->foreignId('supporter_member_id')
-                ->nullable()
-                ->constrained('family_members')
-                ->restrictOnDelete();
             $table->string('source', 30);
             $table->string('idempotency_key', 64);
             $table->timestampsTz();

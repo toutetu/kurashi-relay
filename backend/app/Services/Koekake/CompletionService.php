@@ -138,8 +138,6 @@ final class CompletionService
                 'ended_at' => $endedAtUtc,
                 'recorded_by_member_id' => $motherId,
                 'actor_member_id' => $roles['actor_member_id'],
-                'target_member_id' => $roles['target_member_id'],
-                'supporter_member_id' => $roles['supporter_member_id'],
                 'source' => 'koekake',
                 'idempotency_key' => $idempotencyKey,
             ]);
@@ -165,29 +163,19 @@ final class CompletionService
     }
 
     /**
-     * @return array{
-     *     actor_member_id: int,
-     *     target_member_id: int|null,
-     *     supporter_member_id: int|null
-     * }
+     * @return array{actor_member_id: int}
      */
     private function rolesForStatus(string $status, int $childId, int $motherId): array
     {
         return match ($status) {
             'together' => [
                 'actor_member_id' => $childId,
-                'target_member_id' => null,
-                'supporter_member_id' => $motherId,
             ],
             'parent_done' => [
                 'actor_member_id' => $motherId,
-                'target_member_id' => $childId,
-                'supporter_member_id' => null,
             ],
             default => [
                 'actor_member_id' => $childId,
-                'target_member_id' => null,
-                'supporter_member_id' => null,
             ],
         };
     }

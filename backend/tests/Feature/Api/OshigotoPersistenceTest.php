@@ -44,6 +44,7 @@ class OshigotoPersistenceTest extends TestCase
         $childResponse
             ->assertCreated()
             ->assertJsonPath('meta.deduplicated', false)
+            ->assertJsonPath('data.summary.today_done_count', 1)
             ->assertJsonPath('data.summary.lifetime_count', 1)
             ->assertJsonPath('data.summary.gauge_count', 1)
             ->assertJsonPath('data.summary.coins', 0)
@@ -59,6 +60,7 @@ class OshigotoPersistenceTest extends TestCase
 
         $motherResponse
             ->assertCreated()
+            ->assertJsonPath('data.summary.today_done_count', 1)
             ->assertJsonPath('data.summary.points', 10)
             ->assertJsonPath('data.summary.coins', null)
             ->assertJsonPath('data.summary.gauge_count', 1);

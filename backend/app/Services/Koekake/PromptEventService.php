@@ -173,8 +173,6 @@ final class PromptEventService
             ->first();
 
         if ($existing !== null) {
-            $this->ensurePromptParticipants($existing, $task);
-
             return $existing;
         }
 
@@ -187,7 +185,6 @@ final class PromptEventService
         }
 
         $motherId = FamilyMemberResolver::motherId();
-        $childId = $task->subject_member_id;
         $occurredAt = now('UTC');
 
         try {
@@ -198,7 +195,6 @@ final class PromptEventService
                 'ended_at' => null,
                 'recorded_by_member_id' => $motherId,
                 'actor_member_id' => $motherId,
-                'target_member_id' => $childId,
                 'source' => 'koekake',
                 'idempotency_key' => $eventKey,
             ]);

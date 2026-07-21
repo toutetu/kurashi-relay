@@ -21,13 +21,6 @@ final class RewardCalculator
         $lifetimeCount = $activeRecordCount + $gaugeAdjustment;
         $gaugeCount = (($lifetimeCount % $stampSize) + $stampSize) % $stampSize;
         $fullCount = intdiv($lifetimeCount - $gaugeCount, $stampSize);
-        $todayTaskRecordCount = TaskRecord::query()
-            ->where('family_member_id', $member->id)
-            ->whereNull('cancelled_at')
-            ->whereDate('record_date', $date)
-            ->count();
-        $todayDoneCount = $todayTaskRecordCount
-            + $this->activityEventRecordQuery->activityCountForActorOnDate($member, $date);
         $collectionsCount = RewardCollection::query()
             ->where('family_member_id', $member->id)
             ->count();
@@ -35,7 +28,7 @@ final class RewardCalculator
         $summary = [
             'member' => $member->role,
             'date' => $date,
-            'today_done_count' => $todayDoneCount,
+            'today_done_count' => $this->todayDoneCount($member, $date),
             'lifetime_count' => $lifetimeCount,
             'gauge_count' => $gaugeCount,
             'gauge_size' => $stampSize,
@@ -60,6 +53,30 @@ final class RewardCalculator
         }
 
         return $summary;
+    }
+
+    private function todayDoneCount(FamilyMember $member, string $date): int
+    {
+        $events = $this->activityEventRecordQuery->activityEventsForActorOnDate($member, $date);
+        $eventKeys = $events
+            ->pluck('idempotency_key')
+            ->all();
+
+        $orphanTaskRecordCount = TaskRecord::query()
+            ->where('family_member_id', $member->id)
+            ->whereNull('cancelled_at')
+            ->whereDate('record_date', $date)
+            ->get()
+            ->filter(function (TaskRecord $record) use ($eventKeys): bool {
+                return ! in_array(
+                    TaskRecordService::activityEventIdempotencyKey($record->idempotency_key),
+                    $eventKeys,
+                    true,
+                );
+            })
+            ->count();
+
+        return $events->count() + $orphanTaskRecordCount;
     }
 
     private function activeRecordCount(FamilyMember $member): int

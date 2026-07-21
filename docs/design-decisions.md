@@ -32,6 +32,16 @@
 
 ---
 
+## DR-049: 単一家庭では target/supporter 列を持たない(2026-07-21)
+
+- **課題感**: 母と娘の2人だけなので、`target_member_id` / `supporter_member_id` を毎回考えたくない。
+  書き込みはあるが読取・画面契約では未使用で、複雑さだけが残っていた。
+- **選択肢**: (a) 列を維持し将来の多人数用に残す / (b) NULLのまま非推奨化 /
+  (c) 列を DROP し、役割は `recorded_by` + `actor` + completion `status` に寄せる。
+- **決定**: (c)。`activity_events` から両列を削除する。DR-048 の target/supporter 方針は本DRで改訂する。
+  「一緒に」「代行」は声かけ完了 status、行為者は `actor_member_id` で足りる。
+- **理由**: 単一家庭では対象・支援者は暗黙に決まる。本番含む差分 DROP で十分で、バックフィル不要。
+
 ## DR-048: 人物役割は activity_events の列へ統合し participants を廃止する(2026-07-21)
 
 - **課題感**: `activity_event_participants` は毎回ほぼ `actor` 1行だけで、従属表として重い。
@@ -40,8 +50,9 @@
   (c) `activity_events` に `actor_member_id`（必須）と任意の `target` / `supporter` 列を置く。
 - **決定**: (c)。`actor_member_id` は NOT NULL。`target_member_id` / `supporter_member_id` は
   必要なときだけ埋める。`activity_event_participants` は廃止（DBは refresh 前提）。
+  ※ target/supporter 列は DR-049 で削除し、`recorded_by` + `actor` のみ残す。
 - **理由**: 入力者（`recorded_by`）と行為者（`actor`）の区別は残しつつ、常に1行で完結する。
-  声かけの対象・一緒にした支援者も列で足りる。
+  声かけの対象・一緒にした支援者も列で足りる（当時。DR-049で簡略化）。
 
 ## DR-047: カレンダー接続は母/むすめ別、予定比較は母のみ(2026-07-21)
 
