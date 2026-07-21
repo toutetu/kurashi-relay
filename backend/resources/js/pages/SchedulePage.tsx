@@ -6,7 +6,6 @@ import {
   RefreshCcw,
   Trash2,
   Unlink,
-  UserRound,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -27,6 +26,7 @@ import {
   type PlannedActivity,
 } from "../api/plannedActivities";
 import { ApiError } from "../api/client";
+import { ScheduleAlignedDayGrid } from "../components/schedule/ScheduleAlignedDayGrid";
 import { DashboardCard } from "../components/ui/DashboardCard";
 import { Button } from "../components/ui/Button";
 import { formatTime as formatClock, formatTimeRange } from "../utils/date";
@@ -247,7 +247,8 @@ export function SchedulePage() {
 
   const items = listQuery.data ?? [];
   const options = optionsQuery.data ?? [];
-  const oauthConfigured = connectionsQuery.data?.oauthConfigured ?? false;
+  const oauthConfigured = connectionsQuery.data?.oauthConfigured === true;
+  const oauthStatusKnown = connectionsQuery.isSuccess;
   const motherConnection =
     connectionsQuery.data?.connections.find(
       (item) => (item.subject_role ?? "mother") === "mother",
@@ -384,24 +385,19 @@ export function SchedulePage() {
           予定を読み込めませんでした。
         </p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          <DashboardCard
-            title="むすめの予定"
-            icon={UserRound}
-            tone="daughter"
-            density="compact"
-          >
-            {renderTimeline("むすめ", grouped.child)}
-          </DashboardCard>
-          <DashboardCard
-            title="私の予定"
-            icon={CalendarDays}
-            tone="blue"
-            density="compact"
-          >
-            {renderTimeline("私", grouped.mother)}
-          </DashboardCard>
-        </div>
+        <DashboardCard
+          title="きょうの予定"
+          icon={CalendarDays}
+          tone="neutral"
+          density="compact"
+        >
+          <ScheduleAlignedDayGrid
+            childItems={grouped.child}
+            motherItems={grouped.mother}
+            onCancel={(id) => cancelMutation.mutate(id)}
+            cancelPending={cancelMutation.isPending}
+          />
+        </DashboardCard>
       )}
 
       {grouped.other.length > 0 ? (
@@ -413,10 +409,15 @@ export function SchedulePage() {
       <DashboardCard title="Googleカレンダー" icon={CalendarDays} tone="yellow">
         <p className="text-sm text-[var(--muted-text)]">
           私とむすめで別のGoogleカレンダーを接続できます。同じGoogleアカウント内の別カレンダーでも、別アカウントでもOKです。
-          {!oauthConfigured
+          {oauthStatusKnown && !oauthConfigured
             ? " 先に環境変数へ GOOGLE_CLIENT_ID / SECRET / REDIRECT_URI を設定してください。"
             : null}
         </p>
+        {connectionsQuery.isError ? (
+          <p className="mt-2 text-sm font-bold text-[var(--danger)]">
+            接続状態を取得できませんでした。ページを再読み込みするか、あいことばを確認してください。
+          </p>
+        ) : null}
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {(
@@ -485,11 +486,24 @@ export function SchedulePage() {
                     <Button
                       icon={Link2}
                       size="compact"
-                      loading={connectMutation.isPending}
-                      disabled={!oauthConfigured}
+                      loading={
+                        connectMutation.isPending || connectionsQuery.isLoading
+                      }
+                      disabled={oauthStatusKnown && !oauthConfigured}
+                      title={
+                        oauthStatusKnown && !oauthConfigured
+                          ? "GOOGLE_CLIENT_ID / SECRET が未設定のため接続できません"
+                          : undefined
+                      }
                       onClick={() => {
                         setSyncMessage(null);
                         setOauthFallbackUrl(null);
+                        if (oauthStatusKnown && !oauthConfigured) {
+                          setSyncMessage(
+                            "先に環境変数へ GOOGLE_CLIENT_ID / SECRET / REDIRECT_URI を設定してください。",
+                          );
+                          return;
+                        }
                         connectMutation.mutate(slot.role);
                       }}
                     >
