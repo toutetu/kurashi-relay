@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ActivityEvent;
 use App\Models\FamilyMember;
 use App\Models\TaskDefinition;
+use App\Models\TaskRecord;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -69,16 +70,45 @@ final class ActivityEventRecordQuery
             ->get()
             ->keyBy('activity_definition_id');
 
-        return $events->map(function (ActivityEvent $event) use ($member, $tokyoDate, $taskDefinitions): array {
+        $oshigotoRecordKeys = $events
+            ->pluck('idempotency_key')
+            ->filter(fn (mixed $key): bool => is_string($key) && str_starts_with($key, 'oshigoto:'))
+            ->map(fn (string $key): string => substr($key, strlen('oshigoto:')))
+            ->values()
+            ->all();
+
+        $notesByIdempotencyKey = $oshigotoRecordKeys === []
+            ? collect()
+            : TaskRecord::query()
+                ->whereIn('idempotency_key', $oshigotoRecordKeys)
+                ->whereNotNull('note')
+                ->pluck('note', 'idempotency_key');
+
+        return $events->map(function (ActivityEvent $event) use (
+            $member,
+            $tokyoDate,
+            $taskDefinitions,
+            $notesByIdempotencyKey,
+        ): array {
             /** @var TaskDefinition|null $taskDefinition */
             $taskDefinition = $taskDefinitions->get($event->activity_definition_id);
             $activity = $event->activityDefinition;
+            $note = null;
+
+            if (is_string($event->idempotency_key) && str_starts_with($event->idempotency_key, 'oshigoto:')) {
+                $recordKey = substr($event->idempotency_key, strlen('oshigoto:'));
+                $rawNote = $notesByIdempotencyKey->get($recordKey);
+                if (is_string($rawNote) && trim($rawNote) !== '') {
+                    $note = trim($rawNote);
+                }
+            }
 
             return [
                 'id' => $event->id,
                 'member' => $member->role,
                 'task' => $taskDefinition?->slug ?? $activity?->activity_key ?? 'activity',
-                'task_title' => $taskDefinition?->title
+                'task_title' => $note
+                    ?? $taskDefinition?->title
                     ?? $activity?->name
                     ?? '活動',
                 'record_date' => $tokyoDate,
@@ -86,6 +116,7 @@ final class ActivityEventRecordQuery
                     ->timezone('Asia/Tokyo')
                     ->toIso8601String(),
                 'cancelled_at' => null,
+                'note' => $note,
             ];
         })->values()->all();
     }

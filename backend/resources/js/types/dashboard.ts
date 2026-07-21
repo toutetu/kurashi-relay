@@ -40,9 +40,11 @@ export interface SchedulePlan {
   source?: "google" | "manual";
   status?: string;
   details?: string[];
-  /** done=完了済み / skipped=実施せず。あるとグレーアウト */
+  /** done=完了済み / skipped=中止。あるとグレーアウト */
   outcome?: "done" | "skipped" | null;
   recordable?: boolean;
+  /** 予定の対象人物。娘はホーム「今日の予定」で水色カバー表示 */
+  subjectRole?: "mother" | "child";
 }
 
 export type QuickLogType =

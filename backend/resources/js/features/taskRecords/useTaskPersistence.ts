@@ -237,6 +237,7 @@ export function useTaskPersistence(member: Member) {
               date: operation.date,
               idempotency_key: operation.idempotencyKey,
               source: "web",
+              ...(operation.note ? { note: operation.note } : {}),
             });
             removeOperation(operation);
             applyCreateResult(operation, result);
@@ -330,13 +331,16 @@ export function useTaskPersistence(member: Member) {
   }, [runCancel]);
 
   const incrementTask = useCallback(
-    (slug: string) => {
+    (slug: string, note?: string | null) => {
       const data = queryClient.getQueryData<TasksData>(tasksQueryKey(member));
       const task = data?.tasks.find((item) => item.slug === slug);
       if (!data || !task) return;
 
       setGaugeOverride(null);
       setErrorMessage(null);
+
+      const trimmedNote =
+        typeof note === "string" && note.trim() !== "" ? note.trim() : null;
 
       const operation: PendingCreate = {
         kind: "create",
@@ -345,6 +349,7 @@ export function useTaskPersistence(member: Member) {
         date: data.date,
         idempotencyKey: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
+        ...(trimmedNote ? { note: trimmedNote } : {}),
       };
       enqueueOperation(operation);
       updateCachedData(

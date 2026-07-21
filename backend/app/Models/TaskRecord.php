@@ -21,6 +21,7 @@ class TaskRecord extends Model
         'source',
         'idempotency_key',
         'granted_point_value',
+        'note',
     ];
 
     /**

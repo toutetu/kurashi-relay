@@ -48,6 +48,7 @@ const schedulePlan = z.strictObject({
   details: z.array(z.string()).optional(),
   outcome: z.enum(["done", "skipped"]).nullable().optional(),
   recordable: z.boolean().optional(),
+  subjectRole: z.enum(["mother", "child"]).optional(),
 });
 
 const quickLog = z.strictObject({

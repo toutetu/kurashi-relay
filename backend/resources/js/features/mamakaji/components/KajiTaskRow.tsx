@@ -9,17 +9,24 @@ type KajiTaskRowProps = {
 
 export function KajiTaskRow({ task, onIncrement }: KajiTaskRowProps) {
   const [flyKey, setFlyKey] = useState(0);
+  const needsNote = task.id === "nanashi";
 
   const handleClick = () => {
     onIncrement(task.id);
-    setFlyKey((key) => key + 1);
+    if (!needsNote) {
+      setFlyKey((key) => key + 1);
+    }
   };
 
   return (
     <div className="border-b border-[var(--mkj-line)] last:border-b-0">
       <button
         type="button"
-        aria-label={`${task.label}を記録。きょう${task.count}件`}
+        aria-label={
+          needsNote
+            ? `${task.label}の内容を入力して記録。きょう${task.count}件`
+            : `${task.label}を記録。きょう${task.count}件`
+        }
         onClick={handleClick}
         className="pressable group relative flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-[13px] font-semibold text-[var(--mkj-ink)] transition hover:bg-[color-mix(in_srgb,var(--mkj-rasp-soft)_65%,var(--mkj-card))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
       >

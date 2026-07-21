@@ -136,21 +136,21 @@ export const RIDES_2025: Ride[] = [
     name: "ホラー・ナイト・アカデミー ～絶叫の15年～",
     place: "グラマシーパーク",
     placeEmoji: "🎭",
-    done: true,
+    done: false,
   },
   {
     id: "r2",
     name: "ファクトリー・オブ・フィアー ～ゾンビ・ツアー～",
     place: "ステージ 22",
     placeEmoji: "👣",
-    done: true,
+    done: false,
   },
   {
     id: "r3",
     name: "18番地の魔女 ～感情と戯れる魔女の館～",
     place: "ステージ 18",
     placeEmoji: "🚪",
-    done: true,
+    done: false,
   },
   {
     id: "r4",
@@ -164,21 +164,21 @@ export const RIDES_2025: Ride[] = [
     name: "チェンソーマン・ザ・カオス 4-D",
     place: "シネマ 4-D シアター",
     placeEmoji: "🎬",
-    done: true,
+    done: false,
   },
   {
     id: "r6",
     name: "貞子の呪い ～ダーク・ホラー・ライド～",
     place: "スペース・ファンタジー",
     placeEmoji: "🎢",
-    done: true,
+    done: false,
   },
   {
     id: "r7",
     name: "King Gnu「SO BAD」×ハリウッド・ドリーム",
     place: "ハリウッド・ドリーム",
     placeEmoji: "🎢",
-    done: true,
+    done: false,
   },
   {
     id: "r8",
@@ -192,7 +192,7 @@ export const RIDES_2025: Ride[] = [
     name: "Ado「唱」×ハリウッド・ドリーム",
     place: "バックドロップ",
     placeEmoji: "🎢",
-    done: true,
+    done: false,
   },
   {
     id: "r10",
@@ -206,7 +206,7 @@ export const RIDES_2025: Ride[] = [
     name: "更衣室",
     place: "ステージ 18",
     placeEmoji: "🚪",
-    done: true,
+    done: false,
   },
 ];
 

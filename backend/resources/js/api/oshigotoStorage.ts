@@ -15,6 +15,7 @@ const pendingCreateSchema = z.object({
   date: z.string(),
   idempotencyKey: z.string(),
   createdAt: z.string(),
+  note: z.string().nullable().optional(),
 });
 
 const pendingCancelSchema = z.object({

@@ -42,6 +42,7 @@ final class TaskRecordController extends Controller
             $request->resolvedDate(),
             $request->validated('idempotency_key'),
             $request->resolvedSource(),
+            $this->resolvedNote($request),
         );
 
         return new StoreTaskRecordResource($result);
@@ -54,6 +55,19 @@ final class TaskRecordController extends Controller
         $result = $service->cancel($id);
 
         return new CancelTaskRecordResource($result);
+    }
+
+    private function resolvedNote(StoreTaskRecordRequest $request): ?string
+    {
+        $note = $request->validated('note');
+
+        if (! is_string($note)) {
+            return null;
+        }
+
+        $trimmed = trim($note);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 
     private function findMember(string $role): FamilyMember

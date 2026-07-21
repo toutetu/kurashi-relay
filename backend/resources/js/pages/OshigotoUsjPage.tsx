@@ -13,6 +13,10 @@ import {
   type Goods,
   type Ride,
 } from "../features/oshigoto/data";
+import {
+  applyPersistedUsjRideDone,
+  persistUsjRides,
+} from "../features/oshigoto/usjRideStorage";
 
 function CheckHeaderIcon() {
   return (
@@ -162,7 +166,7 @@ function GoodsGoalSection() {
 
 export function OshigotoUsjPage() {
   const [rides, setRides] = useState<Ride[]>(() =>
-    RIDES_2025.map((ride) => ({ ...ride })),
+    applyPersistedUsjRideDone(RIDES_2025.map((ride) => ({ ...ride }))),
   );
   const [revealed, setRevealed] = useState(false);
 
@@ -176,6 +180,7 @@ export function OshigotoUsjPage() {
         ride.id === id ? { ...ride, done: !ride.done } : ride,
       );
       const nextDone = next.filter((ride) => ride.done).length;
+      persistUsjRides(next);
       if (currentDone < totalRides && nextDone === totalRides) {
         setRevealed(true);
       }
