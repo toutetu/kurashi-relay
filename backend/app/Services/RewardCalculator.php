@@ -57,26 +57,10 @@ final class RewardCalculator
 
     private function todayDoneCount(FamilyMember $member, string $date): int
     {
-        $events = $this->activityEventRecordQuery->activityEventsForActorOnDate($member, $date);
-        $eventKeys = $events
-            ->pluck('idempotency_key')
-            ->all();
-
-        $orphanTaskRecordCount = TaskRecord::query()
-            ->where('family_member_id', $member->id)
-            ->whereNull('cancelled_at')
-            ->whereDate('record_date', $date)
-            ->get()
-            ->filter(function (TaskRecord $record) use ($eventKeys): bool {
-                return ! in_array(
-                    TaskRecordService::activityEventIdempotencyKey($record->idempotency_key),
-                    $eventKeys,
-                    true,
-                );
-            })
-            ->count();
-
-        return $events->count() + $orphanTaskRecordCount;
+        // 活動回数の正本は activity_events のみ（DR-050）。
+        // 本番DB再作成前提のため、孤児 task_records は集計に含めない。
+        return $this->activityEventRecordQuery
+            ->activityCountForActorOnDate($member, $date);
     }
 
     private function activeRecordCount(FamilyMember $member): int
