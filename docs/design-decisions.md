@@ -32,6 +32,21 @@
 
 ---
 
+## DR-051: おしごと書込を activity_events 正本のみにし、task_records 二重書きを停止する(2026-07-21)
+
+- **課題感**: DR-050 で件数は `activity_events` のみになったが、POST/DELETE はまだ
+  `task_records` にも書いており、正本が2つある状態が続いていた。
+- **選択肢**: (a) 二重書きを維持する / (b) 書込も `activity_events`（+ 台帳・notes）に一本化し、
+  `task_records` への新規書込を止める（テーブル DROP は後続）。
+- **決定**: (b)。`POST/DELETE /api/task-records` は互換エンドポイントとして残すが、永続化は
+  `activity_events`（`source=oshigoto`）、任意の `activity_event_notes`、`reward_transactions`、
+  満杯時の `reward_collections.activity_event_id` のみ。`last_record_id` / `record.id` は
+  `activity_events.id`。`lifetime_count` は取消されていない oshigoto イベント件数、母 `points` は
+  台帳の point 純額。DR-039 の二重書きは本DRで終了する。
+- **理由**: 本番DB再作成前提で互換分岐を持たず、二重計上・二重保存の再発余地をなくす。
+
+---
+
 ## DR-050: おしごと件数は activity_events のみで数える(2026-07-21)
 
 - **課題感**: DR-039 の孤児 `task_records` 加算は移行互換のためだったが、本番DBを再作成できる
@@ -43,6 +58,8 @@
   `task_records` のまま。DR-039 の孤児加算は本DRで置き換える。
 - **理由**: 活動回数の正本を1本に揃え、二重計上の再発余地をなくす。書込の二重化解消は
   報酬・取消互換とセットの別作業とする。
+
+> **更新(DR-051)**: 書込の二重化も解消した。`task_records` への新規書込は停止。
 
 ---
 
@@ -196,6 +213,9 @@
 
 > **更新(DR-050)**: 本番DB再作成前提で、件数の孤児 `task_records` 加算はやめた。
 > 件数は `activity_events` のみ。書込の二重化と `last_record_id` は本DRのまま。
+>
+> **更新(DR-051)**: 書込も `activity_events` 正本のみ。`task_records` 新規書込停止。
+> `last_record_id` / `record.id` は `activity_events.id`。
 
 ---
 

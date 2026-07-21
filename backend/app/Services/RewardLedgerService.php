@@ -4,24 +4,22 @@ namespace App\Services;
 
 use App\Models\ActivityEvent;
 use App\Models\RewardTransaction;
-use App\Models\TaskRecord;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 final class RewardLedgerService
 {
-    public function recordEarnForTaskRecord(TaskRecord $record): ?RewardTransaction
-    {
-        $amount = (int) $record->granted_point_value;
+    public function recordEarnForOshigotoEvent(
+        ActivityEvent $event,
+        int $memberId,
+        int $amount,
+        string $clientIdempotencyKey,
+    ): ?RewardTransaction {
         if ($amount <= 0) {
             return null;
         }
 
-        $event = ActivityEvent::query()
-            ->where('idempotency_key', TaskRecordService::activityEventIdempotencyKey($record->idempotency_key))
-            ->first();
-
-        $idempotencyKey = 'earn:task-record:'.$record->idempotency_key;
+        $idempotencyKey = 'earn:oshigoto:'.$clientIdempotencyKey;
 
         $existing = RewardTransaction::query()
             ->where('idempotency_key', $idempotencyKey)
@@ -33,16 +31,16 @@ final class RewardLedgerService
 
         try {
             return RewardTransaction::query()->create([
-                'member_id' => $record->family_member_id,
-                'activity_event_id' => $event?->id,
+                'member_id' => $memberId,
+                'activity_event_id' => $event->id,
                 'reward_rule_id' => null,
                 'transaction_type' => 'earn',
                 'kind' => 'point',
                 'amount' => $amount,
-                'occurred_at' => $record->completed_at ?? now('UTC'),
+                'occurred_at' => $event->occurred_at ?? now('UTC'),
                 'idempotency_key' => $idempotencyKey,
                 'reverses_transaction_id' => null,
-                'reason' => 'task_record_complete',
+                'reason' => 'oshigoto_complete',
             ]);
         } catch (QueryException) {
             return RewardTransaction::query()
@@ -51,9 +49,12 @@ final class RewardLedgerService
         }
     }
 
-    public function recordReversalForTaskRecord(TaskRecord $record): ?RewardTransaction
-    {
-        $earnKey = 'earn:task-record:'.$record->idempotency_key;
+    public function recordReversalForOshigotoEvent(
+        ActivityEvent $event,
+        string $clientIdempotencyKey,
+        mixed $cancelledAt = null,
+    ): ?RewardTransaction {
+        $earnKey = 'earn:oshigoto:'.$clientIdempotencyKey;
         $earn = RewardTransaction::query()
             ->where('idempotency_key', $earnKey)
             ->where('transaction_type', 'earn')
@@ -75,21 +76,21 @@ final class RewardLedgerService
                 ->first();
         }
 
-        $reversalKey = 'reversal:task-record:'.$record->idempotency_key;
+        $reversalKey = 'reversal:oshigoto:'.$clientIdempotencyKey;
 
         try {
-            return DB::transaction(function () use ($record, $earn, $reversalKey): RewardTransaction {
+            return DB::transaction(function () use ($event, $earn, $reversalKey, $cancelledAt): RewardTransaction {
                 return RewardTransaction::query()->create([
-                    'member_id' => $record->family_member_id,
-                    'activity_event_id' => $earn->activity_event_id,
+                    'member_id' => $earn->member_id,
+                    'activity_event_id' => $event->id,
                     'reward_rule_id' => $earn->reward_rule_id,
                     'transaction_type' => 'reversal',
                     'kind' => $earn->kind,
                     'amount' => -1 * abs((int) $earn->amount),
-                    'occurred_at' => $record->cancelled_at ?? now('UTC'),
+                    'occurred_at' => $cancelledAt ?? now('UTC'),
                     'idempotency_key' => $reversalKey,
                     'reverses_transaction_id' => $earn->id,
-                    'reason' => 'task_record_cancel',
+                    'reason' => 'oshigoto_cancel',
                 ]);
             });
         } catch (QueryException) {

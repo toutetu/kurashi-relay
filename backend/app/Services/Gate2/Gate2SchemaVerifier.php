@@ -13,6 +13,7 @@ final class Gate2SchemaVerifier
         'activity_definitions',
         'activity_events',
         'activity_event_cancellations',
+        'activity_event_notes',
         'planned_activities',
         'plan_actual_links',
         'reward_rules',
@@ -33,6 +34,9 @@ final class Gate2SchemaVerifier
         ],
         'activity_event_cancellations' => [
             'activity_event_id', 'cancelled_at', 'cancelled_by_member_id',
+        ],
+        'activity_event_notes' => [
+            'activity_event_id', 'note',
         ],
         'planned_activities' => [
             'subject_member_id', 'source_type', 'source_key', 'title_snapshot',
@@ -64,6 +68,7 @@ final class Gate2SchemaVerifier
         ['table' => 'activity_events', 'column' => 'recorded_by_member_id', 'references' => 'family_members'],
         ['table' => 'activity_events', 'column' => 'actor_member_id', 'references' => 'family_members'],
         ['table' => 'activity_event_cancellations', 'column' => 'activity_event_id', 'references' => 'activity_events'],
+        ['table' => 'activity_event_notes', 'column' => 'activity_event_id', 'references' => 'activity_events'],
         ['table' => 'activity_event_cancellations', 'column' => 'cancelled_by_member_id', 'references' => 'family_members'],
         ['table' => 'planned_activities', 'column' => 'subject_member_id', 'references' => 'family_members'],
         ['table' => 'planned_activities', 'column' => 'activity_definition_id', 'references' => 'activity_definitions'],
@@ -77,6 +82,7 @@ final class Gate2SchemaVerifier
         ['table' => 'reward_transactions', 'column' => 'activity_event_id', 'references' => 'activity_events'],
         ['table' => 'reward_transactions', 'column' => 'reward_rule_id', 'references' => 'reward_rules'],
         ['table' => 'reward_transactions', 'column' => 'reverses_transaction_id', 'references' => 'reward_transactions'],
+        ['table' => 'reward_collections', 'column' => 'activity_event_id', 'references' => 'activity_events'],
         ['table' => 'prompt_events', 'column' => 'activity_event_id', 'references' => 'activity_events'],
         ['table' => 'daily_tasks', 'column' => 'planned_activity_id', 'references' => 'planned_activities'],
         ['table' => 'plan_answer_versions', 'column' => 'daily_plan_id', 'references' => 'daily_plans'],
@@ -131,7 +137,7 @@ final class Gate2SchemaVerifier
         'plan_actual_links_event_type',
         'reward_transactions_event_rule_type_unique',
         'reminder_schedules_one_scheduled_per_task_unique',
-        'reward_collections_task_record_id_unique',
+        'reward_collections_activity_event_id_unique',
     ];
 
     private const POSTGRESQL_ONLY_TRIGGER = 'activity_event_cancellations_occurred_at_check';

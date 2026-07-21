@@ -16,7 +16,7 @@ class RewardCollection extends Model
         'item_slug',
         'milestone_number',
         'obtained_on',
-        'task_record_id',
+        'activity_event_id',
     ];
 
     /**
@@ -35,8 +35,8 @@ class RewardCollection extends Model
         return $this->belongsTo(FamilyMember::class);
     }
 
-    public function taskRecord(): BelongsTo
+    public function activityEvent(): BelongsTo
     {
-        return $this->belongsTo(TaskRecord::class);
+        return $this->belongsTo(ActivityEvent::class);
     }
 }
