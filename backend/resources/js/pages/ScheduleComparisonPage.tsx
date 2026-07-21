@@ -1,16 +1,112 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, RefreshCcw } from "lucide-react";
+import { useState } from "react";
+import {
+  cancelHomeEvent,
+  createHomeEvent,
+  skipHomePlan,
+  updateHomeEvent,
+} from "../api/home";
 import { getScheduleComparisons } from "../api/scheduleComparisons";
 import { DashboardError, DashboardLoading } from "../components/ui/AsyncStates";
 import { ScheduleComparisonList } from "../features/schedule/components/ScheduleComparisonList";
+import type { ActualEntry, SchedulePlan } from "../types/dashboard";
 import { formatDate, formatMinutes, getTokyoToday } from "../utils/date";
 
 export function ScheduleComparisonPage() {
   const today = getTokyoToday();
+  const queryClient = useQueryClient();
+  const [busyActualId, setBusyActualId] = useState<string | null>(null);
+  const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [planError, setPlanError] = useState<string | null>(null);
   const query = useQuery({
     queryKey: ["schedule-comparisons", today],
     queryFn: ({ signal }) => getScheduleComparisons(today, signal),
   });
+
+  const refresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["schedule-comparisons"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+    ]);
+  };
+
+  const runActualAction = async (
+    actual: ActualEntry,
+    action: () => Promise<void>,
+  ) => {
+    if (busyActualId !== null) return;
+    setBusyActualId(actual.id);
+    setActionError(null);
+    try {
+      await action();
+      await refresh();
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "実績の操作に失敗しました。もう一度お試しください。",
+      );
+    } finally {
+      setBusyActualId(null);
+    }
+  };
+
+  const runPlanAction = async (
+    plan: SchedulePlan,
+    action: () => Promise<void>,
+  ) => {
+    if (busyPlanId !== null) return;
+    setBusyPlanId(plan.id);
+    setPlanError(null);
+    try {
+      await action();
+      await refresh();
+    } catch (error) {
+      setPlanError(
+        error instanceof Error
+          ? error.message
+          : "予定の操作に失敗しました。もう一度お試しください。",
+      );
+    } finally {
+      setBusyPlanId(null);
+    }
+  };
+
+  const startPlan = (plan: SchedulePlan) =>
+    runPlanAction(plan, async () => {
+      await createHomeEvent({
+        planned_activity_id: Number(plan.id),
+        occurred_at: new Date().toISOString(),
+        idempotency_key: `plan-start:${plan.id}:${crypto.randomUUID()}`,
+      });
+    });
+
+  const completePlanAsPlanned = (plan: SchedulePlan) =>
+    runPlanAction(plan, async () => {
+      await createHomeEvent({
+        planned_activity_id: Number(plan.id),
+        occurred_at: plan.startAt,
+        ended_at: plan.endAt,
+        idempotency_key: `plan-done:${plan.id}:${crypto.randomUUID()}`,
+      });
+    });
+
+  const skipPlan = (plan: SchedulePlan) =>
+    runPlanAction(plan, async () => {
+      await skipHomePlan(Number(plan.id));
+    });
+
+  const savePlanDetail = (plan: SchedulePlan, startAt: string, endAt: string) =>
+    runPlanAction(plan, async () => {
+      await createHomeEvent({
+        planned_activity_id: Number(plan.id),
+        occurred_at: startAt,
+        ended_at: endAt,
+        idempotency_key: `plan-detail:${plan.id}:${crypto.randomUUID()}`,
+      });
+    });
 
   return (
     <div className="mx-auto max-w-[1320px]">
@@ -94,7 +190,34 @@ export function ScheduleComparisonPage() {
               </span>
             </div>
           </section>
-          <ScheduleComparisonList items={query.data.comparisons} />
+          {(actionError || planError) && (
+            <p className="mb-3 text-sm font-bold text-[var(--coral)]" role="alert">
+              {actionError ?? planError}
+            </p>
+          )}
+          <ScheduleComparisonList
+            items={query.data.comparisons}
+            date={query.data.date}
+            busyActualId={busyActualId}
+            busyPlanId={busyPlanId}
+            onDeleteActual={(actual) =>
+              runActualAction(actual, async () => {
+                await cancelHomeEvent(Number(actual.id));
+              })
+            }
+            onUpdateActual={(actual, startAt, endAt) =>
+              runActualAction(actual, async () => {
+                await updateHomeEvent(Number(actual.id), {
+                  occurred_at: startAt,
+                  ended_at: endAt,
+                });
+              })
+            }
+            onStartPlan={startPlan}
+            onCompletePlanAsPlanned={completePlanAsPlanned}
+            onSkipPlan={skipPlan}
+            onSavePlanDetail={savePlanDetail}
+          />
         </>
       )}
     </div>

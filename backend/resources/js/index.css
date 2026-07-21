@@ -500,11 +500,18 @@ button:not(:disabled),
   @media (min-width: 75rem) {
     .home-grid {
       gap: 10px;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 20rem;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
       grid-template-areas:
-        "z1 z1 z2"
-        "qs ql pl"
-        "cd ql tb";
+        "z2 z1 z1"
+        "pl qs ql"
+        "pl qs ql";
+    }
+
+    .home-grid.home-grid--extras {
+      grid-template-areas:
+        "z2 z1 z1"
+        "pl qs ql"
+        "tb cd ql";
     }
 
     .area-z1 {
@@ -519,11 +526,11 @@ button:not(:disabled),
     .area-ql {
       grid-area: ql;
     }
-    .area-cd {
-      grid-area: cd;
-    }
     .area-pl {
       grid-area: pl;
+    }
+    .area-cd {
+      grid-area: cd;
     }
     .area-tb {
       grid-area: tb;

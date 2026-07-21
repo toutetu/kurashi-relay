@@ -125,7 +125,8 @@ final class CompletionService
         $motherId = FamilyMemberResolver::motherId();
         $childId = $task->subject_member_id;
         $occurredAtUtc = ($occurredAt ?? CarbonImmutable::now('UTC'))->utc();
-        $endedAtUtc = $endedAt?->utc();
+        // 声かけ系の完了記録は未指定なら開始=終了（瞬間）
+        $endedAtUtc = ($endedAt ?? $occurredAt ?? CarbonImmutable::now('UTC'))->utc();
 
         $roles = $this->rolesForStatus($status, $childId, $motherId);
 

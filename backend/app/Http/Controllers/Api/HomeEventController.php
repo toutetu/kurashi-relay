@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CompleteHomeEventRequest;
 use App\Http\Requests\StoreHomeEventRequest;
+use App\Http\Requests\UpdateHomeEventRequest;
 use App\Http\Requests\UpsertHomeConditionRequest;
 use App\Http\Resources\ActivityEventResource;
 use App\Http\Resources\DailyConditionResource;
+use App\Http\Resources\PlannedActivityResource;
 use App\Services\HomeEventService;
 use App\Support\JstDate;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +35,34 @@ final class HomeEventController extends Controller
     public function destroy(int $id, HomeEventService $service): ActivityEventResource
     {
         $event = $service->cancel($id);
+
+        return (new ActivityEventResource($event))->additional(['status' => 'success']);
+    }
+
+    public function skipPlan(int $id, HomeEventService $service): PlannedActivityResource
+    {
+        $plan = $service->skipPlan($id);
+
+        return (new PlannedActivityResource($plan))->additional(['status' => 'success']);
+    }
+
+    public function complete(
+        CompleteHomeEventRequest $request,
+        int $id,
+        HomeEventService $service,
+    ): ActivityEventResource {
+        $endedAt = $request->validated('ended_at');
+        $event = $service->complete($id, is_string($endedAt) ? $endedAt : '');
+
+        return (new ActivityEventResource($event))->additional(['status' => 'success']);
+    }
+
+    public function update(
+        UpdateHomeEventRequest $request,
+        int $id,
+        HomeEventService $service,
+    ): ActivityEventResource {
+        $event = $service->update($id, $request->validated());
 
         return (new ActivityEventResource($event))->additional(['status' => 'success']);
     }

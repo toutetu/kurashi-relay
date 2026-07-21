@@ -7,15 +7,24 @@ import {
   GitCompareArrows,
   Heart,
   Moon,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
+import { Button } from "../../../components/ui/Button";
 import type {
   ActualEntry,
   ActualKind,
   DifferenceStatus,
   ScheduleComparisonItem,
+  SchedulePlan,
 } from "../../../types/dashboard";
-import { formatMinutes, formatTimeRange } from "../../../utils/date";
+import {
+  formatMinutes,
+  formatTimeRange,
+  toTokyoTimeInputValue,
+} from "../../../utils/date";
 
 const differenceLabels: Record<DifferenceStatus, string> = {
   on_schedule: "予定どおり",
@@ -59,26 +68,119 @@ const kindMetadata: Record<
   },
 };
 
-function ActualBlock({ actual }: { actual: ActualEntry }) {
-  const metadata = kindMetadata[actual.kind];
-  const Icon = metadata.icon;
+type PlanHandlers = {
+  onStart: (plan: SchedulePlan) => Promise<void>;
+  onCompleteAsPlanned: (plan: SchedulePlan) => Promise<void>;
+  onSkip: (plan: SchedulePlan) => Promise<void>;
+  onSaveDetail: (
+    plan: SchedulePlan,
+    startAt: string,
+    endAt: string,
+  ) => Promise<void>;
+};
+
+function PlanActionButton({
+  label,
+  onClick,
+  disabled,
+  tone = "neutral",
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  tone?: "neutral" | "primary" | "danger";
+}) {
+  const toneClass =
+    tone === "primary"
+      ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-deep)]"
+      : tone === "danger"
+        ? "border-[color-mix(in_srgb,var(--coral)_40%,var(--line))] text-[var(--coral)]"
+        : "border-[var(--line)] bg-[var(--surface)] text-[var(--ink)]";
+
   return (
-    <article className="rounded-xl border border-[#cbe7d5] bg-white/85 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <time className="text-sm font-black text-[#287a49]">
-          {formatTimeRange(actual.startAt, actual.endAt)}
-        </time>
-        <span
-          className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[0.68rem] font-black ${metadata.style}`}
-        >
-          <Icon aria-hidden="true" size={13} />
-          {metadata.label}
-        </span>
-      </div>
-      <p className="mt-2 font-black text-[#28334a]">{actual.title}</p>
-      {actual.details.length > 0 && (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`pressable inline-flex min-h-5 items-center justify-center rounded-md border px-1 py-px text-[9px] font-bold leading-none transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function PlanBlock({
+  plan,
+  date,
+  busy,
+  handlers,
+}: {
+  plan: SchedulePlan;
+  date: string;
+  busy: boolean;
+  handlers?: PlanHandlers;
+}) {
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [startTime, setStartTime] = useState(() =>
+    toTokyoTimeInputValue(plan.startAt),
+  );
+  const [endTime, setEndTime] = useState(() =>
+    toTokyoTimeInputValue(plan.endAt),
+  );
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const settled = plan.outcome === "done" || plan.outcome === "skipped";
+  const recordable =
+    plan.recordable === true && handlers !== undefined && !settled;
+  const outcomeLabel =
+    plan.outcome === "done"
+      ? "記録済み"
+      : plan.outcome === "skipped"
+        ? "実施せず"
+        : null;
+
+  const saveDetail = async () => {
+    if (!handlers) return;
+    setDetailError(null);
+    if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+      setDetailError("開始・終了の時刻を入力してください。");
+      return;
+    }
+    if (endTime < startTime) {
+      setDetailError("終了は開始と同じか、それより後にしてください。");
+      return;
+    }
+    try {
+      await handlers.onSaveDetail(
+        plan,
+        `${date}T${startTime}:00+09:00`,
+        `${date}T${endTime}:00+09:00`,
+      );
+      setDetailOpen(false);
+    } catch (error) {
+      setDetailError(
+        error instanceof Error
+          ? error.message
+          : "記録の保存に失敗しました。もう一度お試しください。",
+      );
+    }
+  };
+
+  return (
+    <div className={settled ? "opacity-60" : ""}>
+      <time className="text-sm font-black text-[#236da8]">
+        {formatTimeRange(plan.startAt, plan.endAt)}
+      </time>
+      <p className="mt-2 font-black text-[#28334a]">
+        {plan.title}
+        {outcomeLabel && (
+          <span className="ml-1.5 text-[10px] font-bold text-[var(--muted)]">
+            {outcomeLabel}
+          </span>
+        )}
+      </p>
+      {plan.details && plan.details.length > 0 && (
         <ul className="mt-2 space-y-1 text-sm leading-relaxed text-[#526078]">
-          {actual.details.map((detail) => (
+          {plan.details.map((detail) => (
             <li key={detail} className="flex gap-2">
               <span aria-hidden="true">・</span>
               <span>{detail}</span>
@@ -86,11 +188,251 @@ function ActualBlock({ actual }: { actual: ActualEntry }) {
           ))}
         </ul>
       )}
+      {recordable && (
+        <div className="mt-2 flex flex-wrap gap-0.5">
+          <PlanActionButton
+            label="開始"
+            tone="primary"
+            disabled={busy}
+            onClick={() => void handlers!.onStart(plan)}
+          />
+          <PlanActionButton
+            label="予定通り完了"
+            disabled={busy}
+            onClick={() => void handlers!.onCompleteAsPlanned(plan)}
+          />
+          <PlanActionButton
+            label="実施せず"
+            tone="danger"
+            disabled={busy}
+            onClick={() => void handlers!.onSkip(plan)}
+          />
+          <PlanActionButton
+            label="詳細入力"
+            disabled={busy}
+            onClick={() => {
+              setStartTime(toTokyoTimeInputValue(plan.startAt));
+              setEndTime(toTokyoTimeInputValue(plan.endAt));
+              setDetailError(null);
+              setDetailOpen((open) => !open);
+            }}
+          />
+        </div>
+      )}
+      {detailOpen && recordable && (
+        <div className="mt-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2.5">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-[11px] font-bold text-[var(--muted)]">
+              開始
+              <input
+                type="time"
+                value={startTime}
+                onChange={(event) => setStartTime(event.target.value)}
+                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+              />
+            </label>
+            <label className="text-[11px] font-bold text-[var(--muted)]">
+              終了
+              <input
+                type="time"
+                value={endTime}
+                onChange={(event) => setEndTime(event.target.value)}
+                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+              />
+            </label>
+            <Button
+              onClick={() => void saveDetail()}
+              disabled={busy}
+              variant="solid"
+              tone="blue"
+              size="compact"
+              className="!min-h-9 !px-2.5 !text-[11px]"
+            >
+              保存
+            </Button>
+          </div>
+          {detailError && (
+            <p className="mt-1.5 text-[11px] font-bold text-[var(--coral)]" role="alert">
+              {detailError}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type ActualHandlers = {
+  onDelete: (actual: ActualEntry) => Promise<void>;
+  onUpdate: (
+    actual: ActualEntry,
+    startAt: string,
+    endAt: string,
+  ) => Promise<void>;
+};
+
+function ActualBlock({
+  actual,
+  date,
+  busy,
+  handlers,
+}: {
+  actual: ActualEntry;
+  date: string;
+  busy: boolean;
+  handlers?: ActualHandlers;
+}) {
+  const metadata = kindMetadata[actual.kind];
+  const Icon = metadata.icon;
+  const [editing, setEditing] = useState(false);
+  const [startTime, setStartTime] = useState(() =>
+    toTokyoTimeInputValue(actual.startAt),
+  );
+  const [endTime, setEndTime] = useState(() =>
+    toTokyoTimeInputValue(actual.endAt),
+  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const save = async () => {
+    if (!handlers) return;
+    setErrorMessage(null);
+    if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+      setErrorMessage("開始・終了の時刻を入力してください。");
+      return;
+    }
+    if (endTime < startTime) {
+      setErrorMessage("終了は開始と同じか、それより後にしてください。");
+      return;
+    }
+    try {
+      await handlers.onUpdate(
+        actual,
+        `${date}T${startTime}:00+09:00`,
+        `${date}T${endTime}:00+09:00`,
+      );
+      setEditing(false);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "修正の保存に失敗しました。もう一度お試しください。",
+      );
+    }
+  };
+
+  return (
+    <article className="rounded-xl border border-[#cbe7d5] bg-white/85 p-3">
+      <div className="flex gap-2">
+        <div className="min-w-0 flex-1">
+          <time className="text-sm font-black text-[#287a49]">
+            {formatTimeRange(actual.startAt, actual.endAt)}
+          </time>
+          <p className="mt-2 font-black text-[#28334a]">{actual.title}</p>
+          {actual.details.length > 0 && (
+            <ul className="mt-2 space-y-1 text-sm leading-relaxed text-[#526078]">
+              {actual.details.map((detail) => (
+                <li key={detail} className="flex gap-2">
+                  <span aria-hidden="true">・</span>
+                  <span>{detail}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {handlers && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setStartTime(toTokyoTimeInputValue(actual.startAt));
+                  setEndTime(toTokyoTimeInputValue(actual.endAt));
+                  setErrorMessage(null);
+                  setEditing((open) => !open);
+                }}
+                disabled={busy}
+                aria-label={`${actual.title}を修正`}
+                className="pressable inline-flex min-h-6 items-center justify-center gap-0.5 rounded-md border border-[var(--line)] bg-white px-1.5 py-0.5 text-[10px] font-bold text-[var(--muted)] transition hover:bg-[var(--neutral-soft)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50"
+              >
+                <Pencil aria-hidden="true" size={10} />
+                修正
+              </button>
+              <button
+                type="button"
+                onClick={() => void handlers.onDelete(actual)}
+                disabled={busy}
+                aria-label={`${actual.title}を削除`}
+                className="pressable inline-flex min-h-6 items-center justify-center gap-0.5 rounded-md border border-[color-mix(in_srgb,var(--coral)_35%,var(--line))] bg-white px-1.5 py-0.5 text-[10px] font-bold text-[var(--coral)] transition hover:bg-[var(--coral-soft)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50"
+              >
+                <Trash2 aria-hidden="true" size={10} />
+                削除
+              </button>
+            </div>
+          )}
+        </div>
+        <span
+          className={`inline-flex h-fit shrink-0 items-center gap-1 self-start rounded-full px-2 py-1 text-[0.68rem] font-black ${metadata.style}`}
+        >
+          <Icon aria-hidden="true" size={13} />
+          {metadata.label}
+        </span>
+      </div>
+      {editing && handlers && (
+        <div className="mt-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2.5">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-[11px] font-bold text-[var(--muted)]">
+              開始
+              <input
+                type="time"
+                value={startTime}
+                onChange={(event) => setStartTime(event.target.value)}
+                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+              />
+            </label>
+            <label className="text-[11px] font-bold text-[var(--muted)]">
+              終了
+              <input
+                type="time"
+                value={endTime}
+                onChange={(event) => setEndTime(event.target.value)}
+                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+              />
+            </label>
+            <Button
+              onClick={() => void save()}
+              disabled={busy}
+              variant="solid"
+              tone="blue"
+              size="compact"
+              className="!min-h-9 !px-2.5 !text-[11px]"
+            >
+              保存
+            </Button>
+          </div>
+          {errorMessage && (
+            <p className="mt-1.5 text-[11px] font-bold text-[var(--coral)]" role="alert">
+              {errorMessage}
+            </p>
+          )}
+        </div>
+      )}
     </article>
   );
 }
 
-function ComparisonRow({ item }: { item: ScheduleComparisonItem }) {
+function ComparisonRow({
+  item,
+  date,
+  busyActualId,
+  busyPlanId,
+  handlers,
+  planHandlers,
+}: {
+  item: ScheduleComparisonItem;
+  date: string;
+  busyActualId: string | null;
+  busyPlanId: string | null;
+  handlers?: ActualHandlers;
+  planHandlers?: PlanHandlers;
+}) {
   const noPlan = item.plan === null;
   const noActuals = item.actuals.length === 0;
   const isUnplanned = noPlan && !noActuals;
@@ -112,22 +454,12 @@ function ComparisonRow({ item }: { item: ScheduleComparisonItem }) {
           予定
         </h3>
         {item.plan ? (
-          <div>
-            <time className="text-sm font-black text-[#236da8]">
-              {formatTimeRange(item.plan.startAt, item.plan.endAt)}
-            </time>
-            <p className="mt-2 font-black text-[#28334a]">{item.plan.title}</p>
-            {item.plan.details && item.plan.details.length > 0 && (
-              <ul className="mt-2 space-y-1 text-sm leading-relaxed text-[#526078]">
-                {item.plan.details.map((detail) => (
-                  <li key={detail} className="flex gap-2">
-                    <span aria-hidden="true">・</span>
-                    <span>{detail}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <PlanBlock
+            plan={item.plan}
+            date={date}
+            busy={busyPlanId !== null}
+            handlers={planHandlers}
+          />
         ) : (
           <div className="rounded-xl border border-dashed border-[#9ac8ee] bg-white/75 p-3">
             <p className="font-black text-[#236da8]">予定なし</p>
@@ -159,7 +491,13 @@ function ComparisonRow({ item }: { item: ScheduleComparisonItem }) {
         ) : (
           <div className="space-y-2">
             {item.actuals.map((actual) => (
-              <ActualBlock key={actual.id} actual={actual} />
+              <ActualBlock
+                key={actual.id}
+                actual={actual}
+                date={date}
+                busy={busyActualId !== null}
+                handlers={handlers}
+              />
             ))}
           </div>
         )}
@@ -221,9 +559,49 @@ function ComparisonRow({ item }: { item: ScheduleComparisonItem }) {
 
 export function ScheduleComparisonList({
   items,
+  date,
+  busyActualId = null,
+  busyPlanId = null,
+  onDeleteActual,
+  onUpdateActual,
+  onStartPlan,
+  onCompletePlanAsPlanned,
+  onSkipPlan,
+  onSavePlanDetail,
 }: {
   items: ScheduleComparisonItem[];
+  date: string;
+  busyActualId?: string | null;
+  busyPlanId?: string | null;
+  onDeleteActual?: (actual: ActualEntry) => Promise<void>;
+  onUpdateActual?: (
+    actual: ActualEntry,
+    startAt: string,
+    endAt: string,
+  ) => Promise<void>;
+  onStartPlan?: (plan: SchedulePlan) => Promise<void>;
+  onCompletePlanAsPlanned?: (plan: SchedulePlan) => Promise<void>;
+  onSkipPlan?: (plan: SchedulePlan) => Promise<void>;
+  onSavePlanDetail?: (
+    plan: SchedulePlan,
+    startAt: string,
+    endAt: string,
+  ) => Promise<void>;
 }) {
+  const handlers =
+    onDeleteActual && onUpdateActual
+      ? { onDelete: onDeleteActual, onUpdate: onUpdateActual }
+      : undefined;
+  const planHandlers =
+    onStartPlan && onCompletePlanAsPlanned && onSkipPlan && onSavePlanDetail
+      ? {
+          onStart: onStartPlan,
+          onCompleteAsPlanned: onCompletePlanAsPlanned,
+          onSkip: onSkipPlan,
+          onSaveDetail: onSavePlanDetail,
+        }
+      : undefined;
+
   if (items.length === 0) {
     return (
       <div className="rounded-[1.4rem] border border-dashed border-[#bcdcf7] bg-white p-8 text-center">
@@ -261,6 +639,11 @@ export function ScheduleComparisonList({
           <ComparisonRow
             key={`${item.timeRange.start}-${item.timeRange.end}`}
             item={item}
+            date={date}
+            busyActualId={busyActualId}
+            busyPlanId={busyPlanId}
+            handlers={handlers}
+            planHandlers={planHandlers}
           />
         ))}
       </div>

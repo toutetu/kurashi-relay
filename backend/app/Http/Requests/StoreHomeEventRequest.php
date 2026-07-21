@@ -19,9 +19,15 @@ final class StoreHomeEventRequest extends FormRequest
     {
         return [
             'activity_definition_id' => [
-                'required',
+                'nullable',
+                'required_without:planned_activity_id',
                 'integer',
                 Rule::exists('activity_definitions', 'id')->where(fn ($q) => $q->where('is_active', true)),
+            ],
+            'planned_activity_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('planned_activities', 'id'),
             ],
             'idempotency_key' => ['required', 'string', 'max:64'],
             'occurred_at' => ['nullable', 'date'],
@@ -37,7 +43,7 @@ final class StoreHomeEventRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'activity_definition_id.required' => '記録する活動を選んでください。',
+            'activity_definition_id.required_without' => '記録する活動を選んでください。',
             'idempotency_key.required' => '再送防止キーが必要です。',
         ];
     }

@@ -10,11 +10,25 @@ export type ActivityStatus = "idle" | "running" | "paused" | "completed";
 
 export interface CurrentActivity {
   id: string;
+  eventId: number;
+  activityDefinitionId: number;
+  plannedActivityId?: number | null;
   title: string;
   category: ActivityCategory;
   startedAt: string;
   status: ActivityStatus;
   relatedPlanTitle?: string | null;
+}
+
+export interface QuickActivityOption {
+  id: string;
+  label: string;
+  category: ActivityCategory;
+  source: "preset" | "google";
+  activityDefinitionId: number;
+  plannedActivityId: number | null;
+  plannedStartAt: string | null;
+  plannedEndAt: string | null;
 }
 
 export interface SchedulePlan {
@@ -26,6 +40,9 @@ export interface SchedulePlan {
   source?: "google" | "manual";
   status?: string;
   details?: string[];
+  /** done=完了済み / skipped=実施せず。あるとグレーアウト */
+  outcome?: "done" | "skipped" | null;
+  recordable?: boolean;
 }
 
 export type QuickLogType =
@@ -150,6 +167,7 @@ export interface DashboardData {
   date: string;
   currentActivity: CurrentActivity | null;
   nextPlans: SchedulePlan[];
+  quickActivities: QuickActivityOption[];
   quickLogs: QuickLog[];
   conditions: Conditions;
   childStrategy: ChildStrategy;

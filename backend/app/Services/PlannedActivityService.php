@@ -37,6 +37,27 @@ final class PlannedActivityService
     }
 
     /**
+     * ホーム「きょうのようす」用。実施せず(cancelled)も表示のため含める。
+     *
+     * @return Collection<int, PlannedActivity>
+     */
+    public function listForHomeDate(string $localDate): Collection
+    {
+        return PlannedActivity::query()
+            ->with([
+                'activityDefinition',
+                'subjectMember',
+                'planActualLinks' => fn ($q) => $q->where('link_type', 'primary'),
+                'planActualLinks.activityEvent.cancellation',
+            ])
+            ->whereDate('local_date', $localDate)
+            ->orderByRaw('planned_start_at IS NULL')
+            ->orderBy('planned_start_at')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
      * @param  array{
      *   subject: string,
      *   title: string,

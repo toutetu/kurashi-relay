@@ -2,9 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\ActivityDefinition;
+use App\Models\ActivityEvent;
 use App\Models\DailyCondition;
 use App\Models\PlannedActivity;
+use App\Support\FamilyMemberResolver;
 use App\Support\JstDate;
+use Database\Support\ActivityDefinitionCatalog;
 use Illuminate\Support\Collection;
 
 final class DashboardService
@@ -21,14 +25,16 @@ final class DashboardService
     public function get(?string $date = null): array
     {
         $resolvedDate = $date ?? JstDate::today();
-        $plans = $this->plannedActivities->listForDate($resolvedDate);
+        $plans = $this->plannedActivities->listForHomeDate($resolvedDate);
         $comparison = $this->scheduleComparisons->forDate($resolvedDate);
         $condition = $this->homeEvents->conditionsForDate($resolvedDate);
+        $currentActivity = $this->homeEvents->runningActivity();
 
         return [
             'date' => $resolvedDate,
-            'currentActivity' => null,
+            'currentActivity' => $this->mapCurrentActivity($currentActivity),
             'nextPlans' => $this->mapNextPlans($plans, $resolvedDate),
+            'quickActivities' => $this->mapQuickActivities(),
             'quickLogs' => $this->mapQuickLogs($this->homeEvents->quickLogCounts($resolvedDate)),
             'conditions' => $this->mapConditions($condition),
             'childStrategy' => [
@@ -60,6 +66,37 @@ final class DashboardService
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    private function mapCurrentActivity(?ActivityEvent $event): ?array
+    {
+        if ($event === null) {
+            return null;
+        }
+
+        $link = $event->planActualLinks->firstWhere('link_type', 'primary');
+        $plan = $link?->plannedActivity;
+
+        return [
+            'id' => (string) $event->id,
+            'eventId' => $event->id,
+            'activityDefinitionId' => $event->activity_definition_id,
+            'plannedActivityId' => $plan?->id,
+            'title' => $plan?->title_snapshot
+                ?? $event->activityDefinition?->quick_label
+                ?? $event->activityDefinition?->name
+                ?? '活動',
+            'category' => $this->mapCategory(
+                $plan?->category_snapshot ?? $event->activityDefinition?->category,
+                $event->activityDefinition?->kind,
+            ),
+            'startedAt' => $event->occurred_at->timezone('Asia/Tokyo')->toIso8601String(),
+            'status' => 'running',
+            'relatedPlanTitle' => $plan?->title_snapshot,
+        ];
+    }
+
+    /**
      * @param  Collection<int, PlannedActivity>  $plans
      * @return list<array<string, mixed>>
      */
@@ -72,6 +109,8 @@ final class DashboardService
                     ?? "{$date}T00:00:00+09:00";
                 $end = $plan->planned_end_at?->timezone('Asia/Tokyo')->toIso8601String()
                     ?? ($plan->is_all_day ? "{$date}T23:59:59+09:00" : $start);
+                $outcome = $this->resolvePlanOutcome($plan);
+                $isMother = $plan->subject_member_id === FamilyMemberResolver::motherId();
 
                 return [
                     'id' => (string) $plan->id,
@@ -81,9 +120,64 @@ final class DashboardService
                     'category' => $this->mapCategory($plan->category_snapshot, $plan->activityDefinition?->kind),
                     'source' => $plan->source_type === 'google_calendar' ? 'google' : 'manual',
                     'status' => $plan->status === 'cancelled' ? 'cancelled' : 'planned',
+                    'outcome' => $outcome,
+                    'recordable' => $isMother && $outcome === null,
                 ];
             })
             ->all();
+    }
+
+    private function resolvePlanOutcome(PlannedActivity $plan): ?string
+    {
+        if ($plan->status === 'cancelled') {
+            return 'skipped';
+        }
+
+        foreach ($plan->planActualLinks as $link) {
+            $event = $link->activityEvent;
+            if ($event === null) {
+                continue;
+            }
+            if ($event->ended_at !== null && $event->cancellation === null) {
+                return 'done';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function mapQuickActivities(): array
+    {
+        $definitionKeys = ActivityDefinitionCatalog::quickActivityDefinitionKeys();
+        $definitions = ActivityDefinition::query()
+            ->where('is_active', true)
+            ->whereIn('activity_key', array_values($definitionKeys))
+            ->get()
+            ->keyBy('activity_key');
+
+        $options = [];
+        foreach ($definitionKeys as $category => $key) {
+            $definition = $definitions->get($key);
+            if (! $definition instanceof ActivityDefinition) {
+                continue;
+            }
+
+            $options[] = [
+                'id' => 'preset:'.$category,
+                'label' => $definition->quick_label,
+                'category' => $category,
+                'source' => 'preset',
+                'activityDefinitionId' => $definition->id,
+                'plannedActivityId' => null,
+                'plannedStartAt' => null,
+                'plannedEndAt' => null,
+            ];
+        }
+
+        return $options;
     }
 
     /**

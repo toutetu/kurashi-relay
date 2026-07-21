@@ -30,7 +30,10 @@ Route::middleware('family-token')->group(function () {
     Route::get('/dashboard', DashboardController::class);
 
     Route::post('/home/events', [HomeEventController::class, 'store']);
+    Route::patch('/home/events/{id}/complete', [HomeEventController::class, 'complete'])->whereNumber('id');
+    Route::patch('/home/events/{id}', [HomeEventController::class, 'update'])->whereNumber('id');
     Route::delete('/home/events/{id}', [HomeEventController::class, 'destroy'])->whereNumber('id');
+    Route::post('/home/plans/{id}/skip', [HomeEventController::class, 'skipPlan'])->whereNumber('id');
     Route::get('/home/quick-logs', [HomeEventController::class, 'quickLogs']);
     Route::get('/home/conditions', [HomeEventController::class, 'showConditions']);
     Route::put('/home/conditions', [HomeEventController::class, 'upsertConditions']);
