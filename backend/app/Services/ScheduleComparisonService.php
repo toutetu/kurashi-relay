@@ -36,8 +36,9 @@ final class ScheduleComparisonService
 
         /** @var Collection<int, ActivityEvent> $events */
         $events = ActivityEvent::query()
-            ->with(['activityDefinition', 'cancellation'])
+            ->with(['activityDefinition', 'cancellation', 'planActualLinks'])
             ->where('recorded_by_member_id', $motherId)
+            ->where('event_type', 'activity')
             ->whereBetween('occurred_at', [$start, $end])
             ->whereDoesntHave('cancellation')
             ->orderBy('occurred_at')
@@ -50,6 +51,14 @@ final class ScheduleComparisonService
 
         $comparisons = [];
         $usedEventIds = [];
+        $planIds = $plans->pluck('id')->all();
+        $explicitEventIds = $events
+            ->filter(fn (ActivityEvent $event): bool => $event->planActualLinks->contains(
+                fn ($link): bool => $link->link_type === 'primary'
+                    && in_array($link->planned_activity_id, $planIds, true),
+            ))
+            ->pluck('id')
+            ->all();
 
         foreach ($plans as $plan) {
             $planStart = CarbonImmutable::parse(
@@ -62,23 +71,51 @@ final class ScheduleComparisonService
                         ? CarbonImmutable::parse($date, 'Asia/Tokyo')->endOfDay()
                         : $planStart->addHour()))->toIso8601String()
             );
-            $overlapping = $events->filter(function (ActivityEvent $event) use ($planStart, $planEnd, $usedEventIds): bool {
+            $linked = $events->filter(function (ActivityEvent $event) use ($plan, $usedEventIds): bool {
                 if (in_array($event->id, $usedEventIds, true)) {
                     return false;
                 }
 
-                $eventStart = $event->occurred_at;
-                $eventEnd = $event->ended_at ?? $eventStart->copy()->addMinutes(30);
-
-                return $eventStart < $planEnd && $eventEnd > $planStart;
+                return $event->planActualLinks->contains(
+                    fn ($link): bool => $link->planned_activity_id === $plan->id
+                        && $link->link_type === 'primary',
+                );
             });
+
+            foreach ($linked as $event) {
+                $usedEventIds[] = $event->id;
+            }
+
+            $overlapping = $linked->isNotEmpty()
+                ? collect()
+                : $events->filter(function (ActivityEvent $event) use (
+                    $planStart,
+                    $planEnd,
+                    $usedEventIds,
+                    $explicitEventIds,
+                ): bool {
+                    if (in_array($event->id, $usedEventIds, true)
+                        || in_array($event->id, $explicitEventIds, true)) {
+                        return false;
+                    }
+
+                    $eventStart = $event->occurred_at;
+                    $eventEnd = \App\Support\ActivityEventTime::effectiveEnd($event);
+
+                    return $eventStart < $planEnd && $eventEnd > $planStart;
+                });
 
             foreach ($overlapping as $event) {
                 $usedEventIds[] = $event->id;
             }
 
+            $actualEvents = $linked
+                ->concat($overlapping)
+                ->sortBy(fn (ActivityEvent $event) => $event->occurred_at)
+                ->values();
+
             $planImpacts = $impacts->get($plan->id, collect());
-            $comparisons[] = $this->buildPlanComparison($plan, $planStart, $planEnd, $overlapping, $planImpacts);
+            $comparisons[] = $this->buildPlanComparison($plan, $planStart, $planEnd, $actualEvents, $planImpacts);
         }
 
         foreach ($events as $event) {
@@ -112,7 +149,20 @@ final class ScheduleComparisonService
         Collection $planImpacts,
     ): array {
         $plannedMinutes = max(0, (int) $planStart->diffInMinutes($planEnd));
-        $actuals = $overlapping->map(fn (ActivityEvent $event) => $this->mapActual($event))->values()->all();
+        $actuals = $overlapping
+            ->map(function (ActivityEvent $event) use ($plan): array {
+                $explicitlyLinked = $event->planActualLinks->contains(
+                    fn ($link): bool => $link->planned_activity_id === $plan->id
+                        && $link->link_type === 'primary',
+                );
+
+                return $this->mapActual(
+                    $event,
+                    $explicitlyLinked ? $plan->title_snapshot : null,
+                );
+            })
+            ->values()
+            ->all();
         $actualMinutes = array_sum(array_map(
             fn (array $a): int => max(0, (int) CarbonImmutable::parse($a['startAt'])->diffInMinutes(CarbonImmutable::parse($a['endAt']))),
             $actuals,
@@ -153,6 +203,14 @@ final class ScheduleComparisonService
                 ->all();
         }
 
+        $isDone = $overlapping->contains(fn (ActivityEvent $event): bool => $event->ended_at !== null
+            && $event->cancellation === null
+            && $event->planActualLinks->contains(
+                fn ($link): bool => $link->planned_activity_id === $plan->id
+                    && $link->link_type === 'primary',
+            ));
+        $outcome = $isDone ? 'done' : null;
+
         return [
             'timeRange' => [
                 'start' => $planStart->timezone('Asia/Tokyo')->toIso8601String(),
@@ -165,6 +223,8 @@ final class ScheduleComparisonService
                 'endAt' => $planEnd->timezone('Asia/Tokyo')->toIso8601String(),
                 'category' => $this->mapCategory($plan->category_snapshot, $plan->activityDefinition?->kind),
                 'details' => [],
+                'outcome' => $outcome,
+                'recordable' => $outcome === null,
             ],
             'actuals' => $actuals,
             'difference' => [
@@ -211,10 +271,10 @@ final class ScheduleComparisonService
     /**
      * @return array<string, mixed>
      */
-    private function mapActual(ActivityEvent $event): array
+    private function mapActual(ActivityEvent $event, ?string $titleOverride = null): array
     {
         $start = $event->occurred_at->timezone('Asia/Tokyo');
-        $end = ($event->ended_at ?? $event->occurred_at->copy()->addMinutes(30))->timezone('Asia/Tokyo');
+        $end = \App\Support\ActivityEventTime::effectiveEnd($event)->timezone('Asia/Tokyo');
         $kind = match ($event->activityDefinition?->kind) {
             'waiting' => 'waiting',
             'sleep' => 'sleep',
@@ -224,7 +284,8 @@ final class ScheduleComparisonService
 
         return [
             'id' => (string) $event->id,
-            'title' => $event->activityDefinition?->quick_label
+            'title' => $titleOverride
+                ?? $event->activityDefinition?->quick_label
                 ?? $event->activityDefinition?->name
                 ?? '記録',
             'kind' => $kind,

@@ -22,47 +22,276 @@ import type {
   SchedulePlan,
   Score,
 } from "../../../types/dashboard";
-import { formatTime, formatTimeRange } from "../../../utils/date";
+import {
+  formatTime,
+  formatTimeRange,
+  toTokyoTimeInputValue,
+} from "../../../utils/date";
 
-export function NextPlansCard({ plans }: { plans: SchedulePlan[] }) {
-  const visiblePlans = plans.slice(0, 2);
+type PlanActionHandlers = {
+  onStart: (plan: SchedulePlan) => Promise<void>;
+  onCompleteAsPlanned: (plan: SchedulePlan) => Promise<void>;
+  onSkip: (plan: SchedulePlan) => Promise<void>;
+  onSaveDetail: (
+    plan: SchedulePlan,
+    startAt: string,
+    endAt: string,
+  ) => Promise<void>;
+};
+
+function PlanActionButton({
+  label,
+  onClick,
+  disabled,
+  tone = "neutral",
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  tone?: "neutral" | "primary" | "danger";
+}) {
+  const toneClass =
+    tone === "primary"
+      ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-deep)]"
+      : tone === "danger"
+        ? "border-[color-mix(in_srgb,var(--coral)_40%,var(--line))] text-[var(--coral)]"
+        : "border-[var(--line)] bg-[var(--surface)] text-[var(--ink)]";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`pressable rounded-lg border px-1.5 py-0.5 text-[10px] font-bold leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function PlanRow({
+  plan,
+  date,
+  isLast,
+  busy,
+  running,
+  actions,
+}: {
+  plan: SchedulePlan;
+  date: string;
+  isLast: boolean;
+  busy: boolean;
+  running: boolean;
+  actions?: PlanActionHandlers;
+}) {
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [startTime, setStartTime] = useState(() =>
+    toTokyoTimeInputValue(plan.startAt),
+  );
+  const [endTime, setEndTime] = useState(() =>
+    toTokyoTimeInputValue(plan.endAt),
+  );
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const settled = plan.outcome === "done" || plan.outcome === "skipped";
+  const recordable =
+    plan.recordable === true && actions !== undefined && !settled;
+  const outcomeLabel =
+    plan.outcome === "done"
+      ? "記録済み"
+      : plan.outcome === "skipped"
+        ? "実施せず"
+        : null;
+
+  const saveDetail = async () => {
+    if (!actions) return;
+    setDetailError(null);
+    if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+      setDetailError("開始・終了の時刻を入力してください。");
+      return;
+    }
+    if (endTime < startTime) {
+      setDetailError("終了は開始と同じか、それより後にしてください。");
+      return;
+    }
+    try {
+      await actions.onSaveDetail(
+        plan,
+        `${date}T${startTime}:00+09:00`,
+        `${date}T${endTime}:00+09:00`,
+      );
+      setDetailOpen(false);
+    } catch (error) {
+      setDetailError(
+        error instanceof Error
+          ? error.message
+          : "詳細の保存に失敗しました。もう一度お試しください。",
+      );
+    }
+  };
+
+  return (
+    <li
+      className={`pb-3 last:pb-1 ${settled ? "opacity-55" : ""}`}
+    >
+      <div className={`flex gap-2 sm:gap-3 ${settled ? "grayscale" : ""}`}>
+        <time className="w-11 shrink-0 pt-0.5 text-right text-[13.5px] font-extrabold tabular-nums text-[var(--primary-deep)]">
+          {formatTime(plan.startAt)}
+        </time>
+        <span className="flex w-3.5 shrink-0 flex-col items-center">
+          <span
+            className={`mt-1 size-2.5 rounded-full border-[2.5px] bg-white ${
+              settled
+                ? "border-[var(--muted)]"
+                : running
+                  ? "border-[var(--green)]"
+                  : "border-[var(--primary)]"
+            }`}
+          />
+          {!isLast && (
+            <span className="mt-0.5 w-0.5 flex-1 rounded-sm bg-[var(--line)]" />
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span
+            className={`block text-[13.5px] font-bold ${
+              settled ? "text-[var(--muted)]" : "text-[var(--ink)]"
+            }`}
+          >
+            {plan.title}
+            {running && !settled && (
+              <span className="ml-1.5 text-[10px] font-bold text-[var(--green)]">
+                進行中
+              </span>
+            )}
+            {outcomeLabel && (
+              <span className="ml-1.5 text-[10px] font-bold text-[var(--muted)]">
+                {outcomeLabel}
+              </span>
+            )}
+          </span>
+          <span className="mt-0.5 block text-[11.5px] text-[var(--muted)] tabular-nums">
+            {formatTimeRange(plan.startAt, plan.endAt)}
+          </span>
+        </span>
+        {recordable && (
+          <div className="flex max-w-[11.5rem] shrink-0 flex-wrap justify-end gap-1">
+            <PlanActionButton
+              label="開始"
+              tone="primary"
+              disabled={busy}
+              onClick={() => void actions.onStart(plan)}
+            />
+            <PlanActionButton
+              label="予定通り完了"
+              disabled={busy}
+              onClick={() => void actions.onCompleteAsPlanned(plan)}
+            />
+            <PlanActionButton
+              label="実施せず"
+              tone="danger"
+              disabled={busy}
+              onClick={() => void actions.onSkip(plan)}
+            />
+            <PlanActionButton
+              label="詳細入力"
+              disabled={busy}
+              onClick={() => {
+                setStartTime(toTokyoTimeInputValue(plan.startAt));
+                setEndTime(toTokyoTimeInputValue(plan.endAt));
+                setDetailError(null);
+                setDetailOpen((open) => !open);
+              }}
+            />
+          </div>
+        )}
+      </div>
+      {detailOpen && recordable && (
+        <div className="mt-2 ml-[3.75rem] rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2.5 sm:ml-16">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-[11px] font-bold text-[var(--muted)]">
+              開始
+              <input
+                type="time"
+                value={startTime}
+                onChange={(event) => setStartTime(event.target.value)}
+                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+              />
+            </label>
+            <label className="text-[11px] font-bold text-[var(--muted)]">
+              終了
+              <input
+                type="time"
+                value={endTime}
+                onChange={(event) => setEndTime(event.target.value)}
+                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+              />
+            </label>
+            <Button
+              onClick={() => void saveDetail()}
+              disabled={busy}
+              variant="solid"
+              tone="blue"
+              size="compact"
+              className="!min-h-9 !px-2.5 !text-[11px]"
+            >
+              保存
+            </Button>
+          </div>
+          {detailError && (
+            <p className="mt-1.5 text-[11px] font-bold text-[var(--coral)]" role="alert">
+              {detailError}
+            </p>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+export function NextPlansCard({
+  plans,
+  date,
+  runningPlanId = null,
+  busyPlanId = null,
+  actions,
+  errorMessage = null,
+}: {
+  plans: SchedulePlan[];
+  date: string;
+  runningPlanId?: string | null;
+  busyPlanId?: string | null;
+  actions?: PlanActionHandlers;
+  errorMessage?: string | null;
+}) {
   return (
     <DashboardCard
-      title="次の予定"
+      title="今日の予定"
       icon={CalendarDays}
       tone="blue"
       density="compact"
       action={<SectionLink to="/schedule">詳しく見る</SectionLink>}
     >
-      {visiblePlans.length > 0 ? (
-        <ol className="list-none space-y-0 p-0">
-          {visiblePlans.map((plan, index) => {
-            const isLast = index === visiblePlans.length - 1;
-            return (
-              <li key={plan.id} className="flex gap-3 pb-3 last:pb-1">
-                <time className="w-11 shrink-0 pt-0.5 text-right text-[13.5px] font-extrabold tabular-nums text-[var(--primary-deep)]">
-                  {formatTime(plan.startAt)}
-                </time>
-                <span className="flex w-3.5 shrink-0 flex-col items-center">
-                  <span className="mt-1 size-2.5 rounded-full border-[2.5px] border-[var(--primary)] bg-white" />
-                  {!isLast && (
-                    <span className="mt-0.5 w-0.5 flex-1 rounded-sm bg-[var(--line)]" />
-                  )}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[13.5px] font-bold text-[var(--ink)]">
-                    {plan.title}
-                  </span>
-                  <span className="mt-0.5 block text-[11.5px] text-[var(--muted)] tabular-nums">
-                    {formatTimeRange(plan.startAt, plan.endAt)}
-                  </span>
-                </span>
-              </li>
-            );
-          })}
+      {plans.length > 0 ? (
+        <ol className="list-none max-h-[min(70vh,36rem)] space-y-0 overflow-y-auto p-0">
+          {plans.map((plan, index) => (
+            <PlanRow
+              key={plan.id}
+              plan={plan}
+              date={date}
+              isLast={index === plans.length - 1}
+              busy={busyPlanId !== null}
+              running={runningPlanId === plan.id}
+              actions={actions}
+            />
+          ))}
         </ol>
       ) : (
-        <EmptyState>次の予定はありません。</EmptyState>
+        <EmptyState>今日の予定はありません。</EmptyState>
+      )}
+      {errorMessage && (
+        <p className="mt-2 text-xs font-bold text-[var(--coral)]" role="alert">
+          {errorMessage}
+        </p>
       )}
     </DashboardCard>
   );

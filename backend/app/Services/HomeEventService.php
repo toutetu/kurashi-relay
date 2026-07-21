@@ -6,18 +6,23 @@ use App\Models\ActivityDefinition;
 use App\Models\ActivityEvent;
 use App\Models\ActivityEventCancellation;
 use App\Models\DailyCondition;
+use App\Models\PlanActualLink;
+use App\Models\PlannedActivity;
 use App\Support\FamilyMemberResolver;
 use App\Support\JstDate;
 use Carbon\CarbonImmutable;
+use Database\Support\ActivityDefinitionCatalog;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final class HomeEventService
 {
     /**
      * @param  array{
-     *   activity_definition_id: int,
+     *   activity_definition_id?: int|null,
+     *   planned_activity_id?: int|null,
      *   idempotency_key: string,
      *   occurred_at?: string|null,
      *   ended_at?: string|null,
@@ -28,16 +33,9 @@ final class HomeEventService
      */
     public function store(array $input): array
     {
-        $definition = ActivityDefinition::query()
-            ->whereKey($input['activity_definition_id'])
-            ->where('is_active', true)
-            ->first();
-
-        if ($definition === null) {
-            throw (new ModelNotFoundException)->setModel(ActivityDefinition::class, [$input['activity_definition_id']]);
-        }
-
         $motherId = FamilyMemberResolver::motherId();
+        $plan = $this->resolvePlan($input['planned_activity_id'] ?? null, $motherId);
+        $definition = $this->resolveDefinition($input['activity_definition_id'] ?? null, $plan);
         $eventType = $input['event_type'] ?? 'activity';
         if (! in_array($eventType, ['activity', 'support'], true)) {
             $eventType = 'activity';
@@ -50,13 +48,36 @@ final class HomeEventService
             ? CarbonImmutable::parse($input['ended_at'])->timezone('UTC')
             : null;
 
-        return DB::transaction(function () use ($definition, $motherId, $eventType, $occurredAt, $endedAt, $input): array {
+        return DB::transaction(function () use ($definition, $plan, $motherId, $eventType, $occurredAt, $endedAt, $input): array {
+            $isDurationActivity = in_array($definition->activity_key, $this->durationActivityKeys(), true);
+            if ($isDurationActivity) {
+                DB::table('family_members')
+                    ->where('id', $motherId)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
             $existing = ActivityEvent::query()
+                ->with('planActualLinks')
                 ->where('idempotency_key', $input['idempotency_key'])
                 ->first();
 
             if ($existing !== null) {
-                return ['event' => $existing->load(['activityDefinition']), 'created' => false];
+                $this->assertIdempotentRequestMatches($existing, $definition, $plan);
+
+                return [
+                    'event' => $existing->load(['activityDefinition', 'planActualLinks.plannedActivity']),
+                    'created' => false,
+                ];
+            }
+
+            if ($isDurationActivity) {
+                $this->completeRunningActivities($motherId, $occurredAt);
+            }
+
+            // 声かけなど瞬間記録は開始=終了で保存する
+            if ($endedAt === null && ! $isDurationActivity) {
+                $endedAt = $occurredAt;
             }
 
             $event = ActivityEvent::query()->create([
@@ -70,15 +91,76 @@ final class HomeEventService
                 'idempotency_key' => $input['idempotency_key'],
             ]);
 
-            return ['event' => $event->load(['activityDefinition']), 'created' => true];
+            $this->ensurePlanActualLink($event, $plan);
+
+            return [
+                'event' => $event->load(['activityDefinition', 'planActualLinks.plannedActivity']),
+                'created' => true,
+            ];
         });
+    }
+
+    public function complete(int $id, string $endedAt): ActivityEvent
+    {
+        return DB::transaction(function () use ($id, $endedAt): ActivityEvent {
+            $definitionIds = ActivityDefinition::query()
+                ->whereIn('activity_key', $this->durationActivityKeys())
+                ->pluck('id');
+
+            $event = ActivityEvent::query()
+                ->where('source', 'mother_quick')
+                ->where('recorded_by_member_id', FamilyMemberResolver::motherId())
+                ->whereIn('activity_definition_id', $definitionIds)
+                ->whereKey($id)
+                ->whereDoesntHave('cancellation')
+                ->lockForUpdate()
+                ->first();
+
+            if ($event === null) {
+                throw (new ModelNotFoundException)->setModel(ActivityEvent::class, [$id]);
+            }
+
+            if ($event->ended_at !== null) {
+                return $event->load(['activityDefinition', 'planActualLinks.plannedActivity']);
+            }
+
+            $resolvedEnd = CarbonImmutable::parse($endedAt)->timezone('UTC');
+            if ($resolvedEnd->isBefore($event->occurred_at)) {
+                throw ValidationException::withMessages([
+                    'ended_at' => ['終了時刻は開始時刻以降にしてください。'],
+                ]);
+            }
+
+            $event->ended_at = $resolvedEnd;
+            $event->save();
+
+            return $event->load(['activityDefinition', 'planActualLinks.plannedActivity']);
+        });
+    }
+
+    public function runningActivity(): ?ActivityEvent
+    {
+        $definitionIds = ActivityDefinition::query()
+            ->whereIn('activity_key', $this->durationActivityKeys())
+            ->pluck('id');
+
+        return ActivityEvent::query()
+            ->with(['activityDefinition', 'planActualLinks.plannedActivity'])
+            ->where('source', 'mother_quick')
+            ->where('recorded_by_member_id', FamilyMemberResolver::motherId())
+            ->whereIn('activity_definition_id', $definitionIds)
+            ->whereNull('ended_at')
+            ->whereDoesntHave('cancellation')
+            ->latest('occurred_at')
+            ->first();
     }
 
     public function cancel(int $id): ActivityEvent
     {
         return DB::transaction(function () use ($id): ActivityEvent {
             $event = ActivityEvent::query()
-                ->where('source', 'mother_quick')
+                ->whereIn('source', ['mother_quick', 'koekake'])
+                ->where('recorded_by_member_id', FamilyMemberResolver::motherId())
                 ->whereKey($id)
                 ->lockForUpdate()
                 ->first();
@@ -102,6 +184,68 @@ final class HomeEventService
 
             return $event->load(['activityDefinition', 'cancellation']);
         });
+    }
+
+    /**
+     * @param  array{occurred_at?: string|null, ended_at?: string|null}  $input
+     */
+    public function update(int $id, array $input): ActivityEvent
+    {
+        return DB::transaction(function () use ($id, $input): ActivityEvent {
+            $event = ActivityEvent::query()
+                ->whereIn('source', ['mother_quick', 'koekake'])
+                ->where('recorded_by_member_id', FamilyMemberResolver::motherId())
+                ->whereKey($id)
+                ->whereDoesntHave('cancellation')
+                ->lockForUpdate()
+                ->first();
+
+            if ($event === null) {
+                throw (new ModelNotFoundException)->setModel(ActivityEvent::class, [$id]);
+            }
+
+            $occurredAt = array_key_exists('occurred_at', $input) && is_string($input['occurred_at']) && $input['occurred_at'] !== ''
+                ? CarbonImmutable::parse($input['occurred_at'])->timezone('UTC')
+                : $event->occurred_at;
+
+            $endedAt = array_key_exists('ended_at', $input)
+                ? (
+                    is_string($input['ended_at']) && $input['ended_at'] !== ''
+                        ? CarbonImmutable::parse($input['ended_at'])->timezone('UTC')
+                        : null
+                )
+                : $event->ended_at;
+
+            if ($endedAt !== null && $endedAt->isBefore($occurredAt)) {
+                throw ValidationException::withMessages([
+                    'ended_at' => ['終了時刻は開始時刻以降にしてください。'],
+                ]);
+            }
+
+            $event->occurred_at = $occurredAt;
+            $event->ended_at = $endedAt;
+            $event->save();
+
+            return $event->load(['activityDefinition', 'planActualLinks.plannedActivity']);
+        });
+    }
+
+    public function skipPlan(int $plannedActivityId): PlannedActivity
+    {
+        $plan = PlannedActivity::query()
+            ->whereKey($plannedActivityId)
+            ->where('subject_member_id', FamilyMemberResolver::motherId())
+            ->where('status', '!=', 'cancelled')
+            ->first();
+
+        if ($plan === null) {
+            throw (new ModelNotFoundException)->setModel(PlannedActivity::class, [$plannedActivityId]);
+        }
+
+        $plan->status = 'cancelled';
+        $plan->save();
+
+        return $plan->load(['activityDefinition', 'subjectMember']);
     }
 
     /**
@@ -197,5 +341,125 @@ final class HomeEventService
     public function conditionsForDate(string $date): ?DailyCondition
     {
         return DailyCondition::query()->whereDate('local_date', $date)->first();
+    }
+
+    private function resolvePlan(mixed $id, int $motherId): ?PlannedActivity
+    {
+        if ($id === null || $id === '') {
+            return null;
+        }
+
+        $plan = PlannedActivity::query()
+            ->with('activityDefinition')
+            ->whereKey((int) $id)
+            ->where('subject_member_id', $motherId)
+            ->where('status', '!=', 'cancelled')
+            ->first();
+
+        if ($plan === null) {
+            throw ValidationException::withMessages([
+                'planned_activity_id' => ['記録できる「私」の予定を選んでください。'],
+            ]);
+        }
+
+        return $plan;
+    }
+
+    private function resolveDefinition(mixed $id, ?PlannedActivity $plan): ActivityDefinition
+    {
+        if ($plan?->activityDefinition !== null) {
+            return $plan->activityDefinition;
+        }
+
+        $query = ActivityDefinition::query()->where('is_active', true);
+        if ($id !== null && $id !== '') {
+            $query->whereKey((int) $id);
+        } elseif ($plan !== null) {
+            $query->where('activity_key', ActivityDefinitionCatalog::calendarActivityDefinitionKey());
+        } else {
+            throw ValidationException::withMessages([
+                'activity_definition_id' => ['記録する活動を選んでください。'],
+            ]);
+        }
+
+        $definition = $query->first();
+        if ($definition === null) {
+            throw (new ModelNotFoundException)->setModel(ActivityDefinition::class, [$id]);
+        }
+
+        return $definition;
+    }
+
+    private function ensurePlanActualLink(ActivityEvent $event, ?PlannedActivity $plan): void
+    {
+        if ($plan === null) {
+            return;
+        }
+
+        PlanActualLink::query()->firstOrCreate(
+            [
+                'planned_activity_id' => $plan->id,
+                'activity_event_id' => $event->id,
+                'link_type' => 'primary',
+            ],
+            [
+                'matched_by' => 'manual',
+                'confidence' => 100,
+                'created_at' => now('UTC'),
+            ],
+        );
+    }
+
+    private function assertIdempotentRequestMatches(
+        ActivityEvent $event,
+        ActivityDefinition $definition,
+        ?PlannedActivity $plan,
+    ): void {
+        $linkedPlanIds = $event->planActualLinks
+            ->where('link_type', 'primary')
+            ->pluck('planned_activity_id')
+            ->values();
+        $requestedPlanId = $plan?->id;
+        $samePlan = $requestedPlanId === null
+            ? $linkedPlanIds->isEmpty()
+            : $linkedPlanIds->count() === 1 && $linkedPlanIds->first() === $requestedPlanId;
+
+        if ($event->activity_definition_id !== $definition->id || ! $samePlan) {
+            throw new ConflictHttpException('同じ再送防止キーに異なる記録内容は指定できません。');
+        }
+    }
+
+    private function completeRunningActivities(int $motherId, CarbonImmutable $endedAt): void
+    {
+        $definitionIds = ActivityDefinition::query()
+            ->whereIn('activity_key', $this->durationActivityKeys())
+            ->pluck('id');
+
+        $events = ActivityEvent::query()
+            ->where('source', 'mother_quick')
+            ->where('recorded_by_member_id', $motherId)
+            ->whereIn('activity_definition_id', $definitionIds)
+            ->whereNull('ended_at')
+            ->whereDoesntHave('cancellation')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($events as $event) {
+            $event->ended_at = $endedAt->isBefore($event->occurred_at)
+                ? $event->occurred_at
+                : $endedAt;
+            $event->save();
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function durationActivityKeys(): array
+    {
+        return [
+            ...array_values(ActivityDefinitionCatalog::quickActivityDefinitionKeys()),
+            ActivityDefinitionCatalog::calendarActivityDefinitionKey(),
+        ];
     }
 }

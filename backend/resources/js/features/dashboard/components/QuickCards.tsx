@@ -17,74 +17,74 @@ import { Button } from "../../../components/ui/Button";
 import { EmptyState } from "../../../components/ui/DashboardPrimitives";
 import type {
   ActivityCategory,
+  QuickActivityOption,
   QuickLog,
   QuickLogType,
 } from "../../../types/dashboard";
-import type { LocalActivity } from "../../../types/local";
 
-const quickActivities: Array<{
-  category: ActivityCategory;
-  label: string;
-  icon: LucideIcon;
-  chipClass: string;
-}> = [
+const quickActivityPresentation: Record<
+  ActivityCategory,
   {
-    category: "work_preparation",
-    label: "就労準備",
+    icon: LucideIcon;
+    chipClass: string;
+  }
+> = {
+  work_preparation: {
     icon: BriefcaseBusiness,
     chipClass: "bg-[var(--cat-blue-soft)] text-[var(--cat-blue)]",
   },
-  {
-    category: "housework",
-    label: "家事",
+  housework: {
     icon: House,
     chipClass: "bg-[var(--amber-soft)] text-[var(--amber)]",
   },
-  {
-    category: "school_support",
-    label: "登校支援",
+  school_support: {
     icon: Backpack,
     chipClass: "bg-[var(--green-soft)] text-[var(--green)]",
   },
-  {
-    category: "waiting",
-    label: "待機",
+  waiting: {
     icon: Clock3,
     chipClass: "bg-[var(--cat-blue-soft)] text-[var(--cat-blue)]",
   },
-  {
-    category: "recovery",
-    label: "回復・休息",
+  recovery: {
     icon: Moon,
     chipClass: "bg-[var(--fuji-soft)] text-[var(--fuji)]",
   },
-  {
-    category: "last_war",
-    label: "ラストウォー",
+  last_war: {
     icon: Gamepad2,
     chipClass: "bg-[var(--coral-soft)] text-[var(--coral)]",
   },
-];
+};
 
 export function QuickStartCard({
+  activities,
   onStart,
-  runningCategory = null,
+  runningOptionId = null,
 }: {
-  onStart: (activity: LocalActivity) => void;
-  runningCategory?: ActivityCategory | null;
+  activities: QuickActivityOption[];
+  onStart: (activity: QuickActivityOption) => Promise<void>;
+  runningOptionId?: string | null;
 }) {
-  const startActivity = (category: ActivityCategory, label: string) =>
-    onStart({
-      id: `local-${category}-${new Date().toISOString()}`,
-      title: label,
-      category,
-      startedAt: new Date().toISOString(),
-      status: "running",
-      relatedPlanTitle: null,
-      pausedAt: null,
-      completedAt: null,
-      totalPausedMilliseconds: 0,
-    });
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const presets = activities.filter((activity) => activity.source === "preset");
+
+  const startActivity = async (activity: QuickActivityOption) => {
+    if (savingId !== null) return;
+    setSavingId(activity.id);
+    setErrorMessage(null);
+
+    try {
+      await onStart(activity);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "活動の開始を保存できませんでした。もう一度お試しください。",
+      );
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   return (
     <DashboardCard
@@ -95,14 +95,19 @@ export function QuickStartCard({
       density="compact"
     >
       <div className="grid grid-cols-3 gap-2">
-        {quickActivities.map(({ category, label, icon: Icon, chipClass }) => {
-          const running = runningCategory === category;
+        {presets.map((activity) => {
+          const presentation = quickActivityPresentation[activity.category];
+          const Icon = presentation.icon;
+          const running = runningOptionId === activity.id;
+
           return (
             <button
-              key={category}
+              key={activity.id}
               type="button"
-              onClick={() => startActivity(category, label)}
-              className="pressable relative flex flex-col items-center gap-1 rounded-2xl border-[1.5px] bg-[var(--surface)] px-1 py-1.5 text-[11px] font-bold text-[var(--ink)] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+              onClick={() => void startActivity(activity)}
+              disabled={savingId !== null}
+              aria-label={`${activity.label}を開始`}
+              className="pressable relative flex flex-col items-center gap-1 rounded-2xl border-[1.5px] bg-[var(--surface)] px-1 py-1.5 text-[11px] font-bold text-[var(--ink)] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:opacity-60"
               style={
                 running
                   ? {
@@ -121,18 +126,23 @@ export function QuickStartCard({
                 />
               )}
               <span
-                className={`grid size-[34px] place-items-center rounded-full ${chipClass}`}
+                className={`grid size-[34px] place-items-center rounded-full ${presentation.chipClass}`}
               >
                 <Icon aria-hidden="true" size={15} />
               </span>
-              {label}
+              {activity.label}
             </button>
           );
         })}
       </div>
       <p className="mt-2 text-[10.5px] text-[var(--faint)]">
-        この画面での変更は、まだサーバーには保存されません。
+        開始時刻を保存し、「終了」で終了時刻も記録します。予定の操作は「きょうのようす」から行えます。
       </p>
+      {errorMessage && (
+        <p className="mt-2 text-xs font-bold text-[var(--coral)]" role="alert">
+          {errorMessage}
+        </p>
+      )}
     </DashboardCard>
   );
 }
@@ -265,11 +275,7 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
                       <Plus aria-hidden="true" size={14} strokeWidth={2.4} />
                     </span>
                     {flyKey !== undefined && flyKey > 0 && (
-                      <span
-                        key={flyKey}
-                        className="fly"
-                        aria-hidden="true"
-                      >
+                      <span key={flyKey} className="fly" aria-hidden="true">
                         +1
                       </span>
                     )}

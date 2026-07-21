@@ -16,11 +16,25 @@ const activityCategory = z.enum([
 
 const currentActivity = z.strictObject({
   id: identifier,
+  eventId: z.number().int().positive(),
+  activityDefinitionId: z.number().int().positive(),
+  plannedActivityId: z.number().int().positive().nullable().optional(),
   title: z.string().min(1),
   category: activityCategory,
   startedAt: isoDateTime,
   status: z.enum(["idle", "running", "paused", "completed"]),
   relatedPlanTitle: z.string().nullable().optional(),
+});
+
+const quickActivity = z.strictObject({
+  id: identifier,
+  label: z.string().min(1),
+  category: activityCategory,
+  source: z.enum(["preset", "google"]),
+  activityDefinitionId: z.number().int().positive(),
+  plannedActivityId: z.number().int().positive().nullable(),
+  plannedStartAt: isoDateTime.nullable(),
+  plannedEndAt: isoDateTime.nullable(),
 });
 
 const schedulePlan = z.strictObject({
@@ -32,6 +46,8 @@ const schedulePlan = z.strictObject({
   source: z.enum(["google", "manual"]).optional(),
   status: z.string().min(1).optional(),
   details: z.array(z.string()).optional(),
+  outcome: z.enum(["done", "skipped"]).nullable().optional(),
+  recordable: z.boolean().optional(),
 });
 
 const quickLog = z.strictObject({
@@ -156,6 +172,7 @@ export const dashboardResponseSchema: z.ZodType<DashboardResponse> =
       date: z.iso.date(),
       currentActivity: currentActivity.nullable(),
       nextPlans: z.array(schedulePlan),
+      quickActivities: z.array(quickActivity),
       quickLogs: z.array(quickLog),
       conditions: z.strictObject({
         mother: condition,

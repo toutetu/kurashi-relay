@@ -30,7 +30,7 @@ describe("くらしリレー SPA", () => {
     );
   });
 
-  it("ホームには表示順どおり6項目だけを表示する", async () => {
+  it("ホームには表示順どおり4項目だけを表示する", async () => {
     fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
     renderApp();
 
@@ -38,12 +38,10 @@ describe("くらしリレー SPA", () => {
       await screen.findByRole("heading", { name: "現在の活動" }),
     ).toBeInTheDocument();
     for (const heading of [
+      "現在の活動",
+      "今日の予定",
       "クイック活動記録",
       "クイック記録",
-      "現在の活動",
-      "次の予定",
-      "母の体調と気分",
-      "時間の内訳",
     ]) {
       expect(
         screen.getByRole("heading", { name: heading }),
@@ -55,13 +53,13 @@ describe("くらしリレー SPA", () => {
       ),
     ).toEqual([
       "現在の活動",
+      "今日の予定",
       "クイック活動記録",
       "クイック記録",
-      "母の体調と気分",
-      "次の予定",
-      "時間の内訳",
     ]);
     for (const absentHeading of [
+      "母の体調と気分",
+      "時間の内訳",
       "娘の体調と気分",
       "娘の今日の作戦",
       "予定への影響",
@@ -79,20 +77,20 @@ describe("くらしリレー SPA", () => {
     expect(screen.getByTestId("home-dashboard-grid")).toHaveClass("home-grid");
   });
 
-  it("ホームは記録タブを初期表示し、URLへ同期する", async () => {
+  it("ホームは今日タブを初期表示し、URLへ同期する", async () => {
     fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
     renderApp("/", true);
 
-    expect(await screen.findByRole("tab", { name: "記録" })).toHaveAttribute(
+    expect(await screen.findByRole("tab", { name: "今日" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
     await waitFor(() =>
       expect(screen.getByTestId("location-search")).toHaveTextContent(
-        "?tab=record",
+        "?tab=today",
       ),
     );
-    expect(screen.getByRole("tabpanel", { name: "記録" })).toBeInTheDocument();
+    expect(screen.getByRole("tabpanel", { name: "今日" })).toBeInTheDocument();
   });
 
   it("ホームタブをURLとキーボードで切り替える", async () => {
@@ -107,7 +105,7 @@ describe("くらしリレー SPA", () => {
       "?tab=record",
     );
 
-    await user.keyboard("{ArrowRight}");
+    await user.keyboard("{ArrowLeft}");
     expect(screen.getByRole("tab", { name: "今日" })).toHaveFocus();
     expect(screen.getByRole("tab", { name: "今日" })).toHaveAttribute(
       "aria-selected",
@@ -115,17 +113,17 @@ describe("くらしリレー SPA", () => {
     );
   });
 
-  it("不正なホームタブは記録へ戻す", async () => {
+  it("不正なホームタブは今日へ戻す", async () => {
     fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
     renderApp("/?tab=unknown", true);
 
-    expect(await screen.findByRole("tab", { name: "記録" })).toHaveAttribute(
+    expect(await screen.findByRole("tab", { name: "今日" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
     await waitFor(() =>
       expect(screen.getByTestId("location-search")).toHaveTextContent(
-        "?tab=record",
+        "?tab=today",
       ),
     );
   });
@@ -183,7 +181,7 @@ describe("くらしリレー SPA", () => {
   it("クイック記録の連続タップでは最新の1件を取り消せる", async () => {
     const user = userEvent.setup();
     fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
-    renderApp();
+    renderApp("/?tab=record");
 
     const recordButton = await screen.findByRole("button", {
       name: "起床の声かけを記録。現在1件",
@@ -199,10 +197,10 @@ describe("くらしリレー SPA", () => {
     ).toBeInTheDocument();
   });
 
-  it("ホームの母の体調と気分を1クリックでローカル編集できる", async () => {
+  it("私の状態ページで母の体調と気分を1クリックでローカル編集できる", async () => {
     const user = userEvent.setup();
     fetchMock.mockImplementation(() => jsonResponse(dashboardResponse));
-    renderApp();
+    renderApp("/mama-state");
 
     await user.click(
       await screen.findByRole("button", { name: "母の体調を5にする" }),

@@ -84,6 +84,26 @@ export function formatTimeRange(startAt: string, endAt: string): string {
   return `${formatTime(startAt)}〜${formatTime(endAt)}`;
 }
 
+/** Asia/Tokyo の HH:mm（input[type=time] 用） */
+export function toTokyoTimeInputValue(isoDate: string): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: TOKYO_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(isoDate));
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+  return `${values.hour ?? "00"}:${values.minute ?? "00"}`;
+}
+
+/** 日付(YYYY-MM-DD)と HH:mm から Asia/Tokyo の ISO 8601 を作る */
+export function tokyoDateTimeFromParts(date: string, time: string): string {
+  const normalized = /^\d{2}:\d{2}$/.test(time) ? `${time}:00` : time;
+  return `${date}T${normalized}+09:00`;
+}
+
 export function formatMinutes(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;

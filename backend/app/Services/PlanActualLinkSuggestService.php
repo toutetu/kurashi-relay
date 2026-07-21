@@ -27,6 +27,7 @@ final class PlanActualLinkSuggestService
             ->get();
 
         $events = ActivityEvent::query()
+            ->with('activityDefinition')
             ->whereBetween('occurred_at', [$start, $end])
             ->whereDoesntHave('cancellation')
             ->get();
@@ -43,7 +44,7 @@ final class PlanActualLinkSuggestService
 
                 foreach ($events as $event) {
                     $eventStart = $event->occurred_at;
-                    $eventEnd = $event->ended_at ?? $eventStart->copy()->addMinutes(30);
+                    $eventEnd = \App\Support\ActivityEventTime::effectiveEnd($event);
 
                     if (! ($eventStart < $planEnd && $eventEnd > $planStart)) {
                         continue;

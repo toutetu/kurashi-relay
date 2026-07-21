@@ -19,6 +19,7 @@ final class DashboardResource extends JsonResource
             'date' => $dashboard['date'],
             'currentActivity' => $dashboard['currentActivity'],
             'nextPlans' => $dashboard['nextPlans'],
+            'quickActivities' => $dashboard['quickActivities'],
             'quickLogs' => $dashboard['quickLogs'],
             'conditions' => $dashboard['conditions'],
             'childStrategy' => $dashboard['childStrategy'],

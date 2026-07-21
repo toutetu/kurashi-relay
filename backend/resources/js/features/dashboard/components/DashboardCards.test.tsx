@@ -7,6 +7,9 @@ import { CurrentActivityCard, QuickLogsCard } from "./DashboardCards";
 function ActivityHarness() {
   const [activity, setActivity] = useState<LocalActivity>({
     id: "local-activity",
+    eventId: 1,
+    activityDefinitionId: 46,
+    plannedActivityId: null,
     title: "就労準備",
     category: "work_preparation",
     startedAt: "2026-07-13T09:00:00+09:00",
@@ -32,21 +35,12 @@ describe("ダッシュボードのローカル操作", () => {
     vi.useRealTimers();
   });
 
-  it("一時停止中の時間を経過時間から除外する", async () => {
+  it("進行中の経過時間を更新する", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-13T10:00:00+09:00"));
     render(<ActivityHarness />);
 
     expect(screen.getByText("1時間")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "一時停止" }));
-
-    act(() => vi.advanceTimersByTime(30 * 60 * 1000));
-    expect(screen.getByText("1時間")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "再開" }));
-    act(() => vi.advanceTimersByTime(0));
-    expect(screen.getByText("1時間")).toBeInTheDocument();
-
     act(() => vi.advanceTimersByTime(30 * 60 * 1000));
     expect(screen.getByText("1時間30分")).toBeInTheDocument();
   });

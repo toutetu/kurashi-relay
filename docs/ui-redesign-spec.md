@@ -83,10 +83,10 @@ red→coral 系、yellow→amber 系(solid 前景は白)、neutral→ink 系、d
   - reduced-motion で `.popping`/`.count-bump` は animation none、`.fly` は display none
 - `.home-grid`(モバイル1列 / `@media (min-width:75rem)` で3列):
   ```
-  grid-template-columns: minmax(0,1fr) minmax(0,1fr) 20rem;
-  grid-template-areas: "z1 z1 z2" "qs ql pl" "cd ql tb";
+  grid-template-columns: minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);
+  grid-template-areas: "z2 z1 z1" "pl qs ql" "pl qs ql";
   ```
-  `.area-z1/z2/qs/ql/cd/pl/tb` で grid-area 指定。gap 0.75rem
+  `.area-z1/z2/qs/ql/pl` で grid-area 指定。gap 0.625rem(PCは10px)
 - `.zone-label`: 13px/800/`var(--primary-deep)`、右側に `flex:1; height:1.5px; background: color-mix(in srgb, var(--primary) 16%, transparent)` の線(`::after`)
 
 ## 3. 新規 `src/features/mood/mood.tsx`
@@ -117,12 +117,12 @@ red→coral 系、yellow→amber 系(solid 前景は白)、neutral→ink 系、d
 
 - ヘッダー: 日付(小・カレンダーアイコン付き)→ H1「今日のくらしを、見えるかたちに」(20px/800)。右側に `MoodPicker` と更新ボタン(ghost・小)を縦積み(モバイルは折り返し)
 - `CurrentActivityCard`(NowBar化、§6)を**タブの外・常時表示**で最初に配置
-- `SegmentedTabs`(記録/今日)は現状のURL同期ロジックのまま(モバイルのみ表示)
-  - 記録タブ: クイック活動記録・クイック記録・母の体調と気分
-  - 今日タブ: 次の予定・時間の内訳
-- グリッド: `home-grid` + `area-*` クラス。ゾーンラベル `✏️ きろくする` / `👀 きょうのようす` は `<p class="zone-label hidden xl:flex">`(見出しタグにしない)
+- `SegmentedTabs`(今日/記録)は現状のURL同期ロジックのまま(モバイルのみ表示)。既定タブは今日
+  - 今日タブ: 今日の予定(1日分すべて)
+  - 記録タブ: クイック活動記録・クイック記録
+- グリッド: `home-grid` + `area-*` クラス。ゾーンラベルは左 `👀 きょうのようす` / 右 `✏️ きろくする` を `<p class="zone-label hidden xl:flex">`(見出しタグにしない)
 - `data-testid="home-dashboard-grid"` は grid の div に残す
-- QuickStartCard に `runningCategory`(currentActivity が running のときの category、それ以外 null)を渡す
+- QuickStartCard に `runningOptionId` を渡す
 
 ## 6. `src/features/dashboard/components/CurrentActivityCard.tsx` — NowBar化
 
@@ -167,7 +167,7 @@ red→coral 系、yellow→amber 系(solid 前景は白)、neutral→ink 系、d
 
 ## 10. テスト更新(`src/App.test.tsx` のみ)
 
-1. 「ホームには表示順どおり6項目…」: main h2 の期待順を `["現在の活動","クイック活動記録","クイック記録","母の体調と気分","次の予定","時間の内訳"]` に変更。grid のクラス assert は `toHaveClass("home-grid")` に変更
+1. 「ホームには表示順どおり4項目…」: main h2 の期待順を `["現在の活動","今日の予定","クイック活動記録","クイック記録"]` に変更。grid のクラス assert は `toHaveClass("home-grid")` に変更
 2. 「PCサイドバーには…モバイル下部には6項目」: 下部ナビの link 数を 5 に変更(テスト名も「5項目」に)
 - 他のテストは**修正せず通す**(通らない場合は実装側を直す)
 

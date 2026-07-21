@@ -47,7 +47,59 @@ final class ActivityDefinitionCatalog
             ['activity_key' => 'ACT-043', 'category' => 'planning', 'name' => '今日の予定確認', 'child_label' => '今日することを確認した', 'parent_prompt_label' => '今日することを確認するように声をかけた', 'quick_label' => '予定確認の声かけ', 'kind' => 'activity', 'sort_order' => 43],
             ['activity_key' => 'ACT-044', 'category' => 'planning', 'name' => '明日の持ち物確認', 'child_label' => '明日の持ち物を確認した', 'parent_prompt_label' => '明日の持ち物を確認するように声をかけた', 'quick_label' => '明日の持ち物確認の声かけ', 'kind' => 'activity', 'sort_order' => 44],
             ['activity_key' => 'ACT-045', 'category' => 'sleep', 'name' => 'おやすみ', 'child_label' => 'おやすみを言った', 'parent_prompt_label' => 'おやすみの挨拶をした', 'quick_label' => 'おやすみの声かけ', 'kind' => 'sleep', 'sort_order' => 45],
+            ['activity_key' => 'ACT-046', 'category' => 'work_preparation', 'name' => '就労準備', 'child_label' => '就労準備をした', 'parent_prompt_label' => '就労準備をした', 'quick_label' => '就労準備', 'kind' => 'activity', 'sort_order' => 46],
+            ['activity_key' => 'ACT-047', 'category' => 'housework', 'name' => '家事', 'child_label' => '家事をした', 'parent_prompt_label' => '家事をした', 'quick_label' => '家事', 'kind' => 'activity', 'sort_order' => 47],
+            ['activity_key' => 'ACT-048', 'category' => 'school_support', 'name' => '登校支援', 'child_label' => '登校の準備をした', 'parent_prompt_label' => '登校を支援した', 'quick_label' => '登校支援', 'kind' => 'support', 'sort_order' => 48],
+            ['activity_key' => 'ACT-049', 'category' => 'waiting', 'name' => '待機', 'child_label' => '待機した', 'parent_prompt_label' => '待機した', 'quick_label' => '待機', 'kind' => 'waiting', 'sort_order' => 49],
+            ['activity_key' => 'ACT-050', 'category' => 'recovery', 'name' => '回復・休息', 'child_label' => '休息した', 'parent_prompt_label' => '回復・休息した', 'quick_label' => '回復・休息', 'kind' => 'recovery', 'sort_order' => 50],
+            ['activity_key' => 'ACT-051', 'category' => 'last_war', 'name' => 'ラストウォー', 'child_label' => 'ラストウォーをした', 'parent_prompt_label' => 'ラストウォーをした', 'quick_label' => 'ラストウォー', 'kind' => 'activity', 'sort_order' => 51],
+            ['activity_key' => 'ACT-052', 'category' => 'calendar', 'name' => 'カレンダー予定', 'child_label' => '予定を実施した', 'parent_prompt_label' => '予定を実施した', 'quick_label' => 'カレンダー予定', 'kind' => 'activity', 'sort_order' => 52],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function quickActivityDefinitionKeys(): array
+    {
+        return [
+            'work_preparation' => 'ACT-046',
+            'housework' => 'ACT-047',
+            'school_support' => 'ACT-048',
+            'waiting' => 'ACT-049',
+            'recovery' => 'ACT-050',
+            'last_war' => 'ACT-051',
+        ];
+    }
+
+    public static function calendarActivityDefinitionKey(): string
+    {
+        return 'ACT-052';
+    }
+
+    /**
+     * @return list<array{
+     *     activity_key: string,
+     *     category: string,
+     *     name: string,
+     *     child_label: string,
+     *     parent_prompt_label: string,
+     *     quick_label: string,
+     *     kind: string,
+     *     sort_order: int
+     * }>
+     */
+    public static function quickActivityDefinitions(): array
+    {
+        $keys = [
+            ...array_values(self::quickActivityDefinitionKeys()),
+            self::calendarActivityDefinitionKey(),
+        ];
+
+        return array_values(array_filter(
+            self::definitions(),
+            fn (array $definition): bool => in_array($definition['activity_key'], $keys, true),
+        ));
     }
 
     /**

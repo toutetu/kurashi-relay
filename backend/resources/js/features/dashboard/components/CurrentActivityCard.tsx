@@ -1,6 +1,5 @@
 import {
   ArrowRightLeft,
-  CirclePause,
   CirclePlay,
   CircleStop,
 } from "lucide-react";
@@ -55,53 +54,52 @@ function useElapsedMinutes(activity: LocalActivity | null) {
 export function CurrentActivityCard({
   activity,
   onChange,
+  onComplete,
 }: {
   activity: LocalActivity | null;
   onChange: (activity: LocalActivity | null) => void;
+  onComplete?: (activity: LocalActivity, endedAt: string) => Promise<void>;
 }) {
   const headingId = useId();
   const elapsedMinutes = useElapsedMinutes(activity);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const goToQuickStart = () =>
     document
       .querySelector("#quick-start")
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  const pause = () => {
-    if (!activity || activity.status !== "running") return;
-    onChange({
-      ...activity,
-      status: "paused",
-      pausedAt: new Date().toISOString(),
-    });
-  };
-  const resume = () => {
-    if (!activity || activity.status !== "paused") return;
-    const pausedMilliseconds = activity.pausedAt
-      ? Math.max(0, Date.now() - new Date(activity.pausedAt).getTime())
-      : 0;
-    onChange({
-      ...activity,
-      status: "running",
-      pausedAt: null,
-      completedAt: null,
-      totalPausedMilliseconds:
-        activity.totalPausedMilliseconds + pausedMilliseconds,
-    });
-  };
-  const complete = () => {
+  const complete = async () => {
     if (!activity || activity.status === "completed") return;
     const now = new Date();
     const pausedMilliseconds = activity.pausedAt
       ? Math.max(0, now.getTime() - new Date(activity.pausedAt).getTime())
       : 0;
-    onChange({
+    const nextActivity: LocalActivity = {
       ...activity,
       status: "completed",
       pausedAt: null,
       completedAt: now.toISOString(),
       totalPausedMilliseconds:
         activity.totalPausedMilliseconds + pausedMilliseconds,
-    });
+    };
+
+    setIsSaving(true);
+    setErrorMessage(null);
+    try {
+      if (onComplete) {
+        await onComplete(activity, now.toISOString());
+      }
+      onChange(nextActivity);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "終了時刻を保存できませんでした。もう一度お試しください。",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -141,37 +139,17 @@ export function CurrentActivityCard({
             </strong>
           </p>
           <div className="flex flex-wrap gap-2">
-            {activity.status === "running" && (
-              <Button
-                onClick={pause}
-                variant="soft"
-                tone="blue"
-                size="compact"
-                icon={CirclePause}
-              >
-                一時停止
-              </Button>
-            )}
-            {activity.status === "paused" && (
-              <Button
-                onClick={resume}
-                variant="soft"
-                tone="blue"
-                size="compact"
-                icon={CirclePlay}
-              >
-                再開
-              </Button>
-            )}
             {activity.status !== "completed" && (
               <Button
-                onClick={complete}
+                onClick={() => void complete()}
+                disabled={isSaving}
                 variant="solid"
                 tone="blue"
                 size="compact"
                 icon={CircleStop}
+                loading={isSaving}
               >
-                終了
+                {isSaving ? "保存中…" : "終了"}
               </Button>
             )}
             <Button
@@ -184,6 +162,14 @@ export function CurrentActivityCard({
               切り替える
             </Button>
           </div>
+          {errorMessage && (
+            <p
+              className="basis-full text-xs font-bold text-[var(--coral)]"
+              role="alert"
+            >
+              {errorMessage}
+            </p>
+          )}
         </>
       ) : (
         <>
