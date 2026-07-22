@@ -8,6 +8,7 @@ use App\Models\ActivityEventCancellation;
 use App\Models\DailyCondition;
 use App\Models\PlanActualLink;
 use App\Models\PlannedActivity;
+use App\Models\TaskRecord;
 use App\Support\FamilyMemberResolver;
 use App\Support\JstDate;
 use Carbon\CarbonImmutable;
@@ -196,8 +197,6 @@ final class HomeEventService
     {
         return DB::transaction(function () use ($id, $input): ActivityEvent {
             $event = ActivityEvent::query()
-                ->whereIn('source', ['mother_quick', 'koekake'])
-                ->where('recorded_by_member_id', FamilyMemberResolver::motherId())
                 ->whereKey($id)
                 ->whereDoesntHave('cancellation')
                 ->lockForUpdate()
@@ -206,6 +205,9 @@ final class HomeEventService
             if ($event === null) {
                 throw (new ModelNotFoundException)->setModel(ActivityEvent::class, [$id]);
             }
+
+            $previousOccurredAt = $event->occurred_at;
+            $previousEndedAt = $event->ended_at;
 
             $occurredAt = array_key_exists('occurred_at', $input) && is_string($input['occurred_at']) && $input['occurred_at'] !== ''
                 ? CarbonImmutable::parse($input['occurred_at'])->timezone('UTC')
@@ -219,6 +221,16 @@ final class HomeEventService
                 )
                 : $event->ended_at;
 
+            // 瞬間記録（開始=終了）は開始だけ変えたとき終了も揃える
+            if (
+                ! array_key_exists('ended_at', $input)
+                && $previousEndedAt !== null
+                && $previousOccurredAt !== null
+                && $previousEndedAt->equalTo($previousOccurredAt)
+            ) {
+                $endedAt = $occurredAt;
+            }
+
             if ($endedAt !== null && $endedAt->isBefore($occurredAt)) {
                 throw ValidationException::withMessages([
                     'ended_at' => ['終了時刻は開始時刻以降にしてください。'],
@@ -228,6 +240,17 @@ final class HomeEventService
             $event->occurred_at = $occurredAt;
             $event->ended_at = $endedAt;
             $event->save();
+
+            if (
+                is_string($event->idempotency_key)
+                && str_starts_with($event->idempotency_key, 'oshigoto:')
+            ) {
+                $taskKey = substr($event->idempotency_key, strlen('oshigoto:'));
+                TaskRecord::query()
+                    ->where('idempotency_key', $taskKey)
+                    ->whereNull('cancelled_at')
+                    ->update(['completed_at' => $occurredAt]);
+            }
 
             return $event->load(['activityDefinition', 'planActualLinks.plannedActivity']);
         });
