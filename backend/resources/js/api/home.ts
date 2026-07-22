@@ -29,6 +29,7 @@ export async function createHomeEvent(input: {
   idempotency_key: string;
   occurred_at?: string;
   ended_at?: string;
+  note?: string;
 }) {
   const response = await apiSend<unknown>("/api/home/events", "POST", input);
   const parsed = eventResponseSchema.safeParse(response);

@@ -53,7 +53,11 @@ export function MemberTimelineSection({
       )}
 
       {query.isSuccess && (
-        <RecordsTimelineList records={query.data.records} />
+        <RecordsTimelineList
+          records={query.data.records}
+          member={member}
+          date={date}
+        />
       )}
     </section>
   );

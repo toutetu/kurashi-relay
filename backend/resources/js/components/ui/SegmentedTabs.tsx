@@ -36,7 +36,7 @@ export function SegmentedTabs({
     <div
       role="tablist"
       aria-label={label}
-      className="mb-3 grid grid-cols-3 gap-1 rounded-2xl border border-[var(--border)] bg-white/85 p-1 xl:hidden"
+      className="mb-3 grid grid-cols-2 gap-1 rounded-2xl border border-[var(--border)] bg-white/85 p-1 min-[75rem]:hidden"
     >
       {tabs.map((tab, index) => {
         const selected = tab.value === value;

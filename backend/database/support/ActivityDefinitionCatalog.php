@@ -47,13 +47,37 @@ final class ActivityDefinitionCatalog
             ['activity_key' => 'ACT-043', 'category' => 'planning', 'name' => '今日の予定確認', 'child_label' => '今日することを確認した', 'parent_prompt_label' => '今日することを確認するように声をかけた', 'quick_label' => '予定確認の声かけ', 'kind' => 'activity', 'sort_order' => 43],
             ['activity_key' => 'ACT-044', 'category' => 'planning', 'name' => '明日の持ち物確認', 'child_label' => '明日の持ち物を確認した', 'parent_prompt_label' => '明日の持ち物を確認するように声をかけた', 'quick_label' => '明日の持ち物確認の声かけ', 'kind' => 'activity', 'sort_order' => 44],
             ['activity_key' => 'ACT-045', 'category' => 'sleep', 'name' => 'おやすみ', 'child_label' => 'おやすみを言った', 'parent_prompt_label' => 'おやすみの挨拶をした', 'quick_label' => 'おやすみの声かけ', 'kind' => 'sleep', 'sort_order' => 45],
-            ['activity_key' => 'ACT-046', 'category' => 'work_preparation', 'name' => '就労準備', 'child_label' => '就労準備をした', 'parent_prompt_label' => '就労準備をした', 'quick_label' => '就労準備', 'kind' => 'activity', 'sort_order' => 46],
+            ['activity_key' => 'ACT-046', 'category' => 'work_preparation', 'name' => 'くらしリレー開発', 'child_label' => 'くらしリレー開発をした', 'parent_prompt_label' => 'くらしリレー開発をした', 'quick_label' => 'くらしリレー開発', 'kind' => 'activity', 'sort_order' => 46],
             ['activity_key' => 'ACT-047', 'category' => 'housework', 'name' => '家事', 'child_label' => '家事をした', 'parent_prompt_label' => '家事をした', 'quick_label' => '家事', 'kind' => 'activity', 'sort_order' => 47],
             ['activity_key' => 'ACT-048', 'category' => 'school_support', 'name' => '登校支援', 'child_label' => '登校の準備をした', 'parent_prompt_label' => '登校を支援した', 'quick_label' => '登校支援', 'kind' => 'support', 'sort_order' => 48],
             ['activity_key' => 'ACT-049', 'category' => 'waiting', 'name' => '待機', 'child_label' => '待機した', 'parent_prompt_label' => '待機した', 'quick_label' => '待機', 'kind' => 'waiting', 'sort_order' => 49],
             ['activity_key' => 'ACT-050', 'category' => 'recovery', 'name' => '回復・休息', 'child_label' => '休息した', 'parent_prompt_label' => '回復・休息した', 'quick_label' => '回復・休息', 'kind' => 'recovery', 'sort_order' => 50],
             ['activity_key' => 'ACT-051', 'category' => 'last_war', 'name' => 'ラストウォー', 'child_label' => 'ラストウォーをした', 'parent_prompt_label' => 'ラストウォーをした', 'quick_label' => 'ラストウォー', 'kind' => 'activity', 'sort_order' => 51],
             ['activity_key' => 'ACT-052', 'category' => 'calendar', 'name' => 'カレンダー予定', 'child_label' => '予定を実施した', 'parent_prompt_label' => '予定を実施した', 'quick_label' => 'カレンダー予定', 'kind' => 'activity', 'sort_order' => 52],
+            ['activity_key' => 'ACT-053', 'category' => 'daily_living', 'name' => '自由記入', 'child_label' => '自由記入した', 'parent_prompt_label' => '自由記入した', 'quick_label' => '自由記入', 'kind' => 'activity', 'sort_order' => 53],
+        ];
+    }
+
+    /**
+     * ホーム「クイック記録」に出す瞬間記録の activity_key と表示メタ。
+     *
+     * @return array<string, array{type: string, label: string}>
+     */
+    public static function quickLogDefinitionMeta(): array
+    {
+        return [
+            'ACT-037' => ['type' => 'wake_prompt', 'label' => '起床'],
+            'ACT-025' => ['type' => 'sleep_prompt', 'label' => '就寝'],
+            'ACT-005' => ['type' => 'brush_teeth', 'label' => '歯磨き'],
+            'ACT-019' => ['type' => 'bath_hair', 'label' => '入浴・洗髪'],
+            'ACT-053' => ['type' => 'free_note', 'label' => '自由記入'],
+            'ACT-007' => ['type' => 'dishes', 'label' => '食器を洗った'],
+            'ACT-008' => ['type' => 'laundry', 'label' => '洗濯を回して干した'],
+            'ACT-001' => ['type' => 'nameless_housework', 'label' => '名もなき家事をやった'],
+            'ACT-009' => ['type' => 'vacuum', 'label' => '床に掃除機をかけた'],
+            'ACT-010' => ['type' => 'dinner', 'label' => '夕飯を作った'],
+            'ACT-003' => ['type' => 'change_clothes_prompt', 'label' => '着替えの声かけ'],
+            'ACT-041' => ['type' => 'transport', 'label' => '出発・送迎'],
         ];
     }
 

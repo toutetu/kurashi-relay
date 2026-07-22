@@ -49,6 +49,15 @@ export interface SchedulePlan {
 
 export type QuickLogType =
   | "wake_prompt"
+  | "sleep_prompt"
+  | "brush_teeth"
+  | "bath_hair"
+  | "free_note"
+  | "dishes"
+  | "laundry"
+  | "nameless_housework"
+  | "vacuum"
+  | "dinner"
   | "change_clothes_prompt"
   | "school_contact"
   | "stomachache_support"
