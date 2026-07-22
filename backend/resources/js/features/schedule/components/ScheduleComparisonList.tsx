@@ -2,7 +2,6 @@ import {
   Activity,
   AlarmClock,
   CalendarDays,
-  CheckCircle2,
   Clock3,
   GitCompareArrows,
   Heart,
@@ -11,7 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "../../../components/ui/Button";
 import type {
   ActualEntry,
@@ -22,10 +21,17 @@ import type {
 } from "../../../types/dashboard";
 import {
   formatMinutes,
-  formatTime,
   formatTimeRange,
   toTokyoTimeInputValue,
 } from "../../../utils/date";
+
+const TOKYO = "Asia/Tokyo";
+const PX_PER_HOUR = 56;
+const PX_PER_MINUTE = PX_PER_HOUR / 60;
+const DEFAULT_START_MINUTE = 6 * 60;
+const DEFAULT_END_MINUTE = 22 * 60;
+const MIN_EVENT_MINUTES = 30;
+const DAY_MINUTES = 24 * 60;
 
 const differenceLabels: Record<DifferenceStatus, string> = {
   on_schedule: "予定どおり",
@@ -33,18 +39,18 @@ const differenceLabels: Record<DifferenceStatus, string> = {
   interrupted: "中断",
   cancelled: "中止",
   moved_to_night: "夜へ振り替え",
-  unplanned_activity: "予定外の活動",
+  unplanned_activity: "予定外",
   no_plan_no_record: "記録なし",
 };
 
 const differenceStyles: Record<DifferenceStatus, string> = {
-  on_schedule: "bg-[#e7f7ed] text-[#287a49]",
-  delayed: "bg-[#fff0b8] text-[#77550b]",
-  interrupted: "bg-[#ffe0e1] text-[#a4373d]",
-  cancelled: "bg-[#ffe0e1] text-[#a4373d]",
-  moved_to_night: "bg-[#eee8ff] text-[#684baa]",
-  unplanned_activity: "bg-[#eee8ff] text-[#684baa]",
-  no_plan_no_record: "bg-slate-100 text-[#526078]",
+  on_schedule: "border-[#9bc9aa] bg-[#e7f7ed] text-[#287a49]",
+  delayed: "border-[#e6d08a] bg-[#fff0b8] text-[#77550b]",
+  interrupted: "border-[#e8a8ab] bg-[#ffe0e1] text-[#a4373d]",
+  cancelled: "border-[#e8a8ab] bg-[#ffe0e1] text-[#a4373d]",
+  moved_to_night: "border-[#cfc1f5] bg-[#eee8ff] text-[#684baa]",
+  unplanned_activity: "border-[#cfc1f5] bg-[#eee8ff] text-[#684baa]",
+  no_plan_no_record: "border-[var(--line)] bg-[var(--neutral-soft)] text-[#526078]",
 };
 
 const kindMetadata: Record<
@@ -58,7 +64,7 @@ const kindMetadata: Record<
     style: "bg-[#e7f7ed] text-[#287a49]",
   },
   waiting: {
-    label: "待機・拘束",
+    label: "待機",
     icon: Clock3,
     style: "bg-[#fff8db] text-[#77550b]",
   },
@@ -79,6 +85,82 @@ type PlanHandlers = {
     endAt: string,
   ) => Promise<void>;
 };
+
+type ActualHandlers = {
+  onDelete: (actual: ActualEntry) => Promise<void>;
+  onUpdate: (
+    actual: ActualEntry,
+    startAt: string,
+    endAt: string,
+  ) => Promise<void>;
+};
+
+function tokyoMinuteOfDay(iso: string): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: TOKYO,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(iso));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const hour = Number(values.hour ?? "0");
+  const minute = Number(values.minute ?? "0");
+  return hour * 60 + minute;
+}
+
+function formatHourLabel(minuteOfDay: number): string {
+  const hour = Math.floor(minuteOfDay / 60) % 24;
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+function blockStyle(
+  startAt: string,
+  endAt: string,
+  startMinute: number,
+): { top: number; height: number } {
+  const start = tokyoMinuteOfDay(startAt);
+  const rawEnd = tokyoMinuteOfDay(endAt);
+  const end = Math.max(rawEnd, start + MIN_EVENT_MINUTES);
+  return {
+    top: (start - startMinute) * PX_PER_MINUTE,
+    height: Math.max((end - start) * PX_PER_MINUTE, 28),
+  };
+}
+
+function resolveWindow(ranges: Array<{ startAt: string; endAt: string }>): {
+  startMinute: number;
+  endMinute: number;
+} {
+  if (ranges.length === 0) {
+    return {
+      startMinute: DEFAULT_START_MINUTE,
+      endMinute: DEFAULT_END_MINUTE,
+    };
+  }
+
+  let minStart = DAY_MINUTES;
+  let maxEnd = 0;
+  for (const range of ranges) {
+    const start = tokyoMinuteOfDay(range.startAt);
+    const end = Math.max(tokyoMinuteOfDay(range.endAt), start + MIN_EVENT_MINUTES);
+    minStart = Math.min(minStart, start);
+    maxEnd = Math.max(maxEnd, end);
+  }
+
+  const startMinute = Math.min(
+    DEFAULT_START_MINUTE,
+    Math.max(0, Math.floor(minStart / 60) * 60),
+  );
+  const endMinute = Math.max(
+    DEFAULT_END_MINUTE,
+    Math.min(DAY_MINUTES, Math.ceil(maxEnd / 60) * 60),
+  );
+
+  return {
+    startMinute,
+    endMinute: Math.max(endMinute, startMinute + 60),
+  };
+}
 
 function PlanActionButton({
   label,
@@ -103,21 +185,23 @@ function PlanActionButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`pressable inline-flex min-h-11 items-center justify-center rounded-xl border px-3 py-2 text-sm font-bold leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
+      className={`pressable inline-flex min-h-7 items-center justify-center rounded-lg border px-1.5 py-0.5 text-[10px] font-bold leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
     >
       {label}
     </button>
   );
 }
 
-function PlanBlock({
+function PlanEventCard({
   plan,
   date,
+  startMinute,
   busy,
   handlers,
 }: {
   plan: SchedulePlan;
   date: string;
+  startMinute: number;
   busy: boolean;
   handlers?: PlanHandlers;
 }) {
@@ -138,6 +222,7 @@ function PlanBlock({
       : plan.outcome === "skipped"
         ? "中止"
         : null;
+  const style = blockStyle(plan.startAt, plan.endAt, startMinute);
 
   const saveDetail = async () => {
     if (!handlers) return;
@@ -167,30 +252,24 @@ function PlanBlock({
   };
 
   return (
-    <div className={settled ? "opacity-60" : ""}>
-      <time className="text-sm font-black text-[#236da8]">
-        {formatTimeRange(plan.startAt, plan.endAt)}
-      </time>
-      <p className="mt-2 font-black text-[#28334a]">
+    <article
+      className={`comparison-grid absolute inset-x-1 overflow-hidden rounded-xl border border-[#bcdcf7] bg-[#edf6ff] px-2 py-1 ${settled ? "opacity-55" : ""}`}
+      style={{ top: style.top, height: detailOpen ? "auto" : style.height, minHeight: style.height }}
+      title={plan.title}
+    >
+      <p className="truncate text-[12.5px] font-bold text-[var(--ink)]">
         {plan.title}
         {outcomeLabel && (
-          <span className="ml-1.5 text-[10px] font-bold text-[var(--muted)]">
+          <span className="ml-1 text-[10px] font-bold text-[var(--muted)]">
             {outcomeLabel}
           </span>
         )}
       </p>
-      {plan.details && plan.details.length > 0 && (
-        <ul className="mt-2 space-y-1 text-sm leading-relaxed text-[#526078]">
-          {plan.details.map((detail) => (
-            <li key={detail} className="flex gap-2">
-              <span aria-hidden="true">・</span>
-              <span>{detail}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <p className="mt-0.5 text-[10.5px] tabular-nums text-[var(--muted)]">
+        {formatTimeRange(plan.startAt, plan.endAt)}
+      </p>
       {recordable && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-1 flex flex-wrap gap-1">
           <PlanActionButton
             label="開始"
             tone="primary"
@@ -209,7 +288,7 @@ function PlanBlock({
             onClick={() => void handlers!.onSkip(plan)}
           />
           <PlanActionButton
-            label="詳細入力"
+            label="詳細"
             disabled={busy}
             onClick={() => {
               setStartTime(toTokyoTimeInputValue(plan.startAt));
@@ -221,24 +300,24 @@ function PlanBlock({
         </div>
       )}
       {detailOpen && recordable && (
-        <div className="mt-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2.5">
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="text-[11px] font-bold text-[var(--muted)]">
+        <div className="mt-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-1.5">
+          <div className="flex flex-wrap items-end gap-1">
+            <label className="text-[10px] font-bold text-[var(--muted)]">
               開始
               <input
                 type="time"
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
-                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+                className="mt-0.5 block min-h-8 rounded-lg border border-[var(--line)] px-1.5 text-[12px] font-bold text-[var(--ink)]"
               />
             </label>
-            <label className="text-[11px] font-bold text-[var(--muted)]">
+            <label className="text-[10px] font-bold text-[var(--muted)]">
               終了
               <input
                 type="time"
                 value={endTime}
                 onChange={(event) => setEndTime(event.target.value)}
-                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+                className="mt-0.5 block min-h-8 rounded-lg border border-[var(--line)] px-1.5 text-[12px] font-bold text-[var(--ink)]"
               />
             </label>
             <Button
@@ -247,39 +326,32 @@ function PlanBlock({
               variant="solid"
               tone="blue"
               size="compact"
-              className="!min-h-9 !px-2.5 !text-[11px]"
+              className="!min-h-8 !px-2 !text-[10px]"
             >
               保存
             </Button>
           </div>
           {detailError && (
-            <p className="mt-1.5 text-[11px] font-bold text-[var(--coral)]" role="alert">
+            <p className="mt-1 text-[10px] font-bold text-[var(--coral)]" role="alert">
               {detailError}
             </p>
           )}
         </div>
       )}
-    </div>
+    </article>
   );
 }
 
-type ActualHandlers = {
-  onDelete: (actual: ActualEntry) => Promise<void>;
-  onUpdate: (
-    actual: ActualEntry,
-    startAt: string,
-    endAt: string,
-  ) => Promise<void>;
-};
-
-function ActualBlock({
+function ActualEventCard({
   actual,
   date,
+  startMinute,
   busy,
   handlers,
 }: {
   actual: ActualEntry;
   date: string;
+  startMinute: number;
   busy: boolean;
   handlers?: ActualHandlers;
 }) {
@@ -293,6 +365,7 @@ function ActualBlock({
     toTokyoTimeInputValue(actual.endAt),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const style = blockStyle(actual.startAt, actual.endAt, startMinute);
 
   const save = async () => {
     if (!handlers) return;
@@ -322,79 +395,73 @@ function ActualBlock({
   };
 
   return (
-    <article className="rounded-xl border border-[#cbe7d5] bg-white/85 p-3">
-      <div className="flex gap-2">
-        <div className="min-w-0 flex-1">
-          <time className="text-sm font-black text-[#287a49]">
-            {formatTimeRange(actual.startAt, actual.endAt)}
-          </time>
-          <p className="mt-2 font-black text-[#28334a]">{actual.title}</p>
-          {actual.details.length > 0 && (
-            <ul className="mt-2 space-y-1 text-sm leading-relaxed text-[#526078]">
-              {actual.details.map((detail) => (
-                <li key={detail} className="flex gap-2">
-                  <span aria-hidden="true">・</span>
-                  <span>{detail}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {handlers && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setStartTime(toTokyoTimeInputValue(actual.startAt));
-                  setEndTime(toTokyoTimeInputValue(actual.endAt));
-                  setErrorMessage(null);
-                  setEditing((open) => !open);
-                }}
-                disabled={busy}
-                aria-label={`${actual.title}を修正`}
-                className="pressable inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-bold text-[var(--muted)] transition hover:bg-[var(--neutral-soft)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50"
-              >
-                <Pencil aria-hidden="true" size={16} />
-                修正
-              </button>
-              <button
-                type="button"
-                onClick={() => void handlers.onDelete(actual)}
-                disabled={busy}
-                aria-label={`${actual.title}を削除`}
-                className="pressable inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[color-mix(in_srgb,var(--coral)_35%,var(--line))] bg-white px-3 py-2 text-sm font-bold text-[var(--coral)] transition hover:bg-[var(--coral-soft)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50"
-              >
-                <Trash2 aria-hidden="true" size={16} />
-                削除
-              </button>
-            </div>
-          )}
-        </div>
+    <article
+      className="absolute inset-x-1 overflow-hidden rounded-xl border border-[#cbe7d5] bg-[#eff9f2] px-2 py-1"
+      style={{ top: style.top, height: editing ? "auto" : style.height, minHeight: style.height }}
+      title={actual.title}
+    >
+      <div className="flex items-start justify-between gap-1">
+        <p className="min-w-0 flex-1 truncate text-[12.5px] font-bold text-[var(--ink)]">
+          {actual.title}
+        </p>
         <span
-          className={`inline-flex h-fit shrink-0 items-center gap-1 self-start rounded-full px-2 py-1 text-[0.68rem] font-black ${metadata.style}`}
+          className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-black ${metadata.style}`}
         >
-          <Icon aria-hidden="true" size={13} />
+          <Icon aria-hidden="true" size={10} />
           {metadata.label}
         </span>
       </div>
+      <p className="mt-0.5 text-[10.5px] tabular-nums text-[var(--muted)]">
+        {formatTimeRange(actual.startAt, actual.endAt)}
+      </p>
+      {handlers && (
+        <div className="mt-1 flex flex-wrap gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              setStartTime(toTokyoTimeInputValue(actual.startAt));
+              setEndTime(toTokyoTimeInputValue(actual.endAt));
+              setErrorMessage(null);
+              setEditing((open) => !open);
+            }}
+            disabled={busy}
+            aria-label={`${actual.title}を修正`}
+            className="pressable inline-flex min-h-7 items-center gap-1 rounded-lg border border-[var(--line)] bg-white px-1.5 text-[10px] font-bold text-[var(--muted)] disabled:opacity-50"
+          >
+            <Pencil aria-hidden="true" size={11} />
+            修正
+          </button>
+          <button
+            type="button"
+            onClick={() => void handlers.onDelete(actual)}
+            disabled={busy}
+            aria-label={`${actual.title}を削除`}
+            className="pressable inline-flex min-h-7 items-center gap-1 rounded-lg border border-[color-mix(in_srgb,var(--coral)_35%,var(--line))] bg-white px-1.5 text-[10px] font-bold text-[var(--coral)] disabled:opacity-50"
+          >
+            <Trash2 aria-hidden="true" size={11} />
+            削除
+          </button>
+        </div>
+      )}
       {editing && handlers && (
-        <div className="mt-2 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-2.5">
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="text-[11px] font-bold text-[var(--muted)]">
+        <div className="mt-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-1.5">
+          <div className="flex flex-wrap items-end gap-1">
+            <label className="text-[10px] font-bold text-[var(--muted)]">
               開始
               <input
                 type="time"
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
-                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+                className="mt-0.5 block min-h-8 rounded-lg border border-[var(--line)] px-1.5 text-[12px] font-bold text-[var(--ink)]"
               />
             </label>
-            <label className="text-[11px] font-bold text-[var(--muted)]">
+            <label className="text-[10px] font-bold text-[var(--muted)]">
               終了
               <input
                 type="time"
                 value={endTime}
                 onChange={(event) => setEndTime(event.target.value)}
-                className="mt-0.5 block min-h-9 rounded-lg border border-[var(--line)] px-2 text-[13px] font-bold text-[var(--ink)]"
+                className="mt-0.5 block min-h-8 rounded-lg border border-[var(--line)] px-1.5 text-[12px] font-bold text-[var(--ink)]"
               />
             </label>
             <Button
@@ -403,13 +470,13 @@ function ActualBlock({
               variant="solid"
               tone="blue"
               size="compact"
-              className="!min-h-9 !px-2.5 !text-[11px]"
+              className="!min-h-8 !px-2 !text-[10px]"
             >
               保存
             </Button>
           </div>
           {errorMessage && (
-            <p className="mt-1.5 text-[11px] font-bold text-[var(--coral)]" role="alert">
+            <p className="mt-1 text-[10px] font-bold text-[var(--coral)]" role="alert">
               {errorMessage}
             </p>
           )}
@@ -419,152 +486,66 @@ function ActualBlock({
   );
 }
 
-function ComparisonRow({
+function DifferenceEventCard({
   item,
-  date,
-  isLast,
-  busyActualId,
-  busyPlanId,
-  handlers,
-  planHandlers,
+  startMinute,
 }: {
   item: ScheduleComparisonItem;
-  date: string;
-  isLast: boolean;
-  busyActualId: string | null;
-  busyPlanId: string | null;
-  handlers?: ActualHandlers;
-  planHandlers?: PlanHandlers;
+  startMinute: number;
 }) {
-  const noPlan = item.plan === null;
-  const noActuals = item.actuals.length === 0;
-  const isUnplanned = noPlan && !noActuals;
+  const style = blockStyle(item.timeRange.start, item.timeRange.end, startMinute);
+  const diff = item.difference;
 
   return (
-    <li className="comparison-grid flex gap-2 sm:gap-3 pb-4 last:pb-1">
-      <time className="w-14 shrink-0 pt-1 text-right text-[13px] font-extrabold tabular-nums text-[var(--ink)] sm:w-16 sm:text-[13.5px]">
-        {formatTime(item.timeRange.start)}
-      </time>
-      <span className="flex w-3.5 shrink-0 flex-col items-center">
-        <span className="mt-1.5 size-2.5 rounded-full border-[2.5px] border-[var(--primary)] bg-white" />
-        {!isLast && (
-          <span className="mt-0.5 w-0.5 flex-1 rounded-sm bg-[var(--line)]" />
-        )}
-      </span>
-      <article className="min-w-0 flex-1 space-y-2 rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-3 shadow-[0_8px_24px_rgba(40,51,74,0.05)]">
-        <p className="text-[11px] font-bold tabular-nums text-[var(--muted)]">
-          {formatTimeRange(item.timeRange.start, item.timeRange.end)}
+    <article
+      className={`absolute inset-x-1 overflow-hidden rounded-xl border px-2 py-1 ${differenceStyles[diff.status]}`}
+      style={{ top: style.top, height: style.height }}
+      title={differenceLabels[diff.status]}
+    >
+      <p className="flex items-center gap-1 text-[11px] font-black">
+        <GitCompareArrows aria-hidden="true" size={12} />
+        {differenceLabels[diff.status]}
+      </p>
+      <p className="mt-0.5 text-[10px] tabular-nums opacity-90">
+        {diff.actualMinutes}分 / {diff.plannedMinutes}分
+        {diff.startDelayMinutes > 0 && ` ・遅れ${formatMinutes(diff.startDelayMinutes)}`}
+        {diff.lostMinutes > 0 && ` ・失${formatMinutes(diff.lostMinutes)}`}
+      </p>
+      {diff.causes.length > 0 && (
+        <p className="mt-0.5 truncate text-[10px] opacity-80">
+          {diff.causes.join("・")}
         </p>
+      )}
+    </article>
+  );
+}
 
-        <section
-          className={`min-w-0 rounded-xl border p-3 ${noPlan ? "border-dashed border-[#9ac8ee] bg-[#f7fbff]" : "border-[#bcdcf7] bg-[#edf6ff]/65"}`}
-        >
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-black text-[#236da8]">
-            <CalendarDays aria-hidden="true" size={17} />
-            予定
-          </h3>
-          {item.plan ? (
-            <PlanBlock
-              plan={item.plan}
-              date={date}
-              busy={busyPlanId !== null}
-              handlers={planHandlers}
-            />
-          ) : (
-            <div className="rounded-xl border border-dashed border-[#9ac8ee] bg-white/75 p-3">
-              <p className="font-black text-[#236da8]">予定なし</p>
-              <p className="mt-1 text-sm leading-relaxed text-[#667085]">
-                この時間には予定が登録されていません。
-              </p>
-            </div>
-          )}
-        </section>
-
-        <section className="min-w-0 rounded-xl border border-[#cbe7d5] bg-[#eff9f2] p-3">
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-black text-[#287a49]">
-            <CheckCircle2 aria-hidden="true" size={17} />
-            実績
-          </h3>
-          {isUnplanned && (
-            <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[#eee8ff] px-3 py-1.5 text-xs font-black text-[#684baa]">
-              <GitCompareArrows aria-hidden="true" size={14} />
-              予定外の活動
-            </p>
-          )}
-          {noActuals ? (
-            <div className="rounded-xl border border-dashed border-[#9bc9aa] bg-white/75 p-3">
-              <p className="font-black text-[#526078]">実績記録なし</p>
-              <p className="mt-1 text-sm leading-relaxed text-[#667085]">
-                この時間の実績はまだ入力されていません。
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {item.actuals.map((actual) => (
-                <ActualBlock
-                  key={actual.id}
-                  actual={actual}
-                  date={date}
-                  busy={busyActualId !== null}
-                  handlers={handlers}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="min-w-0 rounded-xl border border-[#cfc1f5] bg-[#f8f5ff] p-3">
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-black text-[#684baa]">
-            <GitCompareArrows aria-hidden="true" size={17} />
-            差分・原因
-          </h3>
-          <span
-            className={`inline-flex min-h-8 items-center rounded-full px-3 py-1 text-xs font-black ${differenceStyles[item.difference.status]}`}
-          >
-            {differenceLabels[item.difference.status]}
-          </span>
-          <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            {item.difference.startDelayMinutes > 0 && (
-              <div className="rounded-xl bg-white/80 p-2.5">
-                <dt className="text-xs font-bold text-[#667085]">開始の遅れ</dt>
-                <dd className="mt-1 font-black text-[#684baa]">
-                  {formatMinutes(item.difference.startDelayMinutes)}
-                </dd>
-              </div>
-            )}
-            <div className="rounded-xl bg-white/80 p-2.5">
-              <dt className="text-xs font-bold text-[#667085]">実績 / 予定</dt>
-              <dd className="mt-1 font-black text-[#684baa]">
-                {item.difference.actualMinutes}分 /{" "}
-                {item.difference.plannedMinutes}分
-              </dd>
-            </div>
-            {item.difference.interruptionCount > 0 && (
-              <div className="rounded-xl bg-white/80 p-2.5">
-                <dt className="text-xs font-bold text-[#667085]">中断</dt>
-                <dd className="mt-1 font-black text-[#684baa]">
-                  {item.difference.interruptionCount}回
-                </dd>
-              </div>
-            )}
-            {item.difference.lostMinutes > 0 && (
-              <div className="rounded-xl bg-white/80 p-2.5">
-                <dt className="text-xs font-bold text-[#667085]">失われた時間</dt>
-                <dd className="mt-1 font-black text-[#684baa]">
-                  {formatMinutes(item.difference.lostMinutes)}
-                </dd>
-              </div>
-            )}
-          </dl>
-          <div className="mt-3 text-sm leading-relaxed text-[#526078]">
-            <span className="font-black">原因：</span>
-            {item.difference.causes.length > 0
-              ? item.difference.causes.join("・")
-              : "特になし"}
-          </div>
-        </section>
-      </article>
-    </li>
+function ColumnLane({
+  hours,
+  startMinute,
+  height,
+  children,
+}: {
+  hours: number[];
+  startMinute: number;
+  height: number;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="relative min-w-0 border-l border-[var(--line)] bg-[var(--surface)]"
+      style={{ height }}
+    >
+      {hours.map((minute) => (
+        <div
+          key={minute}
+          className="pointer-events-none absolute inset-x-0 border-t border-[var(--line-soft)]"
+          style={{ top: (minute - startMinute) * PX_PER_MINUTE }}
+          aria-hidden="true"
+        />
+      ))}
+      {children}
+    </div>
   );
 }
 
@@ -613,6 +594,40 @@ export function ScheduleComparisonList({
         }
       : undefined;
 
+  const plans = useMemo(
+    () => items.flatMap((item) => (item.plan ? [item.plan] : [])),
+    [items],
+  );
+  const actuals = useMemo(
+    () => items.flatMap((item) => item.actuals),
+    [items],
+  );
+
+  const { startMinute, endMinute } = useMemo(() => {
+    const ranges: Array<{ startAt: string; endAt: string }> = [
+      ...plans.map((plan) => ({ startAt: plan.startAt, endAt: plan.endAt })),
+      ...actuals.map((actual) => ({
+        startAt: actual.startAt,
+        endAt: actual.endAt,
+      })),
+      ...items.map((item) => ({
+        startAt: item.timeRange.start,
+        endAt: item.timeRange.end,
+      })),
+    ];
+    return resolveWindow(ranges);
+  }, [plans, actuals, items]);
+
+  const hours = useMemo(() => {
+    const labels: number[] = [];
+    for (let minute = startMinute; minute < endMinute; minute += 60) {
+      labels.push(minute);
+    }
+    return labels;
+  }, [startMinute, endMinute]);
+
+  const height = (endMinute - startMinute) * PX_PER_MINUTE;
+
   if (items.length === 0) {
     return (
       <div className="rounded-[1.4rem] border border-dashed border-[#bcdcf7] bg-white p-8 text-center">
@@ -632,25 +647,103 @@ export function ScheduleComparisonList({
   }
 
   return (
-    <div>
-      <ol className="list-none max-h-[min(80vh,48rem)] space-y-0 overflow-y-auto p-0">
-        {items.map((item, index) => (
-          <ComparisonRow
-            key={`${item.timeRange.start}-${item.timeRange.end}`}
-            item={item}
-            date={date}
-            isLast={index === items.length - 1}
-            busyActualId={busyActualId}
-            busyPlanId={busyPlanId}
-            handlers={handlers}
-            planHandlers={planHandlers}
+    <div className="space-y-3">
+      <div className="overflow-x-auto">
+        <div className="min-w-[28rem] space-y-2">
+          <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2">
+            <div aria-hidden="true" />
+            <p className="text-sm font-black text-[#236da8]">予定</p>
+            <p className="text-sm font-black text-[#287a49]">実績</p>
+            <p className="text-sm font-black text-[#684baa]">差分</p>
+          </div>
+
+          <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2">
+            <div className="relative" style={{ height }} aria-hidden="true">
+              {hours.map((minute) => (
+                <div
+                  key={minute}
+                  className="absolute right-0 w-full border-t border-[var(--line-soft)] pr-1 text-right text-[10.5px] font-bold tabular-nums text-[var(--muted)]"
+                  style={{ top: (minute - startMinute) * PX_PER_MINUTE }}
+                >
+                  {formatHourLabel(minute)}
+                </div>
+              ))}
+            </div>
+
+            <ColumnLane hours={hours} startMinute={startMinute} height={height}>
+              {plans.map((plan) => (
+                <PlanEventCard
+                  key={plan.id}
+                  plan={plan}
+                  date={date}
+                  startMinute={startMinute}
+                  busy={busyPlanId !== null}
+                  handlers={planHandlers}
+                />
+              ))}
+            </ColumnLane>
+
+            <ColumnLane hours={hours} startMinute={startMinute} height={height}>
+              {actuals.map((actual) => (
+                <ActualEventCard
+                  key={actual.id}
+                  actual={actual}
+                  date={date}
+                  startMinute={startMinute}
+                  busy={busyActualId !== null}
+                  handlers={handlers}
+                />
+              ))}
+            </ColumnLane>
+
+            <ColumnLane hours={hours} startMinute={startMinute} height={height}>
+              {items
+                .filter(
+                  (item) =>
+                    item.difference.status !== "no_plan_no_record" ||
+                    item.plan !== null ||
+                    item.actuals.length > 0,
+                )
+                .map((item) => (
+                  <DifferenceEventCard
+                    key={`${item.timeRange.start}-${item.timeRange.end}`}
+                    item={item}
+                    startMinute={startMinute}
+                  />
+                ))}
+            </ColumnLane>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3 text-[11.5px] text-[var(--muted)]">
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            className="size-3 rounded-sm border border-[#bcdcf7] bg-[#edf6ff]"
+            aria-hidden="true"
           />
-        ))}
-      </ol>
-      <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[#bcdcf7] bg-[#edf6ff] p-4 text-sm leading-relaxed text-[#285d8d]">
+          予定
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            className="size-3 rounded-sm border border-[#cbe7d5] bg-[#eff9f2]"
+            aria-hidden="true"
+          />
+          実績
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            className="size-3 rounded-sm border border-[#cfc1f5] bg-[#eee8ff]"
+            aria-hidden="true"
+          />
+          差分
+        </span>
+      </div>
+
+      <div className="flex items-start gap-3 rounded-2xl border border-[#bcdcf7] bg-[#edf6ff] p-4 text-sm leading-relaxed text-[#285d8d]">
         <AlarmClock className="mt-0.5 shrink-0" aria-hidden="true" size={19} />
         <p>
-          「予定なし」の時間も、実績があれば予定外の活動として表示します。予定も実績もない時間は「実績記録なし」と表示します。
+          左の時刻軸に沿って、予定・実績・差分を並べています。ブロックのない帯が空白の時間です。同じ高さは同じ時刻帯の重なりです。
         </p>
       </div>
     </div>
