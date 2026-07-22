@@ -24,8 +24,6 @@ type KoekakeTaskCardProps = {
   isPromptBlocked?: boolean;
 };
 
-const SELF_ONLY_ACTIVITY_KEYS = new Set(["ACT-037"]);
-
 export function KoekakeTaskCard({
   task,
   onPrompt,
@@ -40,8 +38,6 @@ export function KoekakeTaskCard({
   const [flyKey, setFlyKey] = useState(0);
   const due = isKoekakeTaskDue(task);
   const promptPreview = buildDefaultPromptPayload(task);
-  const parentDoneDisabled =
-    task.activity_key !== null && SELF_ONLY_ACTIVITY_KEYS.has(task.activity_key);
 
   const handlePrompt = () => {
     setFlyKey((key) => key + 1);
@@ -97,7 +93,7 @@ export function KoekakeTaskCard({
         </div>
       </div>
 
-      <div className="relative mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
+      <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Button
           type="button"
           variant="outline"
@@ -123,9 +119,6 @@ export function KoekakeTaskCard({
         </Button>
         {QUICK_COMPLETION_OPTIONS.map((status) => {
           const selected = task.completion?.status === status;
-          const disabled =
-            isCompletionPending ||
-            (status === "parent_done" && parentDoneDisabled);
 
           return (
             <Button
@@ -136,7 +129,7 @@ export function KoekakeTaskCard({
               variant={selected ? "solid" : "outline"}
               tone="blue"
               loading={isCompletionPending && selected}
-              disabled={disabled}
+              disabled={isCompletionPending}
               aria-pressed={selected}
               aria-label={`${task.name}を${COMPLETION_STATUS_LABELS[status]}にする`}
               onClick={() => onCompletion(task, status)}
