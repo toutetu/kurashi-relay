@@ -248,10 +248,10 @@ function HomeDashboard({
             : ""
         }`}
       >
-        <p className="zone-label area-z2 hidden xl:flex">👀 きょうのようす</p>
-        <p className="zone-label area-z1 hidden xl:flex">✏️ きろくする</p>
+        <p className="zone-label area-z2 hidden min-[75rem]:flex">👀 きょうのようす</p>
+        <p className="zone-label area-z1 hidden min-[75rem]:flex">✏️ きろくする</p>
         <div
-          className={`area-pl ${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+          className={`area-pl ${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch min-[75rem]:flex`}
         >
           <NextPlansCard
             plans={data.nextPlans}
@@ -268,7 +268,7 @@ function HomeDashboard({
           />
         </div>
         <div
-          className={`area-qs ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+          className={`area-qs ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch min-[75rem]:flex`}
         >
           <QuickStartCard
             activities={data.quickActivities}
@@ -277,20 +277,20 @@ function HomeDashboard({
           />
         </div>
         <div
-          className={`area-ql ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+          className={`area-ql ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch min-[75rem]:flex`}
         >
           <QuickLogsCard initialLogs={data.quickLogs} />
         </div>
         {SHOW_HOME_MOTHER_CONDITIONS && (
           <div
-            className={`area-cd ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+            className={`area-cd ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch min-[75rem]:flex`}
           >
             <MotherConditionsCard initialCondition={data.conditions.mother} />
           </div>
         )}
         {SHOW_HOME_TIME_BALANCE && (
           <div
-            className={`area-tb ${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch xl:flex`}
+            className={`area-tb ${activeTab === "today" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch min-[75rem]:flex`}
           >
             <TimeBalanceCard balance={data.timeBalance} />
           </div>
