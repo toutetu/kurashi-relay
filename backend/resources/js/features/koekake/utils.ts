@@ -23,8 +23,6 @@ export const COMPLETION_STATUS_LABELS: Record<CompletionStatus, string> = {
 /** 一覧カードに出す行動結果（詳細からは外す） */
 export const QUICK_COMPLETION_OPTIONS = [
   "completed",
-  "together",
-  "parent_done",
 ] as const satisfies readonly CompletionStatus[];
 
 export function getTokyoHour(now = new Date()): number {
