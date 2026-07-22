@@ -10,7 +10,7 @@ import {
   Undo2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { cancelHomeEvent, createHomeEvent } from "../../../api/home";
 import { DashboardCard } from "../../../components/ui/DashboardCard";
 import { Button } from "../../../components/ui/Button";
@@ -147,6 +147,93 @@ export function QuickStartCard({
   );
 }
 
+function FreeNoteDialog({
+  open,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: (note: string) => void;
+}) {
+  const [note, setNote] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const titleId = useId();
+  const hintId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    setNote("");
+    const frame = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onCancel]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      <button
+        type="button"
+        aria-label="閉じる"
+        className="absolute inset-0 bg-[color-mix(in_srgb,var(--ink)_35%,transparent)]"
+        onClick={onCancel}
+      />
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={hintId}
+        onSubmit={(event) => {
+          event.preventDefault();
+          onConfirm(note.trim());
+        }}
+        className="relative z-10 w-full max-w-md rounded-t-3xl border border-[var(--line)] bg-[var(--surface)] p-4 shadow-xl sm:rounded-3xl sm:p-5"
+      >
+        <h2 id={titleId} className="text-base font-extrabold text-[var(--ink)]">
+          自由記入
+        </h2>
+        <p id={hintId} className="mt-1 text-xs text-[var(--muted)]">
+          いまやったこと・気づいたことを書いて記録できます（空でも記録可）
+        </p>
+        <textarea
+          ref={inputRef}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          maxLength={500}
+          rows={3}
+          placeholder="例: 買い物に行った、薬を飲んだ"
+          className="mt-3 w-full resize-none rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 text-sm font-semibold text-[var(--ink)] placeholder:font-medium placeholder:text-[var(--faint)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+        />
+        <div className="mt-3 flex gap-2">
+          <Button
+            type="button"
+            onClick={onCancel}
+            variant="outline"
+            tone="neutral"
+            className="min-h-11 flex-1"
+          >
+            やめる
+          </Button>
+          <Button type="submit" variant="solid" tone="blue" className="min-h-11 flex-1">
+            記録する
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
   const [logs, setLogs] = useState(initialLogs);
   const [flyKeys, setFlyKeys] = useState<Partial<Record<QuickLogType, number>>>(
@@ -159,6 +246,7 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
   } | null>(null);
   const [savingType, setSavingType] = useState<QuickLogType | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [freeNoteTarget, setFreeNoteTarget] = useState<QuickLog | null>(null);
   const undoTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -172,7 +260,7 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
     [],
   );
 
-  const addLog = async (log: QuickLog) => {
+  const addLog = async (log: QuickLog, note?: string) => {
     if (!log.activityDefinitionId) {
       setErrorMessage("この項目はまだ記録用マスタがありません。");
       return;
@@ -187,6 +275,7 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
       const event = await createHomeEvent({
         activity_definition_id: log.activityDefinitionId,
         idempotency_key: idempotencyKey,
+        ...(note !== undefined && note !== "" ? { note } : {}),
       });
 
       setLogs((current) =>
@@ -210,6 +299,14 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
     } finally {
       setSavingType(null);
     }
+  };
+
+  const handleLogClick = (log: QuickLog) => {
+    if (log.type === "free_note") {
+      setFreeNoteTarget(log);
+      return;
+    }
+    void addLog(log);
   };
 
   const undo = async () => {
@@ -257,7 +354,7 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
                     type="button"
                     aria-label={`${log.label}を記録。現在${log.count}件`}
                     disabled={savingType !== null}
-                    onClick={() => void addLog(log)}
+                    onClick={() => handleLogClick(log)}
                     className="pressable group relative flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-[13px] font-semibold text-[var(--ink)] transition hover:bg-[color-mix(in_srgb,var(--primary-soft)_65%,var(--surface))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:opacity-60"
                   >
                     <span className="min-w-0 flex-1 truncate">{log.label}</span>
@@ -293,6 +390,15 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
           </p>
         )}
       </DashboardCard>
+      <FreeNoteDialog
+        open={freeNoteTarget !== null}
+        onCancel={() => setFreeNoteTarget(null)}
+        onConfirm={(note) => {
+          const target = freeNoteTarget;
+          setFreeNoteTarget(null);
+          if (target) void addLog(target, note);
+        }}
+      />
       {lastAction && (
         <div
           role="status"

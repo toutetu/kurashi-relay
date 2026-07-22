@@ -26,6 +26,7 @@ class ActivityEvent extends Model
         'actor_member_id',
         'source',
         'idempotency_key',
+        'note',
     ];
 
     /**

@@ -27,6 +27,7 @@ final class ActivityEventResource extends JsonResource
             'ended_at' => $event->ended_at?->timezone('Asia/Tokyo')->toIso8601String(),
             'source' => $event->source,
             'idempotency_key' => $event->idempotency_key,
+            'note' => $event->note,
             'cancelled' => $event->cancellation !== null,
         ];
     }

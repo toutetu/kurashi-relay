@@ -89,6 +89,9 @@ final class HomeEventService
                 'actor_member_id' => $motherId,
                 'source' => 'mother_quick',
                 'idempotency_key' => $input['idempotency_key'],
+                'note' => isset($input['note']) && is_string($input['note']) && trim($input['note']) !== ''
+                    ? trim($input['note'])
+                    : null,
             ]);
 
             $this->ensurePlanActualLink($event, $plan);
@@ -253,19 +256,14 @@ final class HomeEventService
      */
     public function quickLogCounts(string $date): array
     {
+        $map = ActivityDefinitionCatalog::quickLogDefinitionMeta();
+        $keys = array_keys($map);
+
         $defs = ActivityDefinition::query()
             ->where('is_active', true)
-            ->whereIn('quick_label', [
-                '起床の声かけ',
-                '着替えの声かけ',
-                '腹痛対応',
-                '自転車で送迎',
-                '引き渡し完了',
-                '学校へ連絡',
-            ])
-            ->orWhereIn('activity_key', ['ACT-037', 'ACT-003', 'ACT-041'])
+            ->whereIn('activity_key', $keys)
             ->get()
-            ->unique('id');
+            ->keyBy('activity_key');
 
         $start = CarbonImmutable::parse($date, 'Asia/Tokyo')->startOfDay()->timezone('UTC');
         $end = CarbonImmutable::parse($date, 'Asia/Tokyo')->endOfDay()->timezone('UTC');
@@ -278,15 +276,9 @@ final class HomeEventService
             ->groupBy('activity_definition_id')
             ->pluck('aggregate', 'activity_definition_id');
 
-        $map = [
-            'ACT-037' => ['type' => 'wake_prompt', 'label' => '起床の声かけ'],
-            'ACT-003' => ['type' => 'change_clothes_prompt', 'label' => '着替えの声かけ'],
-            'ACT-041' => ['type' => 'transport', 'label' => '出発・送迎'],
-        ];
-
         $result = [];
         foreach ($map as $key => $meta) {
-            $def = $defs->firstWhere('activity_key', $key);
+            $def = $defs->get($key);
             $id = $def?->id;
             $result[] = [
                 'type' => $meta['type'],
