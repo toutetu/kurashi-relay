@@ -234,7 +234,13 @@ function FreeNoteDialog({
   );
 }
 
-export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
+export function QuickLogsCard({
+  initialLogs,
+  onRecorded,
+}: {
+  initialLogs: QuickLog[];
+  onRecorded?: () => void;
+}) {
   const [logs, setLogs] = useState(initialLogs);
   const [flyKeys, setFlyKeys] = useState<Partial<Record<QuickLogType, number>>>(
     {},
@@ -290,6 +296,7 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
       setLastAction({ type: log.type, label: log.label, eventId: event.id });
       if (undoTimer.current !== null) window.clearTimeout(undoTimer.current);
       undoTimer.current = window.setTimeout(() => setLastAction(null), 5_000);
+      onRecorded?.();
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -324,6 +331,7 @@ export function QuickLogsCard({ initialLogs }: { initialLogs: QuickLog[] }) {
             : item,
         ),
       );
+      onRecorded?.();
     } catch (error) {
       setErrorMessage(
         error instanceof Error
