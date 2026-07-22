@@ -16,13 +16,14 @@ import { formatDate, formatMinutes, getTokyoToday } from "../utils/date";
 export function ScheduleComparisonPage() {
   const today = getTokyoToday();
   const queryClient = useQueryClient();
+  const [date, setDate] = useState(today);
   const [busyActualId, setBusyActualId] = useState<string | null>(null);
   const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [planError, setPlanError] = useState<string | null>(null);
   const query = useQuery({
-    queryKey: ["schedule-comparisons", today],
-    queryFn: ({ signal }) => getScheduleComparisons(today, signal),
+    queryKey: ["schedule-comparisons", date],
+    queryFn: ({ signal }) => getScheduleComparisons(date, signal),
   });
 
   const refresh = async () => {
@@ -114,14 +115,40 @@ export function ScheduleComparisonPage() {
         <div>
           <p className="flex items-center gap-2 text-sm font-bold text-[#236da8]">
             <CalendarDays aria-hidden="true" size={17} />
-            {query.data ? formatDate(query.data.date) : formatDate(today)}
+            {query.data ? formatDate(query.data.date) : formatDate(date)}
           </p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-[#28334a] sm:text-3xl">
-            今日の予定と実績
+            予定と実績
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#667085]">
             縦の時刻軸に沿って、予定・実績・差分を並べて見られます。ブロックのない帯が空白の時間です。
           </p>
+          <label className="mt-3 flex items-center gap-2 text-sm font-bold text-[#526078]">
+            <span>日付</span>
+            <input
+              type="date"
+              value={date}
+              onChange={(event) => {
+                setDate(event.target.value);
+                setActionError(null);
+                setPlanError(null);
+              }}
+              className="rounded-xl border border-[#dce5ef] bg-white px-3 py-2 font-bold text-[#28334a] shadow-sm focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#68a7e3]"
+            />
+            {date !== today && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDate(today);
+                  setActionError(null);
+                  setPlanError(null);
+                }}
+                className="rounded-xl border border-[#bcdcf7] bg-[#edf6ff] px-3 py-2 text-[#236da8] hover:bg-white focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#68a7e3]"
+              >
+                今日
+              </button>
+            )}
+          </label>
         </div>
         <button
           type="button"
