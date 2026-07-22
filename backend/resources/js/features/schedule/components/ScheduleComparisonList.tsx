@@ -183,9 +183,12 @@ function PlanActionButton({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
       disabled={disabled}
-      className={`pressable inline-flex min-h-7 items-center justify-center rounded-lg border px-1.5 py-0.5 text-[10px] font-bold leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
+      className={`pressable inline-flex min-h-6 items-center justify-center rounded-md border px-1 py-0 text-[9px] font-bold leading-none transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
     >
       {label}
     </button>
@@ -205,6 +208,7 @@ function PlanEventCard({
   busy: boolean;
   handlers?: PlanHandlers;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [startTime, setStartTime] = useState(() =>
     toTokyoTimeInputValue(plan.startAt),
@@ -223,6 +227,7 @@ function PlanEventCard({
         ? "中止"
         : null;
   const style = blockStyle(plan.startAt, plan.endAt, startMinute);
+  const open = expanded || detailOpen;
 
   const saveDetail = async () => {
     if (!handlers) return;
@@ -242,6 +247,7 @@ function PlanEventCard({
         `${date}T${endTime}:00+09:00`,
       );
       setDetailOpen(false);
+      setExpanded(false);
     } catch (error) {
       setDetailError(
         error instanceof Error
@@ -253,23 +259,47 @@ function PlanEventCard({
 
   return (
     <article
-      className={`comparison-grid absolute inset-x-1 overflow-hidden rounded-xl border border-[#bcdcf7] bg-[#edf6ff] px-2 py-1 ${settled ? "opacity-55" : ""}`}
-      style={{ top: style.top, height: detailOpen ? "auto" : style.height, minHeight: style.height }}
-      title={plan.title}
+      role="button"
+      tabIndex={0}
+      aria-expanded={open}
+      onClick={() => {
+        if (!recordable) return;
+        setExpanded((current) => {
+          if (current) setDetailOpen(false);
+          return !current;
+        });
+      }}
+      onKeyDown={(event) => {
+        if (!recordable) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          setExpanded((current) => {
+            if (current) setDetailOpen(false);
+            return !current;
+          });
+        }
+      }}
+      className={`comparison-grid absolute inset-x-1 rounded-xl border border-[#bcdcf7] bg-[#edf6ff] px-2 py-1 ${settled ? "opacity-55" : ""} ${open ? "z-20 overflow-visible shadow-md" : "z-10 overflow-hidden"} ${recordable ? "cursor-pointer" : ""}`}
+      style={{
+        top: style.top,
+        height: open ? "auto" : style.height,
+        minHeight: style.height,
+      }}
+      title={recordable ? `${plan.title}（クリックで操作）` : plan.title}
     >
-      <p className="truncate text-[12.5px] font-bold text-[var(--ink)]">
+      <p className="truncate text-[12px] font-bold text-[var(--ink)]">
         {plan.title}
         {outcomeLabel && (
-          <span className="ml-1 text-[10px] font-bold text-[var(--muted)]">
+          <span className="ml-1 text-[9px] font-bold text-[var(--muted)]">
             {outcomeLabel}
           </span>
         )}
       </p>
-      <p className="mt-0.5 text-[10.5px] tabular-nums text-[var(--muted)]">
+      <p className="mt-0.5 text-[10px] tabular-nums text-[var(--muted)]">
         {formatTimeRange(plan.startAt, plan.endAt)}
       </p>
-      {recordable && (
-        <div className="mt-1 flex flex-wrap gap-1">
+      {recordable && open && (
+        <div className="mt-1 flex flex-wrap gap-0.5">
           <PlanActionButton
             label="開始"
             tone="primary"
@@ -294,30 +324,33 @@ function PlanEventCard({
               setStartTime(toTokyoTimeInputValue(plan.startAt));
               setEndTime(toTokyoTimeInputValue(plan.endAt));
               setDetailError(null);
-              setDetailOpen((open) => !open);
+              setDetailOpen((current) => !current);
             }}
           />
         </div>
       )}
       {detailOpen && recordable && (
-        <div className="mt-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-1.5">
+        <div
+          className="mt-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-1.5"
+          onClick={(event) => event.stopPropagation()}
+        >
           <div className="flex flex-wrap items-end gap-1">
-            <label className="text-[10px] font-bold text-[var(--muted)]">
+            <label className="text-[9px] font-bold text-[var(--muted)]">
               開始
               <input
                 type="time"
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
-                className="mt-0.5 block min-h-8 rounded-lg border border-[var(--line)] px-1.5 text-[12px] font-bold text-[var(--ink)]"
+                className="mt-0.5 block min-h-7 rounded-md border border-[var(--line)] px-1 text-[11px] font-bold text-[var(--ink)]"
               />
             </label>
-            <label className="text-[10px] font-bold text-[var(--muted)]">
+            <label className="text-[9px] font-bold text-[var(--muted)]">
               終了
               <input
                 type="time"
                 value={endTime}
                 onChange={(event) => setEndTime(event.target.value)}
-                className="mt-0.5 block min-h-8 rounded-lg border border-[var(--line)] px-1.5 text-[12px] font-bold text-[var(--ink)]"
+                className="mt-0.5 block min-h-7 rounded-md border border-[var(--line)] px-1 text-[11px] font-bold text-[var(--ink)]"
               />
             </label>
             <Button
@@ -326,13 +359,13 @@ function PlanEventCard({
               variant="solid"
               tone="blue"
               size="compact"
-              className="!min-h-8 !px-2 !text-[10px]"
+              className="!min-h-7 !px-1.5 !text-[9px]"
             >
               保存
             </Button>
           </div>
           {detailError && (
-            <p className="mt-1 text-[10px] font-bold text-[var(--coral)]" role="alert">
+            <p className="mt-1 text-[9px] font-bold text-[var(--coral)]" role="alert">
               {detailError}
             </p>
           )}
@@ -357,6 +390,7 @@ function ActualEventCard({
 }) {
   const metadata = kindMetadata[actual.kind];
   const Icon = metadata.icon;
+  const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [startTime, setStartTime] = useState(() =>
     toTokyoTimeInputValue(actual.startAt),
@@ -366,6 +400,8 @@ function ActualEventCard({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const style = blockStyle(actual.startAt, actual.endAt, startMinute);
+  const open = expanded || editing;
+  const interactive = handlers !== undefined;
 
   const save = async () => {
     if (!handlers) return;
@@ -385,6 +421,7 @@ function ActualEventCard({
         `${date}T${endTime}:00+09:00`,
       );
       setEditing(false);
+      setExpanded(false);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -396,72 +433,103 @@ function ActualEventCard({
 
   return (
     <article
-      className="absolute inset-x-1 overflow-hidden rounded-xl border border-[#cbe7d5] bg-[#eff9f2] px-2 py-1"
-      style={{ top: style.top, height: editing ? "auto" : style.height, minHeight: style.height }}
-      title={actual.title}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-expanded={interactive ? open : undefined}
+      onClick={() => {
+        if (!interactive) return;
+        setExpanded((current) => {
+          if (current) setEditing(false);
+          return !current;
+        });
+      }}
+      onKeyDown={(event) => {
+        if (!interactive) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          setExpanded((current) => {
+            if (current) setEditing(false);
+            return !current;
+          });
+        }
+      }}
+      className={`absolute inset-x-1 rounded-xl border border-[#cbe7d5] bg-[#eff9f2] px-2 py-1 ${open ? "z-20 overflow-visible shadow-md" : "z-10 overflow-hidden"} ${interactive ? "cursor-pointer" : ""}`}
+      style={{
+        top: style.top,
+        height: open ? "auto" : style.height,
+        minHeight: style.height,
+      }}
+      title={interactive ? `${actual.title}（クリックで操作）` : actual.title}
     >
       <div className="flex items-start justify-between gap-1">
-        <p className="min-w-0 flex-1 truncate text-[12.5px] font-bold text-[var(--ink)]">
+        <p className="min-w-0 flex-1 truncate text-[12px] font-bold text-[var(--ink)]">
           {actual.title}
         </p>
         <span
-          className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-black ${metadata.style}`}
+          className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1 py-0.5 text-[8px] font-black ${metadata.style}`}
         >
-          <Icon aria-hidden="true" size={10} />
+          <Icon aria-hidden="true" size={9} />
           {metadata.label}
         </span>
       </div>
-      <p className="mt-0.5 text-[10.5px] tabular-nums text-[var(--muted)]">
+      <p className="mt-0.5 text-[10px] tabular-nums text-[var(--muted)]">
         {formatTimeRange(actual.startAt, actual.endAt)}
       </p>
-      {handlers && (
-        <div className="mt-1 flex flex-wrap gap-1">
+      {handlers && open && (
+        <div className="mt-1 flex flex-wrap gap-0.5">
           <button
             type="button"
-            onClick={() => {
+            onClick={(event) => {
+              event.stopPropagation();
               setStartTime(toTokyoTimeInputValue(actual.startAt));
               setEndTime(toTokyoTimeInputValue(actual.endAt));
               setErrorMessage(null);
-              setEditing((open) => !open);
+              setEditing((current) => !current);
             }}
             disabled={busy}
             aria-label={`${actual.title}を修正`}
-            className="pressable inline-flex min-h-7 items-center gap-1 rounded-lg border border-[var(--line)] bg-white px-1.5 text-[10px] font-bold text-[var(--muted)] disabled:opacity-50"
+            className="pressable inline-flex min-h-6 items-center gap-0.5 rounded-md border border-[var(--line)] bg-white px-1 text-[9px] font-bold text-[var(--muted)] disabled:opacity-50"
           >
-            <Pencil aria-hidden="true" size={11} />
+            <Pencil aria-hidden="true" size={10} />
             修正
           </button>
           <button
             type="button"
-            onClick={() => void handlers.onDelete(actual)}
+            onClick={(event) => {
+              event.stopPropagation();
+              void handlers.onDelete(actual);
+            }}
             disabled={busy}
             aria-label={`${actual.title}を削除`}
-            className="pressable inline-flex min-h-7 items-center gap-1 rounded-lg border border-[color-mix(in_srgb,var(--coral)_35%,var(--line))] bg-white px-1.5 text-[10px] font-bold text-[var(--coral)] disabled:opacity-50"
+            className="pressable inline-flex min-h-6 items-center gap-0.5 rounded-md border border-[color-mix(in_srgb,var(--coral)_35%,var(--line))] bg-white px-1 text-[9px] font-bold text-[var(--coral)] disabled:opacity-50"
           >
-            <Trash2 aria-hidden="true" size={11} />
+            <Trash2 aria-hidden="true" size={10} />
             削除
           </button>
         </div>
       )}
       {editing && handlers && (
-        <div className="mt-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-1.5">
+        <div
+          className="mt-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-1.5"
+          onClick={(event) => event.stopPropagation()}
+        >
           <div className="flex flex-wrap items-end gap-1">
-            <label className="text-[10px] font-bold text-[var(--muted)]">
+            <label className="text-[9px] font-bold text-[var(--muted)]">
               開始
               <input
                 type="time"
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
-                className="mt-0.5 block min-h-8 rounded-lg border border-[var(--line)] px-1.5 text-[12px] font-bold text-[var(--ink)]"
+                className="mt-0.5 block min-h-7 rounded-md border border-[var(--line)] px-1 text-[11px] font-bold text-[var(--ink)]"
               />
             </label>
-            <label className="text-[10px] font-bold text-[var(--muted)]">
+            <label className="text-[9px] font-bold text-[var(--muted)]">
               終了
               <input
                 type="time"
                 value={endTime}
                 onChange={(event) => setEndTime(event.target.value)}
-                className="mt-0.5 block min-h-8 rounded-lg border border-[var(--line)] px-1.5 text-[12px] font-bold text-[var(--ink)]"
+                className="mt-0.5 block min-h-7 rounded-md border border-[var(--line)] px-1 text-[11px] font-bold text-[var(--ink)]"
               />
             </label>
             <Button
@@ -470,13 +538,13 @@ function ActualEventCard({
               variant="solid"
               tone="blue"
               size="compact"
-              className="!min-h-8 !px-2 !text-[10px]"
+              className="!min-h-7 !px-1.5 !text-[9px]"
             >
               保存
             </Button>
           </div>
           {errorMessage && (
-            <p className="mt-1 text-[10px] font-bold text-[var(--coral)]" role="alert">
+            <p className="mt-1 text-[9px] font-bold text-[var(--coral)]" role="alert">
               {errorMessage}
             </p>
           )}
@@ -743,7 +811,7 @@ export function ScheduleComparisonList({
       <div className="flex items-start gap-3 rounded-2xl border border-[#bcdcf7] bg-[#edf6ff] p-4 text-sm leading-relaxed text-[#285d8d]">
         <AlarmClock className="mt-0.5 shrink-0" aria-hidden="true" size={19} />
         <p>
-          左の時刻軸に沿って、予定・実績・差分を並べています。ブロックのない帯が空白の時間です。同じ高さは同じ時刻帯の重なりです。
+          左の時刻軸に沿って、予定・実績・差分を並べています。ブロックのない帯が空白の時間です。カードをクリックすると操作ボタンが開きます。
         </p>
       </div>
     </div>
