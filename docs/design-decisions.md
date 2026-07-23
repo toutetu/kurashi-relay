@@ -32,6 +32,20 @@
 
 ---
 
+## DR-050: おしごと件数は activity_events のみで数える(2026-07-21)
+
+- **課題感**: DR-039 の孤児 `task_records` 加算は移行互換のためだったが、本番DBを再作成できる
+  前提では余分な分岐になり、集計ルールが `TaskService` / `RewardCalculator` で肥大しやすい。
+- **選択肢**: (a) 孤児加算を維持する / (b) 件数だけ `activity_events` に一本化し、二重書き込み
+  （報酬・取消用の `task_records`）は別課題として残す。
+- **決定**: (b)。`today_done_count` と `GET /api/tasks` の `count` は取消されていない
+  `activity_events`（`event_type=activity`）のみ。`last_record_id` と報酬台帳は当面
+  `task_records` のまま。DR-039 の孤児加算は本DRで置き換える。
+- **理由**: 活動回数の正本を1本に揃え、二重計上の再発余地をなくす。書込の二重化解消は
+  報酬・取消互換とセットの別作業とする。
+
+---
+
 ## DR-049: 単一家庭では target/supporter 列を持たない(2026-07-21)
 
 - **課題感**: 母と娘の2人だけなので、`target_member_id` / `supporter_member_id` を毎回考えたくない。
@@ -180,6 +194,9 @@
 - **理由**: タイムラインと書込を一致させつつ、報酬集計と取消 API を壊さない。孤児加算で
   移行前の `task_records` のみ行と koekake 由来イベントも過不足なく数える。
 
+> **更新(DR-050)**: 本番DB再作成前提で、件数の孤児 `task_records` 加算はやめた。
+> 件数は `activity_events` のみ。書込の二重化と `last_record_id` は本DRのまま。
+
 ---
 
 ## DR-038: API-first SPA移行(A0〜A8)を完了し、最終構成を確定する(2026-07-20)
@@ -209,6 +226,8 @@
 
 > **更新(DR-039)**: おしごと書込が `activity_events` へ接続されたため、件数の暫定合算は
 > `activity_events` + 対応イベントが無い孤児 `task_records` に置き換えた。`last_record_id` は本DRのまま。
+>
+> **更新(DR-050)**: 件数は `activity_events` のみに一本化した。孤児加算は終了。
 
 ---
 
