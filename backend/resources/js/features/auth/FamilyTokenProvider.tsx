@@ -163,8 +163,8 @@ export function FamilyTokenProvider({ children }: { children: ReactNode }) {
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 {!required && (
                   <Button
-                    variant="ghost"
-                    tone="neutral"
+                    purpose="low"
+                    tone="default"
                     onClick={() => setDialogOpen(false)}
                   >
                     キャンセル

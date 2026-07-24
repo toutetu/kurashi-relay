@@ -157,7 +157,7 @@ export function KoekakeDetailSheet({
                             <Button
                               type="button"
                               size="compact"
-                              tone="blue"
+                              tone="default"
                               loading={promptPending}
                               onClick={() =>
                                 onPromptWithText(summary, item.text, "template")
@@ -168,8 +168,8 @@ export function KoekakeDetailSheet({
                             <Button
                               type="button"
                               size="compact"
-                              variant="outline"
-                              tone="blue"
+                              purpose="secondary"
+                              tone="default"
                               onClick={() => {
                                 setEditingTemplateId(item.prompt_template_id);
                                 setEditedText(item.text);
@@ -192,7 +192,7 @@ export function KoekakeDetailSheet({
                               <Button
                                 type="button"
                                 size="compact"
-                                tone="blue"
+                                tone="default"
                                 loading={promptPending}
                                 disabled={editedText.trim() === ""}
                                 onClick={() => {
@@ -236,7 +236,7 @@ export function KoekakeDetailSheet({
               type="button"
               className="mt-2"
               size="compact"
-              tone="blue"
+              tone="default"
               loading={promptPending}
               disabled={customText.trim() === "" || pendingCancel}
               onClick={() => {
@@ -261,8 +261,8 @@ export function KoekakeDetailSheet({
                   key={minutes}
                   type="button"
                   size="compact"
-                  variant="outline"
-                  tone="blue"
+                  purpose="secondary"
+                  tone="default"
                   loading={pendingSnooze}
                   onClick={() => onSnooze(taskId, minutes)}
                 >
@@ -272,8 +272,8 @@ export function KoekakeDetailSheet({
               <Button
                 type="button"
                 size="compact"
-                variant="ghost"
-                tone="neutral"
+                purpose="low"
+                tone="default"
                 loading={pendingSnooze}
                 onClick={() => onSnoozeNoneToday(taskId)}
               >

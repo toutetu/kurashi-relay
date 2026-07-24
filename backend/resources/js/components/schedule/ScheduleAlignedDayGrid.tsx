@@ -161,8 +161,8 @@ function EventBlock({
         </p>
         {item.editable && onCancel ? (
           <Button
-            variant="ghost"
-            tone="neutral"
+            purpose="low"
+            tone="default"
             size="compact"
             icon={Trash2}
             aria-label={`${item.title}を取り消す`}
@@ -220,8 +220,8 @@ function AllDayList({
           </span>
           {item.editable && onCancel ? (
             <Button
-              variant="ghost"
-              tone="neutral"
+              purpose="low"
+              tone="default"
               size="compact"
               icon={Trash2}
               aria-label={`${item.title}を取り消す`}

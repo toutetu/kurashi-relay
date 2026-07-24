@@ -46,16 +46,25 @@
 
 カードは `--card-radius`、`--card-shadow` を共通で使う。影は右下方向へ薄く落とし、上側へ広がる影やカード全体を浮かせるhover表現は使わない。母向けの値と娘向けの値は別のトークンとして管理する。
 
-### Button tone・variantと状態
+### Button purpose・toneと状態
 
-各toneは `--button-{tone}-background`、`text`、`border`、`icon`、`hover-background`、`hover-text`、`hover-border`、`hover-icon`、`active-background`、`active-border`、`disabled-background`、`disabled-text` を持つ。Button、QuickActionButton、ScoreControlはこれらを共通利用する。
+共通 `Button` は見た目名ではなく用途で選ぶ。`purpose` は主操作／副操作／状態選択／低優先度の4種。破壊的操作は5つ目を増やさず `tone="danger"` を副操作または低優先度へ付ける。
 
-| variant   | 通常                       | hover（fine pointerのみ）                | active                 | disabled                           |
+| purpose | 見た目 | 用途 |
+| --------- | -------------------------- | ---------------------------------------- |
+| `primary` | きぶん色の塗り＋白文字（旧 solid） | 主操作。同グループ原則1つ。標準高さ48px、最低44px |
+| `secondary` | 白背景＋明確な枠線（旧 outline） | 副操作（編集・キャンセル等） |
+| `selection` | 未選択は白＋枠、選択中は `--primary-soft`＋太い `--primary-deep` 枠 | 気分・体調・人物など状態を選ぶ（`aria-pressed`） |
+| `low` | 透明背景、枠・立体影なし（旧 ghost） | 更新・戻る・「…」など低優先度 |
+
+`tone` は `default`（きぶん色）と `danger`（中止・削除）のみ。Buttonは `--button-{purpose}-*` 系の状態トークンを共通利用する。
+
+| 状態 | 通常 | hover（fine pointerのみ） | active | disabled |
 | --------- | -------------------------- | ---------------------------------------- | ---------------------- | ---------------------------------- |
-| `solid`   | toneの通常背景・文字・枠線 | 少し濃いtone背景とコントラストを保つ文字 | toneのactive背景・枠線 | toneのdisabled背景・文字、操作不可 |
-| `soft`    | tone背景を淡く混ぜる       | 背景と枠線を少し強くする                 | active背景・枠線       | toneのdisabled背景・文字、操作不可 |
-| `outline` | surface背景とtone枠線      | 薄いtone背景と強い枠線                   | active背景・枠線       | toneのdisabled背景・文字、操作不可 |
-| `ghost`   | 透明背景                   | 薄いtone背景のみ表示                     | active背景・枠線       | toneのdisabled背景・文字、操作不可 |
+| primary | toneの通常背景・文字・枠線 | 少し濃いtone背景とコントラストを保つ文字 | toneのactive背景・枠線 | toneのdisabled背景・文字、操作不可 |
+| secondary | surface背景とtone枠線 | 薄いtone背景と強い枠線 | active背景・枠線 | 同上 |
+| selection | 未選択はsurface、選択中は淡色塗り＋太枠 | 薄いtone背景 | active背景・枠線 | 同上 |
+| low | 透明背景 | 薄いtone背景のみ表示 | active背景・枠線 | 同上 |
 
 hoverは `@media (hover: hover) and (pointer: fine)` に限定する。hover時は色変更と最大1pxの上移動、active時は2px下移動・0.99倍・小さい影を使う。disabledとloadingはhover・activeの色変更や移動を行わず、focusリングはどの状態でも維持する。
 

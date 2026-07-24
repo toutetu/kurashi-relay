@@ -130,272 +130,47 @@ button:not(:disabled),
     --button-tone-hover-border: var(--button-blue-hover-border);
     --button-tone-active-background: var(--button-blue-active-background);
     --button-tone-active-border: var(--button-blue-active-border);
-    --button-solid-foreground: var(--button-blue-solid-foreground);
-    --button-soft-foreground: var(--button-blue-soft-foreground);
-    --button-outline-foreground: var(--button-blue-outline-foreground);
-    --button-ghost-foreground: var(--button-blue-ghost-foreground);
-    --button-solid-hover-foreground: var(--button-blue-solid-hover-foreground);
-    --button-soft-hover-foreground: var(--button-blue-soft-hover-foreground);
-    --button-outline-hover-foreground: var(
+    --button-primary-foreground: var(--button-blue-solid-foreground);
+    --button-selection-foreground: var(--button-blue-soft-foreground);
+    --button-secondary-foreground: var(--button-blue-outline-foreground);
+    --button-low-foreground: var(--button-blue-ghost-foreground);
+    --button-primary-hover-foreground: var(--button-blue-solid-hover-foreground);
+    --button-selection-hover-foreground: var(--button-blue-soft-hover-foreground);
+    --button-secondary-hover-foreground: var(
       --button-blue-outline-hover-foreground
     );
-    --button-ghost-hover-foreground: var(--button-blue-ghost-hover-foreground);
-    --button-solid-active-foreground: var(
+    --button-low-hover-foreground: var(--button-blue-ghost-hover-foreground);
+    --button-primary-active-foreground: var(
       --button-blue-solid-active-foreground
     );
-    --button-soft-active-foreground: var(--button-blue-soft-active-foreground);
-    --button-outline-active-foreground: var(
+    --button-selection-active-foreground: var(
+      --button-blue-soft-active-foreground
+    );
+    --button-secondary-active-foreground: var(
       --button-blue-outline-active-foreground
     );
-    --button-ghost-active-foreground: var(
-      --button-blue-ghost-active-foreground
-    );
+    --button-low-active-foreground: var(--button-blue-ghost-active-foreground);
+    --button-disabled-background: var(--button-blue-disabled-background);
+    --button-disabled-text: var(--button-blue-disabled-text);
     --button-background: var(--button-tone-background);
-    --button-foreground: var(--button-solid-foreground, var(--text));
+    --button-foreground: var(--button-primary-foreground, var(--text));
     --button-border: var(--button-tone-border);
     --button-hover-background: var(--button-tone-hover-background);
     --button-hover-foreground: var(
-      --button-solid-hover-foreground,
+      --button-primary-hover-foreground,
       var(--text)
     );
     --button-hover-border: var(--button-tone-hover-border);
     --button-active-background: var(--button-tone-active-background);
     --button-active-border: var(--button-tone-active-border);
     --button-active-foreground: var(
-      --button-solid-active-foreground,
+      --button-primary-active-foreground,
       var(--text)
     );
+    --button-edge: var(--button-tone-active-background);
     border: 1px solid var(--button-border, var(--border));
     background: var(--button-background, var(--surface));
     color: var(--button-foreground, var(--text));
-  }
-
-  .button--tone-red {
-    --button-tone-background: var(--button-red-background);
-    --button-tone-text: var(--button-red-text);
-    --button-tone-border: var(--button-red-border);
-    --button-tone-hover-background: var(--button-red-hover-background);
-    --button-tone-hover-text: var(--button-red-hover-text);
-    --button-tone-hover-border: var(--button-red-hover-border);
-    --button-tone-active-background: var(--button-red-active-background);
-    --button-tone-active-border: var(--button-red-active-border);
-    --button-solid-foreground: var(--button-red-solid-foreground);
-    --button-soft-foreground: var(--button-red-soft-foreground);
-    --button-outline-foreground: var(--button-red-outline-foreground);
-    --button-ghost-foreground: var(--button-red-ghost-foreground);
-    --button-solid-hover-foreground: var(--button-red-solid-hover-foreground);
-    --button-soft-hover-foreground: var(--button-red-soft-hover-foreground);
-    --button-outline-hover-foreground: var(
-      --button-red-outline-hover-foreground
-    );
-    --button-ghost-hover-foreground: var(--button-red-ghost-hover-foreground);
-    --button-solid-active-foreground: var(--button-red-solid-active-foreground);
-    --button-soft-active-foreground: var(--button-red-soft-active-foreground);
-    --button-outline-active-foreground: var(
-      --button-red-outline-active-foreground
-    );
-    --button-ghost-active-foreground: var(--button-red-ghost-active-foreground);
-    --button-disabled-background: var(--button-red-disabled-background);
-    --button-disabled-text: var(--button-red-disabled-text);
-  }
-  .button--tone-yellow {
-    --button-tone-background: var(--button-yellow-background);
-    --button-tone-text: var(--button-yellow-text);
-    --button-tone-border: var(--button-yellow-border);
-    --button-tone-hover-background: var(--button-yellow-hover-background);
-    --button-tone-hover-text: var(--button-yellow-hover-text);
-    --button-tone-hover-border: var(--button-yellow-hover-border);
-    --button-tone-active-background: var(--button-yellow-active-background);
-    --button-tone-active-border: var(--button-yellow-active-border);
-    --button-solid-foreground: var(--button-yellow-solid-foreground);
-    --button-soft-foreground: var(--button-yellow-soft-foreground);
-    --button-outline-foreground: var(--button-yellow-outline-foreground);
-    --button-ghost-foreground: var(--button-yellow-ghost-foreground);
-    --button-solid-hover-foreground: var(
-      --button-yellow-solid-hover-foreground
-    );
-    --button-soft-hover-foreground: var(--button-yellow-soft-hover-foreground);
-    --button-outline-hover-foreground: var(
-      --button-yellow-outline-hover-foreground
-    );
-    --button-ghost-hover-foreground: var(
-      --button-yellow-ghost-hover-foreground
-    );
-    --button-solid-active-foreground: var(
-      --button-yellow-solid-active-foreground
-    );
-    --button-soft-active-foreground: var(
-      --button-yellow-soft-active-foreground
-    );
-    --button-outline-active-foreground: var(
-      --button-yellow-outline-active-foreground
-    );
-    --button-ghost-active-foreground: var(
-      --button-yellow-ghost-active-foreground
-    );
-    --button-disabled-background: var(--button-yellow-disabled-background);
-    --button-disabled-text: var(--button-yellow-disabled-text);
-  }
-  .button--tone-blue {
-    --button-tone-background: var(--button-blue-background);
-    --button-tone-text: var(--button-blue-text);
-    --button-tone-border: var(--button-blue-border);
-    --button-tone-hover-background: var(--button-blue-hover-background);
-    --button-tone-hover-text: var(--button-blue-hover-text);
-    --button-tone-hover-border: var(--button-blue-hover-border);
-    --button-tone-active-background: var(--button-blue-active-background);
-    --button-tone-active-border: var(--button-blue-active-border);
-    --button-solid-foreground: var(--button-blue-solid-foreground);
-    --button-soft-foreground: var(--button-blue-soft-foreground);
-    --button-outline-foreground: var(--button-blue-outline-foreground);
-    --button-ghost-foreground: var(--button-blue-ghost-foreground);
-    --button-solid-hover-foreground: var(--button-blue-solid-hover-foreground);
-    --button-soft-hover-foreground: var(--button-blue-soft-hover-foreground);
-    --button-outline-hover-foreground: var(
-      --button-blue-outline-hover-foreground
-    );
-    --button-ghost-hover-foreground: var(--button-blue-ghost-hover-foreground);
-    --button-solid-active-foreground: var(
-      --button-blue-solid-active-foreground
-    );
-    --button-soft-active-foreground: var(--button-blue-soft-active-foreground);
-    --button-outline-active-foreground: var(
-      --button-blue-outline-active-foreground
-    );
-    --button-ghost-active-foreground: var(
-      --button-blue-ghost-active-foreground
-    );
-    --button-disabled-background: var(--button-blue-disabled-background);
-    --button-disabled-text: var(--button-blue-disabled-text);
-  }
-  .button--tone-neutral {
-    --button-tone-background: var(--button-neutral-background);
-    --button-tone-text: var(--button-neutral-text);
-    --button-tone-border: var(--button-neutral-border);
-    --button-tone-hover-background: var(--button-neutral-hover-background);
-    --button-tone-hover-text: var(--button-neutral-hover-text);
-    --button-tone-hover-border: var(--button-neutral-hover-border);
-    --button-tone-active-background: var(--button-neutral-active-background);
-    --button-tone-active-border: var(--button-neutral-active-border);
-    --button-solid-foreground: var(--button-neutral-solid-foreground);
-    --button-soft-foreground: var(--button-neutral-soft-foreground);
-    --button-outline-foreground: var(--button-neutral-outline-foreground);
-    --button-ghost-foreground: var(--button-neutral-ghost-foreground);
-    --button-solid-hover-foreground: var(
-      --button-neutral-solid-hover-foreground
-    );
-    --button-soft-hover-foreground: var(--button-neutral-soft-hover-foreground);
-    --button-outline-hover-foreground: var(
-      --button-neutral-outline-hover-foreground
-    );
-    --button-ghost-hover-foreground: var(
-      --button-neutral-ghost-hover-foreground
-    );
-    --button-solid-active-foreground: var(
-      --button-neutral-solid-active-foreground
-    );
-    --button-soft-active-foreground: var(
-      --button-neutral-soft-active-foreground
-    );
-    --button-outline-active-foreground: var(
-      --button-neutral-outline-active-foreground
-    );
-    --button-ghost-active-foreground: var(
-      --button-neutral-ghost-active-foreground
-    );
-    --button-disabled-background: var(--button-neutral-disabled-background);
-    --button-disabled-text: var(--button-neutral-disabled-text);
-  }
-  .button--tone-daughter {
-    --button-tone-background: var(--button-daughter-background);
-    --button-tone-text: var(--button-daughter-text);
-    --button-tone-border: var(--button-daughter-border);
-    --button-tone-hover-background: var(--button-daughter-hover-background);
-    --button-tone-hover-text: var(--button-daughter-hover-text);
-    --button-tone-hover-border: var(--button-daughter-hover-border);
-    --button-tone-active-background: var(--button-daughter-active-background);
-    --button-tone-active-border: var(--button-daughter-active-border);
-    --button-solid-foreground: var(--button-daughter-solid-foreground);
-    --button-soft-foreground: var(--button-daughter-soft-foreground);
-    --button-outline-foreground: var(--button-daughter-outline-foreground);
-    --button-ghost-foreground: var(--button-daughter-ghost-foreground);
-    --button-solid-hover-foreground: var(
-      --button-daughter-solid-hover-foreground
-    );
-    --button-soft-hover-foreground: var(
-      --button-daughter-soft-hover-foreground
-    );
-    --button-outline-hover-foreground: var(
-      --button-daughter-outline-hover-foreground
-    );
-    --button-ghost-hover-foreground: var(
-      --button-daughter-ghost-hover-foreground
-    );
-    --button-solid-active-foreground: var(
-      --button-daughter-solid-active-foreground
-    );
-    --button-soft-active-foreground: var(
-      --button-daughter-soft-active-foreground
-    );
-    --button-outline-active-foreground: var(
-      --button-daughter-outline-active-foreground
-    );
-    --button-ghost-active-foreground: var(
-      --button-daughter-ghost-active-foreground
-    );
-    --button-disabled-background: var(--button-daughter-disabled-background);
-    --button-disabled-text: var(--button-daughter-disabled-text);
-  }
-
-  .button--variant-solid {
-    --button-foreground: var(--button-solid-foreground, var(--text));
-    --button-hover-foreground: var(
-      --button-solid-hover-foreground,
-      var(--text)
-    );
-    --button-active-foreground: var(
-      --button-solid-active-foreground,
-      var(--text)
-    );
-  }
-
-  .button--variant-soft {
-    --button-background: color-mix(
-      in srgb,
-      var(--button-tone-background) 15%,
-      var(--surface)
-    );
-    --button-foreground: var(--button-soft-foreground, var(--text));
-    --button-hover-background: color-mix(
-      in srgb,
-      var(--button-tone-background) 28%,
-      var(--surface)
-    );
-    --button-hover-foreground: var(--button-soft-hover-foreground, var(--text));
-    --button-active-foreground: var(
-      --button-soft-active-foreground,
-      var(--text)
-    );
-  }
-  .button--variant-outline {
-    --button-background: var(--surface);
-    --button-foreground: var(--button-outline-foreground, var(--text));
-    --button-hover-background: color-mix(
-      in srgb,
-      var(--button-tone-border) 14%,
-      var(--surface)
-    );
-    --button-hover-foreground: var(
-      --button-outline-hover-foreground,
-      var(--text)
-    );
-    --button-active-foreground: var(
-      --button-outline-active-foreground,
-      var(--text)
-    );
-  }
-  .button {
-    --button-edge: var(--button-tone-active-background);
     box-shadow: 0 2px 0 var(--button-edge);
     transition:
       transform 120ms ease,
@@ -405,12 +180,97 @@ button:not(:disabled),
       color 120ms ease;
   }
 
-  .button--variant-solid {
+  .button--tone-default {
+    --button-tone-background: var(--button-blue-background);
+    --button-tone-text: var(--button-blue-text);
+    --button-tone-border: var(--button-blue-border);
+    --button-tone-hover-background: var(--button-blue-hover-background);
+    --button-tone-hover-text: var(--button-blue-hover-text);
+    --button-tone-hover-border: var(--button-blue-hover-border);
+    --button-tone-active-background: var(--button-blue-active-background);
+    --button-tone-active-border: var(--button-blue-active-border);
+    --button-primary-foreground: var(--button-blue-solid-foreground);
+    --button-selection-foreground: var(--button-blue-soft-foreground);
+    --button-secondary-foreground: var(--button-blue-outline-foreground);
+    --button-low-foreground: var(--button-blue-ghost-foreground);
+    --button-primary-hover-foreground: var(--button-blue-solid-hover-foreground);
+    --button-selection-hover-foreground: var(--button-blue-soft-hover-foreground);
+    --button-secondary-hover-foreground: var(
+      --button-blue-outline-hover-foreground
+    );
+    --button-low-hover-foreground: var(--button-blue-ghost-hover-foreground);
+    --button-primary-active-foreground: var(
+      --button-blue-solid-active-foreground
+    );
+    --button-selection-active-foreground: var(
+      --button-blue-soft-active-foreground
+    );
+    --button-secondary-active-foreground: var(
+      --button-blue-outline-active-foreground
+    );
+    --button-low-active-foreground: var(--button-blue-ghost-active-foreground);
+    --button-disabled-background: var(--button-blue-disabled-background);
+    --button-disabled-text: var(--button-blue-disabled-text);
+  }
+
+  .button--tone-danger {
+    --button-tone-background: var(--button-red-background);
+    --button-tone-text: var(--button-red-text);
+    --button-tone-border: var(--button-red-border);
+    --button-tone-hover-background: var(--button-red-hover-background);
+    --button-tone-hover-text: var(--button-red-hover-text);
+    --button-tone-hover-border: var(--button-red-hover-border);
+    --button-tone-active-background: var(--button-red-active-background);
+    --button-tone-active-border: var(--button-red-active-border);
+    --button-primary-foreground: var(--button-red-solid-foreground);
+    --button-selection-foreground: var(--button-red-soft-foreground);
+    --button-secondary-foreground: var(--button-red-outline-foreground);
+    --button-low-foreground: var(--button-red-ghost-foreground);
+    --button-primary-hover-foreground: var(--button-red-solid-hover-foreground);
+    --button-selection-hover-foreground: var(--button-red-soft-hover-foreground);
+    --button-secondary-hover-foreground: var(
+      --button-red-outline-hover-foreground
+    );
+    --button-low-hover-foreground: var(--button-red-ghost-hover-foreground);
+    --button-primary-active-foreground: var(--button-red-solid-active-foreground);
+    --button-selection-active-foreground: var(--button-red-soft-active-foreground);
+    --button-secondary-active-foreground: var(
+      --button-red-outline-active-foreground
+    );
+    --button-low-active-foreground: var(--button-red-ghost-active-foreground);
+    --button-disabled-background: var(--button-red-disabled-background);
+    --button-disabled-text: var(--button-red-disabled-text);
+  }
+
+  .button--purpose-primary {
+    --button-foreground: var(--button-primary-foreground, var(--text));
+    --button-hover-foreground: var(
+      --button-primary-hover-foreground,
+      var(--text)
+    );
+    --button-active-foreground: var(
+      --button-primary-active-foreground,
+      var(--text)
+    );
     --button-edge: var(--button-tone-active-background);
   }
 
-  .button--variant-soft,
-  .button--variant-outline {
+  .button--purpose-secondary {
+    --button-background: var(--surface);
+    --button-foreground: var(--button-secondary-foreground, var(--text));
+    --button-hover-background: color-mix(
+      in srgb,
+      var(--button-tone-border) 14%,
+      var(--surface)
+    );
+    --button-hover-foreground: var(
+      --button-secondary-hover-foreground,
+      var(--text)
+    );
+    --button-active-foreground: var(
+      --button-secondary-active-foreground,
+      var(--text)
+    );
     --button-edge: color-mix(
       in srgb,
       var(--button-tone-border) 35%,
@@ -418,23 +278,62 @@ button:not(:disabled),
     );
   }
 
-  .button--variant-ghost {
+  .button--purpose-selection {
+    --button-background: var(--surface);
+    --button-border: var(--line);
+    --button-foreground: var(--button-secondary-foreground, var(--text));
+    --button-hover-background: color-mix(
+      in srgb,
+      var(--button-tone-border) 14%,
+      var(--surface)
+    );
+    --button-hover-foreground: var(
+      --button-selection-hover-foreground,
+      var(--text)
+    );
+    --button-active-foreground: var(
+      --button-selection-active-foreground,
+      var(--text)
+    );
+    --button-edge: color-mix(
+      in srgb,
+      var(--button-tone-border) 35%,
+      var(--line)
+    );
+  }
+
+  .button--purpose-selection.button--selected {
+    --button-background: var(--primary-soft);
+    --button-border: var(--primary-deep);
+    --button-foreground: var(--primary-deep);
+    --button-hover-background: color-mix(
+      in srgb,
+      var(--primary) 18%,
+      var(--surface)
+    );
+    --button-hover-foreground: var(--primary-deep);
+    --button-hover-border: var(--primary-deep);
+    --button-active-background: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      var(--surface)
+    );
+    --button-active-border: var(--primary-deep);
+    --button-active-foreground: var(--primary-deep);
+    border-width: 2px;
+  }
+
+  .button--purpose-low {
     --button-background: transparent;
     --button-border: transparent;
-    --button-foreground: var(--button-ghost-foreground, var(--text));
+    --button-foreground: var(--button-low-foreground, var(--text));
     --button-hover-background: color-mix(
       in srgb,
       var(--button-tone-border) 14%,
       transparent
     );
-    --button-hover-foreground: var(
-      --button-ghost-hover-foreground,
-      var(--text)
-    );
-    --button-active-foreground: var(
-      --button-ghost-active-foreground,
-      var(--text)
-    );
+    --button-hover-foreground: var(--button-low-hover-foreground, var(--text));
+    --button-active-foreground: var(--button-low-active-foreground, var(--text));
     --button-edge: transparent;
   }
 

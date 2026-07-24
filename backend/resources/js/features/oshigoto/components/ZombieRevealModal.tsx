@@ -94,7 +94,7 @@ export function ZombieRevealModal({
         )}
 
         <Button
-          tone="daughter"
+          tone="default"
           className="mt-5 w-full"
           onClick={onClose}
         >

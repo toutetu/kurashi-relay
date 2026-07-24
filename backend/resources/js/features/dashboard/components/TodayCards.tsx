@@ -1,5 +1,7 @@
 import {
   CalendarDays,
+  Check,
+  CirclePlay,
   Heart,
   Moon,
   Sparkles,
@@ -7,6 +9,7 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { useState } from "react";
+import { ActionMenu } from "../../../components/ui/ActionMenu";
 import { Button } from "../../../components/ui/Button";
 import { ScoreControl } from "../../../components/ui/ScoreControl";
 import { DashboardCard } from "../../../components/ui/DashboardCard";
@@ -38,36 +41,6 @@ type PlanActionHandlers = {
     endAt: string,
   ) => Promise<void>;
 };
-
-function PlanActionButton({
-  label,
-  onClick,
-  disabled,
-  tone = "neutral",
-}: {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  tone?: "neutral" | "primary" | "danger";
-}) {
-  const toneClass =
-    tone === "primary"
-      ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-deep)]"
-      : tone === "danger"
-        ? "border-[color-mix(in_srgb,var(--coral)_40%,var(--line))] text-[var(--coral)]"
-        : "border-[var(--line)] bg-[var(--surface)] text-[var(--ink)]";
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`pressable rounded-lg border px-1.5 py-0.5 text-[10px] font-bold leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
-    >
-      {label}
-    </button>
-  );
-}
 
 function PlanRow({
   plan,
@@ -201,33 +174,44 @@ function PlanRow({
           </span>
         </span>
         {recordable && (
-          <div className="flex max-w-[11.5rem] shrink-0 flex-wrap justify-end gap-1">
-            <PlanActionButton
-              label="開始"
-              tone="primary"
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Button
+              purpose="primary"
+              tone="default"
+              size="compact"
+              icon={CirclePlay}
               disabled={busy}
               onClick={() => void actions.onStart(plan)}
-            />
-            <PlanActionButton
-              label="計画通り"
+              className="!min-h-11"
+            >
+              開始する
+            </Button>
+            <ActionMenu
+              label={`${plan.title}のその他の操作`}
               disabled={busy}
-              onClick={() => void actions.onCompleteAsPlanned(plan)}
-            />
-            <PlanActionButton
-              label="中止"
-              tone="danger"
-              disabled={busy}
-              onClick={() => void actions.onSkip(plan)}
-            />
-            <PlanActionButton
-              label="詳細入力"
-              disabled={busy}
-              onClick={() => {
-                setStartTime(toTokyoTimeInputValue(plan.startAt));
-                setEndTime(toTokyoTimeInputValue(plan.endAt));
-                setDetailError(null);
-                setDetailOpen((open) => !open);
-              }}
+              items={[
+                {
+                  id: "complete-as-planned",
+                  label: "計画どおり",
+                  onSelect: () => void actions.onCompleteAsPlanned(plan),
+                },
+                {
+                  id: "detail",
+                  label: "詳細入力",
+                  onSelect: () => {
+                    setStartTime(toTokyoTimeInputValue(plan.startAt));
+                    setEndTime(toTokyoTimeInputValue(plan.endAt));
+                    setDetailError(null);
+                    setDetailOpen((open) => !open);
+                  },
+                },
+                {
+                  id: "skip",
+                  label: "中止を記録",
+                  tone: "danger",
+                  onSelect: () => void actions.onSkip(plan),
+                },
+              ]}
             />
           </div>
         )}
@@ -256,8 +240,8 @@ function PlanRow({
             <Button
               onClick={() => void saveDetail()}
               disabled={busy}
-              variant="solid"
-              tone="blue"
+              purpose="primary"
+              tone="default"
               size="compact"
               className="!min-h-9 !px-2.5 !text-[11px]"
             >
@@ -427,6 +411,7 @@ export function DaughterConditionsCard({
               return (
                 <Button
                   key={option.value}
+                  purpose="selection"
                   aria-pressed={selected}
                   aria-label={`娘の入力者区分を${option.label}にする`}
                   onClick={() =>
@@ -435,9 +420,9 @@ export function DaughterConditionsCard({
                       inputSource: option.value,
                     }))
                   }
-                  variant={selected ? "solid" : "outline"}
-                  tone="daughter"
+                  tone="default"
                   size="compact"
+                  icon={selected ? Check : undefined}
                   className="min-w-0 rounded-lg px-1 text-xs"
                 >
                   {option.label}

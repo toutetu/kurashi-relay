@@ -8,14 +8,14 @@ export function QuickActionButton({
   icon: Icon,
   label,
   onClick,
-  tone = "blue",
+  tone = "default",
   detail,
   ariaLabel,
 }: {
   icon: LucideIcon;
   label: string;
   onClick: () => void;
-  tone?: "blue" | "yellow" | "red";
+  tone?: "default" | "danger";
   detail?: ReactNode;
   ariaLabel?: string;
 }) {
@@ -24,7 +24,7 @@ export function QuickActionButton({
       onClick={onClick}
       aria-label={ariaLabel}
       icon={Icon}
-      variant="outline"
+      purpose="secondary"
       tone={tone}
       size="compact"
       className="w-full min-w-0 justify-start text-left"

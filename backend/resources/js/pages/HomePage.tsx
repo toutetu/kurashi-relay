@@ -23,6 +23,7 @@ import {
 } from "../features/dashboard/hooks/dashboardTab";
 import { useSpaDashboardTab } from "../features/dashboard/hooks/useSpaDashboardTab";
 import { useDashboardQuery } from "../features/dashboard/queries/useDashboardQuery";
+import { selectSuggestedPlan } from "../features/dashboard/selectSuggestedPlan";
 import { MoodPicker } from "../features/mood/mood";
 import type {
   DashboardData,
@@ -51,6 +52,7 @@ function HomeDashboard({
   );
   const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
   const [planError, setPlanError] = useState<string | null>(null);
+  const suggestedPlan = selectSuggestedPlan(data.nextPlans);
   const runningOptionId =
     currentActivity && currentActivity.status !== "completed"
       ? currentActivity.plannedActivityId
@@ -227,8 +229,11 @@ function HomeDashboard({
     <div>
       <CurrentActivityCard
         activity={currentActivity}
+        suggestedPlan={suggestedPlan}
+        starting={busyPlanId !== null && suggestedPlan?.plan.id === busyPlanId}
         onChange={setCurrentActivity}
         onComplete={completeActivity}
+        onStartSuggested={startPlan}
       />
       <SegmentedTabs
         tabs={dashboardTabs}
@@ -333,8 +338,8 @@ export function HomePage() {
           <Button
             onClick={() => void query.refetch()}
             disabled={query.isFetching}
-            variant="ghost"
-            tone="blue"
+            purpose="low"
+            tone="default"
             size="compact"
             icon={RefreshCcw}
             loading={query.isFetching && !query.isPending}

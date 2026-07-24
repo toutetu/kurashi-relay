@@ -42,8 +42,8 @@ export function MemberTimelineSection({
           <Button
             onClick={() => void query.refetch()}
             loading={query.isFetching}
-            variant="outline"
-            tone="blue"
+            purpose="secondary"
+            tone="default"
             icon={RefreshCcw}
             className="mx-auto"
           >

@@ -133,8 +133,8 @@ export function ReportsPage() {
                   <Button
                     size="compact"
                     icon={Link2}
-                    variant="ghost"
-                    tone="neutral"
+                    purpose="low"
+                    tone="default"
                     disabled={shareMutation.isPending}
                     onClick={() => shareMutation.mutate(report.id)}
                   >

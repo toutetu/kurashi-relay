@@ -337,8 +337,8 @@ export function SchedulePage() {
                   </span>
                   {item.editable ? (
                     <Button
-                      variant="ghost"
-                      tone="neutral"
+                      purpose="low"
+                      tone="default"
                       size="compact"
                       icon={Trash2}
                       aria-label={`${item.title}を取り消す`}
@@ -511,8 +511,8 @@ export function SchedulePage() {
                     </Button>
                   ) : (
                     <Button
-                      variant="ghost"
-                      tone="neutral"
+                      purpose="low"
+                      tone="default"
                       size="compact"
                       icon={Unlink}
                       loading={disconnectMutation.isPending}

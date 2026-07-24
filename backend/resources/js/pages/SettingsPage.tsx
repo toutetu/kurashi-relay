@@ -124,8 +124,8 @@ export function SettingsPage() {
             {hasSavedToken ? "あいことばを変更" : "あいことばを入力"}
           </Button>
           <Button
-            variant="ghost"
-            tone="neutral"
+            purpose="low"
+            tone="default"
             icon={Trash2}
             disabled={!hasSavedToken}
             onClick={removeSavedToken}

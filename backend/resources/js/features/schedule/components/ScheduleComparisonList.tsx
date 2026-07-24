@@ -2,6 +2,7 @@ import {
   Activity,
   AlarmClock,
   CalendarDays,
+  CirclePlay,
   Clock3,
   GitCompareArrows,
   Heart,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
+import { ActionMenu } from "../../../components/ui/ActionMenu";
 import { Button } from "../../../components/ui/Button";
 import type {
   ActualEntry,
@@ -162,39 +164,6 @@ function resolveWindow(ranges: Array<{ startAt: string; endAt: string }>): {
   };
 }
 
-function PlanActionButton({
-  label,
-  onClick,
-  disabled,
-  tone = "neutral",
-}: {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  tone?: "neutral" | "primary" | "danger";
-}) {
-  const toneClass =
-    tone === "primary"
-      ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-deep)]"
-      : tone === "danger"
-        ? "border-[color-mix(in_srgb,var(--coral)_40%,var(--line))] text-[var(--coral)]"
-        : "border-[var(--line)] bg-[var(--surface)] text-[var(--ink)]";
-
-  return (
-    <button
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-      disabled={disabled}
-      className={`pressable inline-flex min-h-6 items-center justify-center rounded-md border px-1 py-0 text-[9px] font-bold leading-none transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] disabled:opacity-50 ${toneClass}`}
-    >
-      {label}
-    </button>
-  );
-}
-
 function PlanEventCard({
   plan,
   date,
@@ -299,33 +268,47 @@ function PlanEventCard({
         {formatTimeRange(plan.startAt, plan.endAt)}
       </p>
       {recordable && open && (
-        <div className="mt-1 flex flex-wrap gap-0.5">
-          <PlanActionButton
-            label="開始"
-            tone="primary"
+        <div
+          className="mt-1 flex flex-wrap items-center gap-1"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Button
+            purpose="primary"
+            tone="default"
+            size="compact"
+            icon={CirclePlay}
             disabled={busy}
+            className="!min-h-11"
             onClick={() => void handlers!.onStart(plan)}
-          />
-          <PlanActionButton
-            label="計画通り"
+          >
+            開始する
+          </Button>
+          <ActionMenu
+            label={`${plan.title}のその他の操作`}
             disabled={busy}
-            onClick={() => void handlers!.onCompleteAsPlanned(plan)}
-          />
-          <PlanActionButton
-            label="中止"
-            tone="danger"
-            disabled={busy}
-            onClick={() => void handlers!.onSkip(plan)}
-          />
-          <PlanActionButton
-            label="詳細"
-            disabled={busy}
-            onClick={() => {
-              setStartTime(toTokyoTimeInputValue(plan.startAt));
-              setEndTime(toTokyoTimeInputValue(plan.endAt));
-              setDetailError(null);
-              setDetailOpen((current) => !current);
-            }}
+            items={[
+              {
+                id: "complete-as-planned",
+                label: "計画どおり",
+                onSelect: () => void handlers!.onCompleteAsPlanned(plan),
+              },
+              {
+                id: "detail",
+                label: "詳細入力",
+                onSelect: () => {
+                  setStartTime(toTokyoTimeInputValue(plan.startAt));
+                  setEndTime(toTokyoTimeInputValue(plan.endAt));
+                  setDetailError(null);
+                  setDetailOpen((current) => !current);
+                },
+              },
+              {
+                id: "skip",
+                label: "中止を記録",
+                tone: "danger",
+                onSelect: () => void handlers!.onSkip(plan),
+              },
+            ]}
           />
         </div>
       )}
@@ -356,8 +339,8 @@ function PlanEventCard({
             <Button
               onClick={() => void saveDetail()}
               disabled={busy}
-              variant="solid"
-              tone="blue"
+              purpose="primary"
+              tone="default"
               size="compact"
               className="!min-h-7 !px-1.5 !text-[9px]"
             >
@@ -535,8 +518,8 @@ function ActualEventCard({
             <Button
               onClick={() => void save()}
               disabled={busy}
-              variant="solid"
-              tone="blue"
+              purpose="primary"
+              tone="default"
               size="compact"
               className="!min-h-7 !px-1.5 !text-[9px]"
             >

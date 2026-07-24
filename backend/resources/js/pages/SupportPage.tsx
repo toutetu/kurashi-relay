@@ -220,8 +220,8 @@ export function SupportPage() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     size="compact"
-                    variant="ghost"
-                    tone="neutral"
+                    purpose="low"
+                    tone="default"
                     disabled={updateMutation.isPending}
                     onClick={() =>
                       updateMutation.mutate({
@@ -234,8 +234,8 @@ export function SupportPage() {
                   </Button>
                   <Button
                     size="compact"
-                    variant="ghost"
-                    tone="neutral"
+                    purpose="low"
+                    tone="default"
                     disabled={updateMutation.isPending}
                     onClick={() =>
                       updateMutation.mutate({
@@ -249,8 +249,8 @@ export function SupportPage() {
                   </Button>
                   <Button
                     size="compact"
-                    variant="ghost"
-                    tone="neutral"
+                    purpose="low"
+                    tone="default"
                     disabled={updateMutation.isPending}
                     onClick={() =>
                       updateMutation.mutate({

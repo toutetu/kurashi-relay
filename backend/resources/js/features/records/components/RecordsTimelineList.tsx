@@ -106,8 +106,8 @@ export function RecordsTimelineList({
                       onClick={() => void save(record)}
                       disabled={savingId !== null}
                       loading={savingId === record.id}
-                      variant="solid"
-                      tone="blue"
+                      purpose="primary"
+                      tone="default"
                       size="compact"
                       className="!min-h-9 !px-2.5 !text-[11px]"
                     >
@@ -116,8 +116,8 @@ export function RecordsTimelineList({
                     <Button
                       onClick={cancelEdit}
                       disabled={savingId !== null}
-                      variant="outline"
-                      tone="neutral"
+                      purpose="secondary"
+                      tone="default"
                       size="compact"
                       className="!min-h-9 !px-2.5 !text-[11px]"
                     >

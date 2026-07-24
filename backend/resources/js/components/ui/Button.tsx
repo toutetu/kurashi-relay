@@ -2,17 +2,17 @@ import { LoaderCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type ButtonVariant = "solid" | "soft" | "outline" | "ghost";
-type ButtonTone = "red" | "yellow" | "blue" | "neutral" | "daughter";
+type ButtonPurpose = "primary" | "secondary" | "selection" | "low";
+type ButtonTone = "default" | "danger";
 type ButtonSize = "compact" | "regular";
 
 const sizeClasses: Record<ButtonSize, string> = {
   compact: "min-h-11 gap-2 rounded-xl px-2.5 py-2 text-sm",
-  regular: "min-h-11 gap-2 rounded-xl px-4 py-2.5 text-sm",
+  regular: "min-h-12 gap-2 rounded-xl px-4 py-2.5 text-sm",
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: ButtonVariant;
+  purpose?: ButtonPurpose;
   tone?: ButtonTone;
   size?: ButtonSize;
   icon?: LucideIcon;
@@ -20,9 +20,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children?: ReactNode;
 }
 
+function isPressedValue(value: ButtonHTMLAttributes<HTMLButtonElement>["aria-pressed"]) {
+  return value === true || value === "true";
+}
+
 export function Button({
-  variant = "solid",
-  tone = "blue",
+  purpose = "primary",
+  tone = "default",
   size = "regular",
   icon: Icon,
   loading = false,
@@ -33,6 +37,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const selected = purpose === "selection" && isPressedValue(props["aria-pressed"]);
 
   return (
     <button
@@ -40,7 +45,7 @@ export function Button({
       type={type}
       disabled={isDisabled}
       aria-busy={loading || undefined}
-      className={`button button--variant-${variant} button--tone-${tone} pressable inline-flex items-center justify-center font-bold focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:cursor-not-allowed ${sizeClasses[size]} ${className}`}
+      className={`button button--purpose-${purpose} button--tone-${tone} pressable inline-flex items-center justify-center font-bold focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:cursor-not-allowed ${selected ? "button--selected" : ""} ${sizeClasses[size]} ${className}`}
     >
       {loading ? (
         <LoaderCircle

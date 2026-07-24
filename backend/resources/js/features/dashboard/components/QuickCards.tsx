@@ -1,6 +1,7 @@
 import {
   Backpack,
   BriefcaseBusiness,
+  Check,
   Clock3,
   Gamepad2,
   House,
@@ -89,7 +90,7 @@ export function QuickStartCard({
   return (
     <DashboardCard
       id="quick-start"
-      title="クイック活動記録"
+      title="活動開始"
       icon={Clock3}
       tone="blue"
       density="compact"
@@ -107,30 +108,32 @@ export function QuickStartCard({
               onClick={() => void startActivity(activity)}
               disabled={savingId !== null}
               aria-label={`${activity.label}を開始`}
-              className="pressable relative flex flex-col items-center gap-1 rounded-2xl border-[1.5px] bg-[var(--surface)] px-1 py-1.5 text-[11px] font-bold text-[var(--ink)] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:opacity-60"
+              aria-pressed={running}
+              className="pressable relative flex min-h-11 flex-col items-center justify-center gap-1 rounded-2xl border-[1.5px] bg-[var(--surface)] px-1 py-2 text-[11px] font-bold text-[var(--ink)] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:opacity-60"
               style={
                 running
                   ? {
-                      borderColor:
-                        "color-mix(in srgb, var(--green) 45%, var(--line))",
-                      background:
-                        "color-mix(in srgb, var(--green-soft) 45%, var(--surface))",
+                      borderColor: "var(--primary-deep)",
+                      borderWidth: "2px",
+                      background: "var(--primary-soft)",
+                      color: "var(--primary-deep)",
                     }
                   : { borderColor: "var(--line)" }
               }
             >
-              {running && (
-                <span
+              {running ? (
+                <Check
                   aria-hidden="true"
-                  className="absolute top-1.5 right-2 size-2 rounded-full bg-[var(--green)]"
+                  size={14}
+                  className="absolute top-1.5 right-1.5 text-[var(--primary-deep)]"
                 />
-              )}
+              ) : null}
               <span
                 className={`grid size-[34px] place-items-center rounded-full ${presentation.chipClass}`}
               >
                 <Icon aria-hidden="true" size={15} />
               </span>
-              {activity.label}
+              {activity.label}を開始
             </button>
           );
         })}
@@ -219,13 +222,13 @@ function FreeNoteDialog({
           <Button
             type="button"
             onClick={onCancel}
-            variant="outline"
-            tone="neutral"
+            purpose="secondary"
+            tone="default"
             className="min-h-11 flex-1"
           >
             やめる
           </Button>
-          <Button type="submit" variant="solid" tone="blue" className="min-h-11 flex-1">
+          <Button type="submit" purpose="primary" tone="default" className="min-h-11 flex-1">
             記録する
           </Button>
         </div>
@@ -363,7 +366,7 @@ export function QuickLogsCard({
                     aria-label={`${log.label}を記録。現在${log.count}件`}
                     disabled={savingType !== null}
                     onClick={() => handleLogClick(log)}
-                    className="pressable group relative flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2 py-1 text-left text-[13px] font-semibold text-[var(--ink)] transition hover:bg-[color-mix(in_srgb,var(--primary-soft)_65%,var(--surface))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:opacity-60"
+                    className="pressable group relative flex min-h-12 w-full items-center gap-2.5 rounded-xl border border-transparent px-2 py-1.5 text-left text-[13px] font-semibold text-[var(--ink)] transition hover:border-[var(--line)] hover:bg-[color-mix(in_srgb,var(--primary-soft)_65%,var(--surface))] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:opacity-60"
                   >
                     <span className="min-w-0 flex-1 truncate">{log.label}</span>
                     <span
@@ -376,8 +379,9 @@ export function QuickLogsCard({
                     >
                       {log.count}件
                     </span>
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--primary-soft)] text-[var(--primary-deep)] transition group-hover:bg-[var(--primary)] group-hover:text-white">
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--primary-soft)] px-2.5 py-1 text-xs font-extrabold text-[var(--primary-deep)] transition group-hover:bg-[var(--primary)] group-hover:text-white">
                       <Plus aria-hidden="true" size={14} strokeWidth={2.4} />
+                      記録する
                     </span>
                     {flyKey !== undefined && flyKey > 0 && (
                       <span key={flyKey} className="fly" aria-hidden="true">
@@ -416,8 +420,8 @@ export function QuickLogsCard({
           <span className="font-bold">{lastAction.label}を1件記録しました</span>
           <Button
             onClick={() => void undo()}
-            variant="solid"
-            tone="neutral"
+            purpose="primary"
+            tone="default"
             size="compact"
             icon={Undo2}
             className="shrink-0 bg-white text-[var(--text)]"

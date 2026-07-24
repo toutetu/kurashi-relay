@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import type {
   CompletionStatus,
@@ -100,8 +101,8 @@ export function KoekakeTaskCard({
       <div className="relative mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
         <Button
           type="button"
-          variant="outline"
-          tone="blue"
+          purpose="secondary"
+          tone="default"
           size="compact"
           className="relative w-full [--fly-color:var(--mother-blue-strong)]"
           aria-label={`${task.name}に声かけ`}
@@ -129,12 +130,13 @@ export function KoekakeTaskCard({
 
           return (
             <Button
+              purpose="selection"
               key={status}
               type="button"
               className="w-full"
               size="compact"
-              variant={selected ? "solid" : "outline"}
-              tone="blue"
+              tone="default"
+              icon={selected ? Check : undefined}
               loading={isCompletionPending && selected}
               disabled={disabled}
               aria-pressed={selected}
@@ -147,8 +149,8 @@ export function KoekakeTaskCard({
         })}
         <Button
           type="button"
-          variant="outline"
-          tone="blue"
+          purpose="secondary"
+          tone="default"
           size="compact"
           className="w-full"
           aria-label={`${task.name}を5分後に再通知`}
@@ -159,8 +161,8 @@ export function KoekakeTaskCard({
         </Button>
         <Button
           type="button"
-          variant="ghost"
-          tone="neutral"
+          purpose="low"
+          tone="default"
           size="compact"
           className="w-full"
           aria-label={`${task.name}の詳細`}

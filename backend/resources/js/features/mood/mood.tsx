@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import { Check } from "lucide-react";
 import {
   createContext,
   useContext,
@@ -6,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Button } from "../../components/ui/Button";
 
 export const moods = [
   { id: "sakura", emoji: "🌸", label: "さくら" },
@@ -79,20 +81,20 @@ export function MoodPicker() {
       {moods.map((item) => {
         const selected = item.id === mood;
         return (
-          <button
+          <Button
             key={item.id}
             type="button"
+            purpose="selection"
+            tone="default"
+            size="compact"
             aria-pressed={selected}
+            icon={selected ? Check : undefined}
             onClick={() => setMood(item.id)}
-            className={`pressable inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] px-3 text-[12.5px] font-bold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
-              selected
-                ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-deep)]"
-                : "border-[var(--line)] bg-[var(--surface)] text-[var(--muted)]"
-            }`}
+            className="!min-h-11 !rounded-full !px-3 !text-[12.5px]"
           >
             <span aria-hidden="true">{item.emoji}</span>
             <span>{item.label}</span>
-          </button>
+          </Button>
         );
       })}
     </div>

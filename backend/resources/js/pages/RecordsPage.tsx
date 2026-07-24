@@ -63,8 +63,8 @@ export function RecordsPage({ scope = "all" }: RecordsPageProps) {
         <>
           <div className="mt-4 flex justify-center">
             <Button
-              variant="outline"
-              tone="blue"
+              purpose="secondary"
+              tone="default"
               icon={LayoutList}
               onClick={() => setDetailOpen(true)}
             >
@@ -93,8 +93,8 @@ export function RecordsPage({ scope = "all" }: RecordsPageProps) {
           <div className="mt-4 flex justify-center">
             {mamaView === "timeline" ? (
               <Button
-                variant="outline"
-                tone="blue"
+                purpose="secondary"
+                tone="default"
                 icon={Hash}
                 onClick={() => setMamaView("counts")}
               >
@@ -102,8 +102,8 @@ export function RecordsPage({ scope = "all" }: RecordsPageProps) {
               </Button>
             ) : (
               <Button
-                variant="outline"
-                tone="blue"
+                purpose="secondary"
+                tone="default"
                 icon={ListOrdered}
                 onClick={() => setMamaView("timeline")}
               >

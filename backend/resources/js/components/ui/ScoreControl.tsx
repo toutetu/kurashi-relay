@@ -1,4 +1,4 @@
-import { Heart } from "lucide-react";
+import { Check, Heart } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Score } from "../../types/dashboard";
 
@@ -47,7 +47,7 @@ export function ScoreControl({
           const selected = score === value;
           const ariaLabel = `${personLabel}の${label}を${score}にする`;
           const baseClass =
-            "pressable grid h-9 place-items-center rounded-xl border-[1.5px] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:cursor-not-allowed";
+            "pressable relative grid min-h-11 place-items-center rounded-xl border transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] disabled:cursor-not-allowed";
 
           if (appearance === "hearts") {
             const filled = score <= value;
@@ -65,15 +65,25 @@ export function ScoreControl({
                     ? {
                         color: fillColor,
                         background: softBg,
-                        borderColor: `color-mix(in srgb, ${fillColor} 35%, var(--line))`,
+                        borderColor: deepColor,
+                        borderWidth: selected ? "2px" : "1.5px",
                       }
                     : {
                         color: "var(--faint)",
                         background: "var(--surface)",
                         borderColor: "var(--line)",
+                        borderWidth: "1.5px",
                       }
                 }
               >
+                {selected ? (
+                  <Check
+                    aria-hidden="true"
+                    size={12}
+                    className="absolute top-1 right-1"
+                    style={{ color: deepColor }}
+                  />
+                ) : null}
                 <Heart
                   aria-hidden="true"
                   size={17}
@@ -100,15 +110,25 @@ export function ScoreControl({
                   selected
                     ? {
                         background: softBg,
-                        borderColor: fillColor,
+                        borderColor: deepColor,
+                        borderWidth: "2px",
                         color: deepColor,
                       }
                     : {
                         background: "var(--surface)",
                         borderColor: "var(--line)",
+                        borderWidth: "1.5px",
                       }
                 }
               >
+                {selected ? (
+                  <Check
+                    aria-hidden="true"
+                    size={12}
+                    className="absolute top-1 right-1"
+                    style={{ color: deepColor }}
+                  />
+                ) : null}
                 {faceEmojis[index]}
               </button>
             );
@@ -126,17 +146,27 @@ export function ScoreControl({
               style={
                 selected
                   ? {
-                      background: fillColor,
-                      borderColor: fillColor,
-                      color: "white",
+                      background: softBg,
+                      borderColor: deepColor,
+                      borderWidth: "2px",
+                      color: deepColor,
                     }
                   : {
                       background: "var(--surface)",
                       borderColor: "var(--line)",
+                      borderWidth: "1.5px",
                       color: "var(--ink)",
                     }
               }
             >
+              {selected ? (
+                <Check
+                  aria-hidden="true"
+                  size={12}
+                  className="absolute top-1 right-1"
+                  style={{ color: deepColor }}
+                />
+              ) : null}
               {score}
             </button>
           );

@@ -59,8 +59,8 @@ export function DashboardError({
       <Button
         onClick={onRetry}
         loading={isRetrying}
-        variant="solid"
-        tone="red"
+        purpose="primary"
+        tone="danger"
         icon={RefreshCcw}
         className="mt-5 disabled:cursor-wait"
       >

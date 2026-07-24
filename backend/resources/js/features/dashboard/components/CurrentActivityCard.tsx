@@ -6,8 +6,10 @@ import {
 import { useEffect, useId, useState } from "react";
 import { Button } from "../../../components/ui/Button";
 import { StatusChip } from "../../../components/ui/DashboardPrimitives";
+import type { SchedulePlan } from "../../../types/dashboard";
 import type { LocalActivity } from "../../../types/local";
 import { formatMinutes, formatTime } from "../../../utils/date";
+import type { SuggestedPlan } from "../selectSuggestedPlan";
 
 const statusLabels = {
   idle: "待機中",
@@ -53,17 +55,24 @@ function useElapsedMinutes(activity: LocalActivity | null) {
 
 export function CurrentActivityCard({
   activity,
+  suggestedPlan = null,
+  starting = false,
   onChange,
   onComplete,
+  onStartSuggested,
 }: {
   activity: LocalActivity | null;
+  suggestedPlan?: SuggestedPlan | null;
+  starting?: boolean;
   onChange: (activity: LocalActivity | null) => void;
   onComplete?: (activity: LocalActivity, endedAt: string) => Promise<void>;
+  onStartSuggested?: (plan: SchedulePlan) => Promise<void>;
 }) {
   const headingId = useId();
   const elapsedMinutes = useElapsedMinutes(activity);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const isActive = activity !== null && activity.status !== "completed";
   const goToQuickStart = () =>
     document
       .querySelector("#quick-start")
@@ -102,6 +111,20 @@ export function CurrentActivityCard({
     }
   };
 
+  const startSuggested = async () => {
+    if (!suggestedPlan || !onStartSuggested) return;
+    setErrorMessage(null);
+    try {
+      await onStartSuggested(suggestedPlan.plan);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "予定の開始に失敗しました。もう一度お試しください。",
+      );
+    }
+  };
+
   return (
     <section
       aria-labelledby={headingId}
@@ -113,7 +136,7 @@ export function CurrentActivityCard({
       <h2 id={headingId} className="sr-only">
         現在の活動
       </h2>
-      {activity ? (
+      {isActive && activity ? (
         <>
           {activity.status === "running" && (
             <span
@@ -139,29 +162,56 @@ export function CurrentActivityCard({
             </strong>
           </p>
           <div className="flex flex-wrap gap-2">
-            {activity.status !== "completed" && (
-              <Button
-                onClick={() => void complete()}
-                disabled={isSaving}
-                variant="solid"
-                tone="blue"
-                size="compact"
-                icon={CircleStop}
-                loading={isSaving}
-              >
-                {isSaving ? "保存中…" : "終了"}
-              </Button>
-            )}
+            <Button
+              onClick={() => void complete()}
+              disabled={isSaving}
+              purpose="primary"
+              tone="default"
+              size="compact"
+              icon={CircleStop}
+              loading={isSaving}
+            >
+              {isSaving ? "保存中…" : "終了"}
+            </Button>
             <Button
               onClick={goToQuickStart}
-              variant="ghost"
-              tone="neutral"
+              purpose="low"
+              tone="default"
               size="compact"
               icon={ArrowRightLeft}
             >
               切り替える
             </Button>
           </div>
+          {errorMessage && (
+            <p
+              className="basis-full text-xs font-bold text-[var(--coral)]"
+              role="alert"
+            >
+              {errorMessage}
+            </p>
+          )}
+        </>
+      ) : suggestedPlan ? (
+        <>
+          <p className="text-xs font-bold text-[var(--muted)]">
+            {suggestedPlan.kind === "current" ? "いまの予定" : "次の予定"}
+          </p>
+          <p className="min-w-0 truncate text-[15px] font-extrabold text-[var(--ink)] tabular-nums">
+            {formatTime(suggestedPlan.plan.startAt)} {suggestedPlan.plan.title}
+          </p>
+          <span className="hidden flex-1 sm:block" />
+          <Button
+            onClick={() => void startSuggested()}
+            purpose="primary"
+            tone="default"
+            size="compact"
+            icon={CirclePlay}
+            loading={starting}
+            disabled={starting}
+          >
+            開始する
+          </Button>
           {errorMessage && (
             <p
               className="basis-full text-xs font-bold text-[var(--coral)]"
@@ -179,8 +229,8 @@ export function CurrentActivityCard({
           <span className="hidden flex-1 sm:block" />
           <Button
             onClick={goToQuickStart}
-            variant="solid"
-            tone="blue"
+            purpose="low"
+            tone="default"
             size="compact"
             icon={CirclePlay}
           >

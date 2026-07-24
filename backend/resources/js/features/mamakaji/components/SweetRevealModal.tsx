@@ -86,7 +86,7 @@ export function SweetRevealModal({
           {carryover > 0 && <>（{carryover}個は 繰り越し）</>}
         </p>
 
-        <Button tone="neutral" className="mt-5 w-full" onClick={onClose}>
+        <Button tone="default" className="mt-5 w-full" onClick={onClose}>
           とじる
         </Button>
       </div>
