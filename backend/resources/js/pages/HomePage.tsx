@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, RefreshCcw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   completeHomeEvent,
   createHomeEvent,
@@ -52,7 +52,16 @@ function HomeDashboard({
   );
   const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
   const [planError, setPlanError] = useState<string | null>(null);
-  const suggestedPlan = selectSuggestedPlan(data.nextPlans);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const suggestedPlan = selectSuggestedPlan(data.nextPlans, new Date(nowMs));
+  const selectedPlanId =
+    currentActivity && currentActivity.status !== "completed"
+      ? null
+      : (suggestedPlan?.plan.id ?? null);
   const runningOptionId =
     currentActivity && currentActivity.status !== "completed"
       ? currentActivity.plannedActivityId
@@ -262,6 +271,7 @@ function HomeDashboard({
             plans={data.nextPlans}
             date={data.date}
             runningPlanId={runningPlanId}
+            selectedPlanId={selectedPlanId}
             busyPlanId={busyPlanId}
             errorMessage={planError}
             actions={{
@@ -273,7 +283,7 @@ function HomeDashboard({
           />
         </div>
         <div
-          className={`area-qs ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch min-[75rem]:flex`}
+          className={`area-qs ${activeTab === "today" || activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch min-[75rem]:flex`}
         >
           <QuickStartCard
             activities={data.quickActivities}
@@ -282,7 +292,7 @@ function HomeDashboard({
           />
         </div>
         <div
-          className={`area-ql ${activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch min-[75rem]:flex`}
+          className={`area-ql ${activeTab === "today" || activeTab === "record" ? "flex" : "hidden"} h-full w-full min-w-0 justify-self-stretch min-[75rem]:flex`}
         >
           <QuickLogsCard initialLogs={data.quickLogs} />
         </div>

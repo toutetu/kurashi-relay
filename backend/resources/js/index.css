@@ -295,11 +295,8 @@ button:not(:disabled),
       --button-selection-active-foreground,
       var(--text)
     );
-    --button-edge: color-mix(
-      in srgb,
-      var(--button-tone-border) 35%,
-      var(--line)
-    );
+    --button-edge: transparent;
+    box-shadow: none;
   }
 
   .button--purpose-selection.button--selected {
@@ -320,7 +317,9 @@ button:not(:disabled),
     );
     --button-active-border: var(--primary-deep);
     --button-active-foreground: var(--primary-deep);
+    --button-edge: transparent;
     border-width: 2px;
+    box-shadow: none;
   }
 
   .button--purpose-low {

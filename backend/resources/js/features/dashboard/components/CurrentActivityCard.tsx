@@ -128,13 +128,13 @@ export function CurrentActivityCard({
   return (
     <section
       aria-labelledby={headingId}
-      className="mb-2.5 flex flex-wrap items-center gap-2.5 rounded-3xl border-[1.5px] bg-[var(--surface)] px-3 py-1.5 shadow-[var(--card-shadow)] sm:rounded-full sm:px-4 sm:py-1.5"
+      className="mb-2.5 flex flex-wrap items-center gap-2.5 rounded-3xl border-[1.5px] bg-[var(--surface)] px-3 py-2 shadow-[var(--card-shadow)] sm:rounded-full sm:px-4 sm:py-1.5"
       style={{
         borderColor: "color-mix(in srgb, var(--primary) 28%, var(--line))",
       }}
     >
       <h2 id={headingId} className="sr-only">
-        現在の活動
+        進行中の活動
       </h2>
       {isActive && activity ? (
         <>
@@ -144,6 +144,7 @@ export function CurrentActivityCard({
               className="size-2.5 shrink-0 animate-pulse rounded-full bg-[var(--green)]"
             />
           )}
+          <p className="text-xs font-bold text-[var(--muted)]">進行中</p>
           <p className="min-w-0 truncate text-[15px] font-extrabold text-[var(--ink)]">
             {activity.title}
           </p>
@@ -198,17 +199,19 @@ export function CurrentActivityCard({
             {suggestedPlan.kind === "current" ? "いまの予定" : "次の予定"}
           </p>
           <p className="min-w-0 truncate text-[15px] font-extrabold text-[var(--ink)] tabular-nums">
-            {formatTime(suggestedPlan.plan.startAt)} {suggestedPlan.plan.title}
+            <span className="mr-2">{formatTime(suggestedPlan.plan.startAt)}</span>
+            {suggestedPlan.plan.title}
           </p>
           <span className="hidden flex-1 sm:block" />
           <Button
             onClick={() => void startSuggested()}
             purpose="primary"
             tone="default"
-            size="compact"
+            size="regular"
             icon={CirclePlay}
             loading={starting}
             disabled={starting}
+            className="!min-h-12"
           >
             開始する
           </Button>

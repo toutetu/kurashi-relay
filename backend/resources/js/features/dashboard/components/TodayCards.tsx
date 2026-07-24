@@ -48,6 +48,7 @@ function PlanRow({
   isLast,
   busy,
   running,
+  selected = false,
   actions,
 }: {
   plan: SchedulePlan;
@@ -55,6 +56,7 @@ function PlanRow({
   isLast: boolean;
   busy: boolean;
   running: boolean;
+  selected?: boolean;
   actions?: PlanActionHandlers;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
@@ -130,7 +132,9 @@ function PlanRow({
         className={`flex gap-2 sm:gap-3 ${settled ? "grayscale" : ""} ${
           isChildPlan
             ? "rounded-xl border border-[color-mix(in_srgb,var(--cat-blue)_35%,var(--line))] bg-[var(--cat-blue-soft)] px-2 py-1.5 sm:px-2.5"
-            : ""
+            : selected || running
+              ? "rounded-xl border-2 border-[var(--primary-deep)] bg-[var(--primary-soft)] px-2 py-1.5 sm:px-2.5"
+              : ""
         }`}
       >
         <time
@@ -161,6 +165,12 @@ function PlanRow({
             {running && !settled && (
               <span className="ml-1.5 text-[10px] font-bold text-[var(--green)]">
                 進行中
+              </span>
+            )}
+            {selected && !running && !settled && (
+              <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-[var(--primary-deep)]">
+                <Check aria-hidden="true" size={12} />
+                選択中
               </span>
             )}
             {outcomeLabel && (
@@ -263,6 +273,7 @@ export function NextPlansCard({
   plans,
   date,
   runningPlanId = null,
+  selectedPlanId = null,
   busyPlanId = null,
   actions,
   errorMessage = null,
@@ -270,6 +281,7 @@ export function NextPlansCard({
   plans: SchedulePlan[];
   date: string;
   runningPlanId?: string | null;
+  selectedPlanId?: string | null;
   busyPlanId?: string | null;
   actions?: PlanActionHandlers;
   errorMessage?: string | null;
@@ -292,6 +304,9 @@ export function NextPlansCard({
               isLast={index === plans.length - 1}
               busy={busyPlanId !== null}
               running={runningPlanId === plan.id}
+              selected={
+                selectedPlanId === plan.id && runningPlanId !== plan.id
+              }
               actions={actions}
             />
           ))}
