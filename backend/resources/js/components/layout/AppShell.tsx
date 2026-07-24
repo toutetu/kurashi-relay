@@ -39,7 +39,7 @@ const navigationGroups: NavGroup[] = [
     items: [{ to: "/", label: "ホーム", icon: Home }],
   },
   {
-    label: "娘のおしごと",
+    label: "むすめのおしごと",
     items: [
       { to: "/oshigoto", label: "おしごと", icon: Moon },
       { to: "/musume", label: "なにする？", icon: Heart },
@@ -163,12 +163,12 @@ function NavigationItem({
       onClick={onClick}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `flex min-h-10 items-center gap-2.5 text-sm transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
+        `flex min-h-10 items-center gap-2.5 border-l-[3px] text-sm transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
           collapsed ? "size-10 justify-center px-0" : "px-2 py-1.5"
         } ${
           isActive
-            ? "font-bold text-[var(--primary-deep)]"
-            : "font-medium text-[var(--muted-text)] hover:text-[var(--text)]"
+            ? "border-[var(--primary-deep)] bg-[var(--primary-soft)] font-bold text-[var(--primary-deep)]"
+            : "border-transparent font-medium text-[var(--muted-text)] hover:bg-white/60 hover:text-[var(--text)]"
         }`
       }
     >
