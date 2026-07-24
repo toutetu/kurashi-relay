@@ -73,4 +73,14 @@ class ActivityEvent extends Model
     {
         return $this->hasMany(RewardTransaction::class);
     }
+
+    public function note(): HasOne
+    {
+        return $this->hasOne(ActivityEventNote::class);
+    }
+
+    public function rewardCollection(): HasOne
+    {
+        return $this->hasOne(RewardCollection::class);
+    }
 }

@@ -3,9 +3,10 @@
 namespace App\Services;
 
 use App\Models\ActivityDefinition;
+use App\Models\ActivityEvent;
 use App\Models\FamilyMember;
 use App\Models\TaskDefinition;
-use App\Models\TaskRecord;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 final class TaskService
@@ -26,27 +27,20 @@ final class TaskService
             ->orderBy('sort_order')
             ->get();
 
-        $recordsByTaskId = TaskRecord::query()
-            ->where('family_member_id', $member->id)
-            ->whereNull('cancelled_at')
-            ->whereDate('record_date', $date)
-            ->get()
-            ->groupBy('task_definition_id');
-
         $activityCounts = $this->activityEventRecordQuery
             ->activityCountsByDefinitionForActorOnDate($member, $date);
+
+        $lastEventIdsByDefinition = $this->latestOshigotoEventIdsByDefinition($member, $date);
 
         $coveredActivityDefinitionIds = [];
 
         $tasks = $definitions->map(function (TaskDefinition $definition) use (
-            $recordsByTaskId,
             $activityCounts,
+            $lastEventIdsByDefinition,
             &$coveredActivityDefinitionIds,
         ): array {
-            /** @var Collection<int, TaskRecord> $taskRecords */
-            $taskRecords = $recordsByTaskId->get($definition->id, collect());
             $activityDefinitionId = $definition->activity_definition_id;
-            // 件数の正本は activity_events のみ（DR-050）。取消用 ID だけ task_records を見る。
+            // 件数の正本は activity_events のみ（DR-050/051）。
             $count = $activityDefinitionId !== null
                 ? (int) ($activityCounts[$activityDefinitionId] ?? 0)
                 : 0;
@@ -55,8 +49,10 @@ final class TaskService
                 $coveredActivityDefinitionIds[$activityDefinitionId] = true;
             }
 
-            /** @var int|null $lastRecordId 取消用。activity_events は別経路のため task_records のみ */
-            $lastRecordId = $taskRecords->isNotEmpty() ? (int) $taskRecords->max('id') : null;
+            /** @var int|null $lastRecordId 取消用。oshigoto の activity_events.id */
+            $lastRecordId = $activityDefinitionId !== null
+                ? ($lastEventIdsByDefinition[$activityDefinitionId] ?? null)
+                : null;
 
             return [
                 'slug' => $definition->slug,
@@ -124,5 +120,45 @@ final class TaskService
             'tasks' => $tasks,
             'summary' => $this->rewardCalculator->summary($member, $date),
         ];
+    }
+
+    /**
+     * @return array<int, int> activity_definition_id => latest activity_event id
+     */
+    private function latestOshigotoEventIdsByDefinition(FamilyMember $member, string $tokyoDate): array
+    {
+        [$startUtc, $endUtc] = $this->tokyoDayBoundsUtc($tokyoDate);
+
+        /** @var Collection<int, ActivityEvent> $events */
+        $events = ActivityEvent::query()
+            ->where('event_type', 'activity')
+            ->where('source', 'oshigoto')
+            ->where('actor_member_id', $member->id)
+            ->whereBetween('occurred_at', [$startUtc, $endUtc])
+            ->whereDoesntHave('cancellation')
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $latest = [];
+        foreach ($events as $event) {
+            $definitionId = (int) $event->activity_definition_id;
+            if (! isset($latest[$definitionId])) {
+                $latest[$definitionId] = (int) $event->id;
+            }
+        }
+
+        return $latest;
+    }
+
+    /**
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
+    private function tokyoDayBoundsUtc(string $tokyoDate): array
+    {
+        $start = CarbonImmutable::parse($tokyoDate, 'Asia/Tokyo')->startOfDay()->utc();
+        $end = CarbonImmutable::parse($tokyoDate, 'Asia/Tokyo')->endOfDay()->utc();
+
+        return [$start, $end];
     }
 }

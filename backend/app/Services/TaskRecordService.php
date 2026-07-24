@@ -5,11 +5,11 @@ namespace App\Services;
 use App\Exceptions\IdempotencyConflictException;
 use App\Models\ActivityEvent;
 use App\Models\ActivityEventCancellation;
+use App\Models\ActivityEventNote;
 use App\Models\FamilyMember;
 use App\Models\RewardCollection;
 use App\Models\TaskDefinition;
-use App\Models\TaskRecord;
-use App\Models\TaskRecordOperation;
+use Carbon\CarbonImmutable;
 use Database\Support\ActivityDefinitionCatalog;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -23,9 +23,20 @@ final class TaskRecordService
         private readonly RewardLedgerService $rewardLedger,
     ) {}
 
-    public static function activityEventIdempotencyKey(string $taskRecordIdempotencyKey): string
+    public static function activityEventIdempotencyKey(string $clientIdempotencyKey): string
     {
-        return "oshigoto:{$taskRecordIdempotencyKey}";
+        return "oshigoto:{$clientIdempotencyKey}";
+    }
+
+    public static function clientIdempotencyKeyFromEvent(ActivityEvent $event): string
+    {
+        $key = (string) $event->idempotency_key;
+
+        if (str_starts_with($key, 'oshigoto:')) {
+            return substr($key, strlen('oshigoto:'));
+        }
+
+        return $key;
     }
 
     /**
@@ -34,15 +45,7 @@ final class TaskRecordService
      * @return array{
      *     date: string,
      *     member: string,
-     *     records: list<array{
-     *         id: int,
-     *         member: string,
-     *         task: string,
-     *         task_title: string,
-     *         record_date: string,
-     *         completed_at: string,
-     *         cancelled_at: null
-     *     }>
+     *     records: list<array<string, mixed>>
      * }
      */
     public function listForMember(FamilyMember $member, string $recordDate): array
@@ -50,7 +53,6 @@ final class TaskRecordService
         $calendarKey = ActivityDefinitionCatalog::calendarActivityDefinitionKey();
         $events = $this->activityEventRecordQuery
             ->activityEventsForActorOnDate($member, $recordDate)
-            // 記録画面ではカレンダー予定の実施ログを出さない（予定画面・予定と実績で見る）
             ->reject(
                 fn (ActivityEvent $event): bool => $event->activityDefinition?->activity_key === $calendarKey,
             )
@@ -69,7 +71,7 @@ final class TaskRecordService
 
     /**
      * @return array{
-     *     record: TaskRecord,
+     *     record: array<string, mixed>,
      *     summary: array<string, mixed>,
      *     revealed_reward: RewardCollection|null,
      *     deduplicated: bool,
@@ -84,60 +86,64 @@ final class TaskRecordService
         string $source,
         ?string $note = null,
     ): array {
-        return DB::transaction(function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $source, $note): array {
+        return DB::transaction(function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $note): array {
             FamilyMember::query()->whereKey($member->id)->lockForUpdate()->first();
 
-            $existingOperation = TaskRecordOperation::query()
-                ->with([
-                    'taskRecord.familyMember',
-                    'taskRecord.taskDefinition',
-                    'taskRecord.rewardCollection',
-                ])
-                ->where('idempotency_key', $idempotencyKey)
+            $activityDefinitionId = $taskDefinition->activity_definition_id;
+            if ($activityDefinitionId === null) {
+                throw ValidationException::withMessages([
+                    'task' => ['活動定義が紐づいていないため、実績を保存できません。'],
+                ]);
+            }
+
+            $eventKey = self::activityEventIdempotencyKey($idempotencyKey);
+
+            $existing = ActivityEvent::query()
+                ->with(['note', 'rewardCollection', 'actorMember', 'cancellation'])
+                ->where('idempotency_key', $eventKey)
                 ->first();
 
-            if ($existingOperation !== null) {
-                if (! $this->operationMatchesPayload($existingOperation, $member, $taskDefinition, $recordDate)) {
+            if ($existing !== null) {
+                if (! $this->eventMatchesPayload($existing, $member, $taskDefinition, $recordDate)) {
                     throw new IdempotencyConflictException('Idempotency key conflict.');
                 }
 
-                $record = $existingOperation->taskRecord;
-                $this->ensureActivityEvent($member, $taskDefinition, $record, $idempotencyKey);
-
                 return $this->buildStoreResult(
-                    $record,
+                    $existing,
+                    $taskDefinition,
                     $recordDate,
                     true,
                     200,
-                    $this->revealedRewardForKey($record, $idempotencyKey),
+                    $existing->rewardCollection,
                 );
             }
 
             try {
-                $record = DB::transaction(
-                    function () use ($member, $taskDefinition, $recordDate, $idempotencyKey, $source, $note): TaskRecord {
-                        $record = TaskRecord::query()->create([
-                            'family_member_id' => $member->id,
-                            'task_definition_id' => $taskDefinition->id,
-                            'record_date' => $recordDate,
-                            'completed_at' => now('UTC'),
-                            'source' => $source,
-                            'idempotency_key' => $idempotencyKey,
-                            'granted_point_value' => $taskDefinition->point_value,
-                            'note' => $note,
+                $event = DB::transaction(
+                    function () use ($member, $taskDefinition, $activityDefinitionId, $recordDate, $eventKey, $note): ActivityEvent {
+                        $occurredAt = CarbonImmutable::parse($recordDate, 'Asia/Tokyo')
+                            ->setTimeFrom(CarbonImmutable::now('Asia/Tokyo'))
+                            ->utc();
+
+                        $event = ActivityEvent::query()->create([
+                            'activity_definition_id' => $activityDefinitionId,
+                            'event_type' => 'activity',
+                            'occurred_at' => $occurredAt,
+                            'ended_at' => null,
+                            'recorded_by_member_id' => $member->id,
+                            'actor_member_id' => $member->id,
+                            'source' => 'oshigoto',
+                            'idempotency_key' => $eventKey,
                         ]);
 
-                        TaskRecordOperation::query()->create([
-                            'idempotency_key' => $idempotencyKey,
-                            'family_member_id' => $member->id,
-                            'task_definition_id' => $taskDefinition->id,
-                            'record_date' => $recordDate,
-                            'task_record_id' => $record->id,
-                        ]);
+                        if ($note !== null && $note !== '') {
+                            ActivityEventNote::query()->create([
+                                'activity_event_id' => $event->id,
+                                'note' => $note,
+                            ]);
+                        }
 
-                        $this->ensureActivityEvent($member, $taskDefinition, $record, $idempotencyKey);
-
-                        return $record;
+                        return $event;
                     },
                     1,
                 );
@@ -151,54 +157,89 @@ final class TaskRecordService
                 );
             }
 
-            $record->load(['familyMember', 'taskDefinition']);
+            $event->load(['note', 'actorMember', 'rewardCollection']);
 
-            $this->rewardLedger->recordEarnForTaskRecord($record);
+            $this->rewardLedger->recordEarnForOshigotoEvent(
+                $event,
+                $member->id,
+                (int) $taskDefinition->point_value,
+                $idempotencyKey,
+            );
 
-            $revealedReward = $this->maybeGrantReward($member, $record, $recordDate);
+            $revealedReward = $this->maybeGrantReward($member, $event, $recordDate);
 
-            return $this->buildStoreResult($record, $recordDate, false, 201, $revealedReward);
+            return $this->buildStoreResult(
+                $event,
+                $taskDefinition,
+                $recordDate,
+                false,
+                201,
+                $revealedReward,
+            );
         });
     }
 
     /**
      * @return array{
-     *     record: TaskRecord,
+     *     record: array<string, mixed>,
      *     summary: array<string, mixed>
      * }
      */
-    public function cancel(int $recordId): array
+    public function cancel(int $activityEventId): array
     {
-        return DB::transaction(function () use ($recordId): array {
-            $initialRecord = TaskRecord::query()->findOrFail($recordId);
+        return DB::transaction(function () use ($activityEventId): array {
+            $initial = ActivityEvent::query()->findOrFail($activityEventId);
 
-            FamilyMember::query()
-                ->whereKey($initialRecord->family_member_id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $record = TaskRecord::query()
-                ->with(['familyMember', 'taskDefinition'])
-                ->whereKey($recordId)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($record->cancelled_at === null) {
-                $record->cancelled_at = now('UTC');
-                $record->save();
-                $record->refresh()->load(['familyMember', 'taskDefinition']);
+            if ($initial->source !== 'oshigoto' || $initial->event_type !== 'activity') {
+                throw (new \Illuminate\Database\Eloquent\ModelNotFoundException)
+                    ->setModel(ActivityEvent::class, [$activityEventId]);
             }
 
-            $this->ensureActivityEventCancellation($record);
-            $this->rewardLedger->recordReversalForTaskRecord($record);
+            FamilyMember::query()
+                ->whereKey($initial->actor_member_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            $summary = $this->rewardCalculator->summary(
-                $record->familyMember,
-                $record->record_date->toDateString(),
-            );
+            $event = ActivityEvent::query()
+                ->with(['actorMember', 'note', 'cancellation', 'activityDefinition'])
+                ->whereKey($activityEventId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $cancelledAt = $event->cancellation?->cancelled_at;
+
+            if ($cancelledAt === null) {
+                $cancelledAt = now('UTC');
+                try {
+                    ActivityEventCancellation::query()->create([
+                        'activity_event_id' => $event->id,
+                        'cancelled_at' => $cancelledAt,
+                        'cancelled_by_member_id' => $event->actor_member_id,
+                        'created_at' => now('UTC'),
+                    ]);
+                } catch (QueryException $exception) {
+                    if (! $this->isUniqueViolation($exception)) {
+                        throw $exception;
+                    }
+                }
+                $event->unsetRelation('cancellation');
+                $event->load('cancellation');
+                $cancelledAt = $event->cancellation?->cancelled_at ?? $cancelledAt;
+            }
+
+            $clientKey = self::clientIdempotencyKeyFromEvent($event);
+            $this->rewardLedger->recordReversalForOshigotoEvent($event, $clientKey, $cancelledAt);
+
+            $recordDate = $event->occurred_at->timezone('Asia/Tokyo')->toDateString();
+            $taskDefinition = TaskDefinition::query()
+                ->where('activity_definition_id', $event->activity_definition_id)
+                ->where('owner_role', $event->actorMember->role)
+                ->first();
+
+            $summary = $this->rewardCalculator->summary($event->actorMember, $recordDate);
 
             return [
-                'record' => $record,
+                'record' => $this->toRecordArray($event, $taskDefinition, $recordDate, $cancelledAt),
                 'summary' => $summary,
             ];
         });
@@ -217,124 +258,26 @@ final class TaskRecordService
             ->all();
     }
 
-    private function ensureActivityEvent(
-        FamilyMember $member,
-        TaskDefinition $taskDefinition,
-        TaskRecord $record,
-        string $idempotencyKey,
-    ): void {
-        $activityDefinitionId = $taskDefinition->activity_definition_id;
-
-        if ($activityDefinitionId === null) {
-            throw ValidationException::withMessages([
-                'task' => ['活動定義が紐づいていないため、実績を保存できません。'],
-            ]);
-        }
-
-        $eventKey = self::activityEventIdempotencyKey($idempotencyKey);
-
-        $existing = ActivityEvent::query()
-            ->where('idempotency_key', $eventKey)
-            ->first();
-
-        if ($existing !== null) {
-            return;
-        }
-
-        try {
-            ActivityEvent::query()->create([
-                'activity_definition_id' => $activityDefinitionId,
-                'event_type' => 'activity',
-                'occurred_at' => $record->completed_at,
-                'ended_at' => null,
-                'recorded_by_member_id' => $member->id,
-                'actor_member_id' => $member->id,
-                'source' => 'oshigoto',
-                'idempotency_key' => $eventKey,
-            ]);
-        } catch (QueryException $exception) {
-            if (! $this->isUniqueViolation($exception)) {
-                throw $exception;
-            }
-        }
-    }
-
-    private function ensureActivityEventCancellation(TaskRecord $record): void
-    {
-        $event = ActivityEvent::query()
-            ->where('idempotency_key', self::activityEventIdempotencyKey($record->idempotency_key))
-            ->first();
-
-        if ($event === null) {
-            return;
-        }
-
-        if ($event->cancellation()->exists()) {
-            return;
-        }
-
-        try {
-            ActivityEventCancellation::query()->create([
-                'activity_event_id' => $event->id,
-                'cancelled_at' => $record->cancelled_at ?? now('UTC'),
-                'cancelled_by_member_id' => $record->family_member_id,
-                'created_at' => now('UTC'),
-            ]);
-        } catch (QueryException $exception) {
-            if (! $this->isUniqueViolation($exception)) {
-                throw $exception;
-            }
-        }
-    }
-
-    private function matchesPayload(
-        TaskRecord $record,
+    private function eventMatchesPayload(
+        ActivityEvent $event,
         FamilyMember $member,
         TaskDefinition $taskDefinition,
         string $recordDate,
     ): bool {
-        return $record->family_member_id === $member->id
-            && $record->task_definition_id === $taskDefinition->id
-            && $record->record_date->toDateString() === $recordDate;
-    }
+        if ($event->actor_member_id !== $member->id) {
+            return false;
+        }
 
-    private function operationMatchesPayload(
-        TaskRecordOperation $operation,
-        FamilyMember $member,
-        TaskDefinition $taskDefinition,
-        string $recordDate,
-    ): bool {
-        return $operation->family_member_id === $member->id
-            && $operation->task_definition_id === $taskDefinition->id
-            && $operation->record_date->toDateString() === $recordDate;
-    }
+        if ($event->activity_definition_id !== $taskDefinition->activity_definition_id) {
+            return false;
+        }
 
-    private function registerOperation(
-        string $idempotencyKey,
-        FamilyMember $member,
-        TaskDefinition $taskDefinition,
-        string $recordDate,
-        TaskRecord $record,
-    ): void {
-        DB::transaction(
-            fn (): TaskRecordOperation => TaskRecordOperation::query()->create([
-                'idempotency_key' => $idempotencyKey,
-                'family_member_id' => $member->id,
-                'task_definition_id' => $taskDefinition->id,
-                'record_date' => $recordDate,
-                'task_record_id' => $record->id,
-            ]),
-            1,
-        );
+        return $event->occurred_at->timezone('Asia/Tokyo')->toDateString() === $recordDate;
     }
 
     /**
-     * The nested transaction around INSERT is a database savepoint. PostgreSQL
-     * aborts only that savepoint on a unique violation, so these lookups can
-     * safely identify the winning row in the still-usable outer transaction.
-     *
      * @return array{
-     *     record: TaskRecord,
+     *     record: array<string, mixed>,
      *     summary: array<string, mixed>,
      *     revealed_reward: RewardCollection|null,
      *     deduplicated: bool,
@@ -352,86 +295,26 @@ final class TaskRecordService
             throw $exception;
         }
 
-        $existingOperation = TaskRecordOperation::query()
-            ->with([
-                'taskRecord.familyMember',
-                'taskRecord.taskDefinition',
-                'taskRecord.rewardCollection',
-            ])
-            ->where('idempotency_key', $idempotencyKey)
+        $event = ActivityEvent::query()
+            ->with(['note', 'rewardCollection', 'actorMember'])
+            ->where('idempotency_key', self::activityEventIdempotencyKey($idempotencyKey))
             ->first();
 
-        if ($existingOperation !== null) {
-            if (! $this->operationMatchesPayload($existingOperation, $member, $taskDefinition, $recordDate)) {
-                throw new IdempotencyConflictException('Idempotency key conflict.');
-            }
-
-            $record = $existingOperation->taskRecord;
-            $this->ensureActivityEvent($member, $taskDefinition, $record, $idempotencyKey);
-
-            return $this->buildStoreResult(
-                $record,
-                $recordDate,
-                true,
-                200,
-                $this->revealedRewardForKey($record, $idempotencyKey),
-            );
-        }
-
-        $winner = TaskRecord::query()
-            ->with(['familyMember', 'taskDefinition', 'rewardCollection'])
-            ->where('idempotency_key', $idempotencyKey)
-            ->first();
-
-        if ($winner === null) {
+        if ($event === null) {
             throw $exception;
         }
 
-        if (! $this->matchesPayload($winner, $member, $taskDefinition, $recordDate)) {
+        if (! $this->eventMatchesPayload($event, $member, $taskDefinition, $recordDate)) {
             throw new IdempotencyConflictException('Idempotency key conflict.');
         }
 
-        try {
-            $this->registerOperation(
-                $idempotencyKey,
-                $member,
-                $taskDefinition,
-                $recordDate,
-                $winner,
-            );
-        } catch (QueryException $operationException) {
-            if (! $this->isUniqueViolation($operationException)) {
-                throw $operationException;
-            }
-
-            $operation = TaskRecordOperation::query()
-                ->with([
-                    'taskRecord.familyMember',
-                    'taskRecord.taskDefinition',
-                    'taskRecord.rewardCollection',
-                ])
-                ->where('idempotency_key', $idempotencyKey)
-                ->first();
-
-            if ($operation === null) {
-                throw $operationException;
-            }
-
-            if (! $this->operationMatchesPayload($operation, $member, $taskDefinition, $recordDate)) {
-                throw new IdempotencyConflictException('Idempotency key conflict.');
-            }
-
-            $winner = $operation->taskRecord;
-        }
-
-        $this->ensureActivityEvent($member, $taskDefinition, $winner, $idempotencyKey);
-
         return $this->buildStoreResult(
-            $winner,
+            $event,
+            $taskDefinition,
             $recordDate,
             true,
             200,
-            $this->revealedRewardForKey($winner, $idempotencyKey),
+            $event->rewardCollection,
         );
     }
 
@@ -445,7 +328,7 @@ final class TaskRecordService
 
     /**
      * @return array{
-     *     record: TaskRecord,
+     *     record: array<string, mixed>,
      *     summary: array<string, mixed>,
      *     revealed_reward: RewardCollection|null,
      *     deduplicated: bool,
@@ -453,35 +336,57 @@ final class TaskRecordService
      * }
      */
     private function buildStoreResult(
-        TaskRecord $record,
+        ActivityEvent $event,
+        TaskDefinition $taskDefinition,
         string $summaryDate,
         bool $deduplicated,
         int $statusCode,
         ?RewardCollection $revealedReward = null,
     ): array {
+        $member = $event->actorMember ?? FamilyMember::query()->findOrFail($event->actor_member_id);
+
         return [
-            'record' => $record,
-            'summary' => $this->rewardCalculator->summary($record->familyMember, $summaryDate),
+            'record' => $this->toRecordArray($event, $taskDefinition, $summaryDate, null),
+            'summary' => $this->rewardCalculator->summary($member, $summaryDate),
             'revealed_reward' => $revealedReward,
             'deduplicated' => $deduplicated,
             'status_code' => $statusCode,
         ];
     }
 
-    private function revealedRewardForKey(
-        TaskRecord $record,
-        string $idempotencyKey,
-    ): ?RewardCollection {
-        if ($record->idempotency_key !== $idempotencyKey) {
-            return null;
-        }
+    /**
+     * @return array<string, mixed>
+     */
+    private function toRecordArray(
+        ActivityEvent $event,
+        ?TaskDefinition $taskDefinition,
+        string $recordDate,
+        mixed $cancelledAt,
+    ): array {
+        $note = $event->note?->note;
+        $trimmedNote = is_string($note) && trim($note) !== '' ? trim($note) : null;
+        $title = $trimmedNote
+            ?? $taskDefinition?->title
+            ?? $event->activityDefinition?->name
+            ?? '活動';
 
-        return $record->rewardCollection;
+        return [
+            'id' => $event->id,
+            'member' => ($event->actorMember ?? FamilyMember::query()->findOrFail($event->actor_member_id))->role,
+            'task' => $taskDefinition?->slug ?? $event->activityDefinition?->activity_key ?? 'activity',
+            'task_title' => $title,
+            'record_date' => $recordDate,
+            'completed_at' => $event->occurred_at->timezone('Asia/Tokyo')->toIso8601String(),
+            'cancelled_at' => $cancelledAt !== null
+                ? CarbonImmutable::parse($cancelledAt)->timezone('Asia/Tokyo')->toIso8601String()
+                : null,
+            'note' => $trimmedNote,
+        ];
     }
 
     private function maybeGrantReward(
         FamilyMember $member,
-        TaskRecord $record,
+        ActivityEvent $event,
         string $recordDate,
     ): ?RewardCollection {
         $lifetimeCount = $this->rewardCalculator->summary($member, $recordDate)['lifetime_count'];
@@ -509,7 +414,7 @@ final class TaskRecordService
             'item_slug' => $this->pickRewardItemSlug($type),
             'milestone_number' => $milestoneNumber,
             'obtained_on' => $recordDate,
-            'task_record_id' => $record->id,
+            'activity_event_id' => $event->id,
         ]);
     }
 

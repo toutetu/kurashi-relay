@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\ActivityEvent;
 use App\Models\FamilyMember;
 use App\Models\RewardAdjustment;
 use App\Models\RewardCollection;
-use App\Models\TaskRecord;
+use App\Models\RewardTransaction;
 
 final class RewardCalculator
 {
@@ -16,7 +17,7 @@ final class RewardCalculator
     public function summary(FamilyMember $member, string $date): array
     {
         $stampSize = (int) config('kurashi.stamp_size', 10);
-        $activeRecordCount = $this->activeRecordCount($member);
+        $activeRecordCount = $this->activeOshigotoCount($member);
         $gaugeAdjustment = $this->adjustmentSum($member, 'gauge');
         $lifetimeCount = $activeRecordCount + $gaugeAdjustment;
         $gaugeCount = (($lifetimeCount % $stampSize) + $stampSize) % $stampSize;
@@ -43,13 +44,13 @@ final class RewardCalculator
             $summary['points'] = null;
         } else {
             $pointAdjustment = $this->adjustmentSum($member, 'point');
-            $recordPoints = (int) TaskRecord::query()
-                ->where('family_member_id', $member->id)
-                ->whereNull('cancelled_at')
-                ->sum('granted_point_value');
+            $ledgerPoints = (int) RewardTransaction::query()
+                ->where('member_id', $member->id)
+                ->where('kind', 'point')
+                ->sum('amount');
 
             $summary['coins'] = null;
-            $summary['points'] = $recordPoints + $pointAdjustment;
+            $summary['points'] = $ledgerPoints + $pointAdjustment;
         }
 
         return $summary;
@@ -58,16 +59,18 @@ final class RewardCalculator
     private function todayDoneCount(FamilyMember $member, string $date): int
     {
         // 活動回数の正本は activity_events のみ（DR-050）。
-        // 本番DB再作成前提のため、孤児 task_records は集計に含めない。
         return $this->activityEventRecordQuery
             ->activityCountForActorOnDate($member, $date);
     }
 
-    private function activeRecordCount(FamilyMember $member): int
+    private function activeOshigotoCount(FamilyMember $member): int
     {
-        return TaskRecord::query()
-            ->where('family_member_id', $member->id)
-            ->whereNull('cancelled_at')
+        // ゲージに乗るのはおしごとだけ（声かけ完了は含めない）。DR-051。
+        return ActivityEvent::query()
+            ->where('event_type', 'activity')
+            ->where('source', 'oshigoto')
+            ->where('actor_member_id', $member->id)
+            ->whereDoesntHave('cancellation')
             ->count();
     }
 
