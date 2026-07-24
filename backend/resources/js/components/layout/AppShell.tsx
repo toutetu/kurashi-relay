@@ -1,6 +1,7 @@
 import {
   BarChart3,
   CalendarDays,
+  ChevronDown,
   ClipboardPenLine,
   Cookie,
   FileText,
@@ -38,11 +39,11 @@ const navigationGroups: NavGroup[] = [
     items: [{ to: "/", label: "ホーム", icon: Home }],
   },
   {
-    label: "おしごと系",
+    label: "むすめのおしごと",
     items: [
       { to: "/oshigoto", label: "おしごと", icon: Moon },
       { to: "/musume", label: "なにする？", icon: Heart },
-      { to: "/records/musume", label: "きろく", icon: ClipboardPenLine },
+      { to: "/records/musume", label: "きろくを見る", icon: ClipboardPenLine },
     ],
   },
   {
@@ -90,13 +91,14 @@ const mobileNavigation = mobileNavigationPaths.map((path) => {
 });
 
 const SIDEBAR_STORAGE_KEY = "kurashi-relay:sidebar-open";
+const NAV_GROUPS_STORAGE_KEY = "kurashi-relay:nav-groups-open";
 
 const pageTitles: Record<string, string> = {
   "/": "ホーム",
   "/schedule-comparison": "今日の予定と実績",
   "/schedule": "今日の予定",
   "/records": "記録",
-  "/records/musume": "きろく",
+  "/records/musume": "きろくを見る",
   "/mama-kaji": "ママの家事手帖",
   "/mama-kaji/zukan": "世界のおやつ図鑑",
   "/child-plan": "娘の状態・今日の作戦",
@@ -113,6 +115,12 @@ const pageTitles: Record<string, string> = {
   "/settings": "設定",
 };
 
+const defaultOpenGroups = Object.fromEntries(
+  navigationGroups
+    .filter((group) => group.label)
+    .map((group) => [group.label!, true]),
+) as Record<string, boolean>;
+
 function readSidebarOpen(): boolean {
   try {
     return localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
@@ -121,28 +129,21 @@ function readSidebarOpen(): boolean {
   }
 }
 
-function NavigationGroupLabel({
-  label,
-  collapsed = false,
-}: {
-  label: string;
-  collapsed?: boolean;
-}) {
-  if (collapsed) {
-    return (
-      <div
-        className="my-2 h-px w-8 bg-[var(--line)]"
-        role="separator"
-        aria-hidden="true"
-      />
-    );
+function readOpenGroups(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(NAV_GROUPS_STORAGE_KEY);
+    if (!raw) return defaultOpenGroups;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const next = { ...defaultOpenGroups };
+    for (const label of Object.keys(defaultOpenGroups)) {
+      if (typeof parsed[label] === "boolean") {
+        next[label] = parsed[label];
+      }
+    }
+    return next;
+  } catch {
+    return defaultOpenGroups;
   }
-
-  return (
-    <p className="px-3 pb-1 pt-4 text-[0.7rem] font-bold tracking-wide text-[var(--muted-text)]">
-      {label}
-    </p>
-  );
 }
 
 function NavigationItem({
@@ -162,18 +163,16 @@ function NavigationItem({
       onClick={onClick}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `pressable flex min-h-11 items-center gap-2 rounded-xl text-sm font-bold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
-          collapsed
-            ? "size-11 justify-center px-0"
-            : "px-2.5 py-2"
+        `flex min-h-10 items-center gap-2.5 border-l-[3px] text-sm transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${
+          collapsed ? "size-10 justify-center px-0" : "px-2 py-1.5"
         } ${
           isActive
-            ? "bg-[var(--primary-soft)] text-[var(--primary-deep)] shadow-sm"
-            : "text-[var(--muted-text)] hover:bg-white hover:text-[var(--text)]"
+            ? "border-[var(--primary-deep)] bg-[var(--primary-soft)] font-bold text-[var(--primary-deep)]"
+            : "border-transparent font-medium text-[var(--muted-text)] hover:bg-white/60 hover:text-[var(--text)]"
         }`
       }
     >
-      <Icon aria-hidden="true" size={20} className="shrink-0" />
+      <Icon aria-hidden="true" size={18} className="shrink-0" />
       <span className={collapsed ? "sr-only" : "min-w-0 leading-tight"}>
         {label}
       </span>
@@ -181,10 +180,78 @@ function NavigationItem({
   );
 }
 
+function CollapsibleNavGroup({
+  label,
+  items,
+  open,
+  onToggle,
+  sidebarCollapsed = false,
+  onItemClick,
+}: {
+  label: string;
+  items: NavItem[];
+  open: boolean;
+  onToggle: () => void;
+  sidebarCollapsed?: boolean;
+  onItemClick?: () => void;
+}) {
+  if (sidebarCollapsed) {
+    return (
+      <div className="flex flex-col items-center">
+        <div
+          className="my-2 h-px w-8 bg-[var(--line)]"
+          role="separator"
+          aria-hidden="true"
+        />
+        <div className="flex flex-col items-center space-y-0.5">
+          {items.map((item) => (
+            <NavigationItem
+              key={`${label}-${item.to}`}
+              {...item}
+              collapsed
+              onClick={onItemClick}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className="mt-3 flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-[0.7rem] font-bold tracking-wide text-[var(--muted-text)] transition hover:text-[var(--text)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+      >
+        <span>{label}</span>
+        <ChevronDown
+          aria-hidden="true"
+          size={14}
+          className={`shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
+        />
+      </button>
+      {open ? (
+        <div className="flex flex-col space-y-0.5 border-l border-[var(--line)] ml-2 pl-1">
+          {items.map((item) => (
+            <NavigationItem
+              key={`${label}-${item.to}`}
+              {...item}
+              onClick={onItemClick}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function AppShell() {
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
+  const [openGroups, setOpenGroups] = useState(readOpenGroups);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
   const wasMenuOpen = useRef(false);
@@ -197,6 +264,66 @@ export function AppShell() {
       /* ignore */
     }
   }, [sidebarOpen]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(NAV_GROUPS_STORAGE_KEY, JSON.stringify(openGroups));
+    } catch {
+      /* ignore */
+    }
+  }, [openGroups]);
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  const renderNavGroups = (
+    options: {
+      sidebarCollapsed?: boolean;
+      onItemClick?: () => void;
+    } = {},
+  ) =>
+    navigationGroups.map((group, groupIndex) => {
+      if (!group.label) {
+        return (
+          <div
+            key={`ungrouped-${groupIndex}`}
+            className={
+              options.sidebarCollapsed ? "flex flex-col items-center" : undefined
+            }
+          >
+            <div
+              className={
+                options.sidebarCollapsed
+                  ? "flex flex-col items-center space-y-0.5"
+                  : "flex flex-col space-y-0.5"
+              }
+            >
+              {group.items.map((item) => (
+                <NavigationItem
+                  key={`ungrouped-${item.to}`}
+                  {...item}
+                  collapsed={options.sidebarCollapsed}
+                  onClick={options.onItemClick}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <CollapsibleNavGroup
+          key={group.label}
+          label={group.label}
+          items={group.items}
+          open={openGroups[group.label] ?? true}
+          onToggle={() => toggleGroup(group.label!)}
+          sidebarCollapsed={options.sidebarCollapsed}
+          onItemClick={options.onItemClick}
+        />
+      );
+    });
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -343,64 +470,24 @@ export function AppShell() {
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <nav className="space-y-1">
-          {navigationGroups.map((group, groupIndex) => (
-            <div key={group.label ?? `ungrouped-${groupIndex}`}>
-              {group.label ? <NavigationGroupLabel label={group.label} /> : null}
-              <div className="space-y-1">
-                {group.items.map((item) => (
-                  <NavigationItem
-                    key={`${group.label ?? "ungrouped"}-${item.to}`}
-                    {...item}
-                    onClick={() => setMenuOpen(false)}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+        <nav className="space-y-0.5">
+          {renderNavGroups({ onItemClick: () => setMenuOpen(false) })}
         </nav>
       </aside>
 
       <div className="mx-auto flex max-w-[1600px]">
         <aside
           className={`sticky top-14 hidden h-[calc(100vh-3.5rem)] shrink-0 border-r border-[var(--border)] bg-[var(--page-background)] transition-[width] xl:flex xl:flex-col ${
-            sidebarOpen ? "w-[28rem] p-4" : "w-20 items-center p-3"
+            sidebarOpen ? "w-64 p-3" : "w-20 items-center p-3"
           }`}
         >
           <nav
             aria-label="メインメニュー"
             className={`min-h-0 flex-1 overflow-y-auto ${
-              sidebarOpen ? "space-y-1" : "flex flex-col items-center space-y-1"
+              sidebarOpen ? "space-y-0.5" : "flex flex-col items-center space-y-0.5"
             }`}
           >
-            {navigationGroups.map((group, groupIndex) => (
-              <div
-                key={group.label ?? `ungrouped-${groupIndex}`}
-                className={sidebarOpen ? undefined : "flex flex-col items-center"}
-              >
-                {group.label ? (
-                  <NavigationGroupLabel
-                    label={group.label}
-                    collapsed={!sidebarOpen}
-                  />
-                ) : null}
-                <div
-                  className={
-                    sidebarOpen
-                      ? "grid grid-cols-2 gap-1"
-                      : "flex flex-col items-center space-y-1"
-                  }
-                >
-                  {group.items.map((item) => (
-                    <NavigationItem
-                      key={`${group.label ?? "ungrouped"}-${item.to}`}
-                      {...item}
-                      collapsed={!sidebarOpen}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+            {renderNavGroups({ sidebarCollapsed: !sidebarOpen })}
           </nav>
           {sidebarOpen && (
             <div className="mt-auto rounded-2xl border border-dashed border-[var(--line)] bg-[var(--primary-soft)] p-4 text-sm text-[var(--primary-deep)]">
