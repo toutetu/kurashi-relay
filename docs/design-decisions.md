@@ -32,6 +32,24 @@
 
 ---
 
+## DR-050: 代行・一緒には実績正本の専用状態を持たない(2026-07-22)
+
+- **課題感**: 運用では「母が代行」は母の行動として記録し、「一緒に」は母側にも実績を残したい。
+  一方 DR-049 は声かけ完了の `together` / `parent_done` で表すとしており、実績正本に
+  専用区分が乗る形になって複雑だった。
+- **選択肢**: (a) completion status（`together` / `parent_done`）を維持する /
+  (b) `target` / `supporter` 列を復活させて参加関係で表す /
+  (c) `actor_member_id` のみで行為者を表し、必要なら行為者ごとの別イベントと
+  `plan_actual_links` で関係を表す。
+- **決定**: (c)。DR-049 の「一緒に/代行は completion status」は本DRで改訂する。
+  実績の正本（`activity_events`）に `parent_done` / `proxy` / `substitute` / `together`
+  などの専用状態は保存しない。娘の予定を母が実施した場合は、母を `actor_member_id` とし、
+  娘の `planned_activities` と `plan_actual_links` で結ぶ。母と娘がそれぞれ実施した場合は
+  行為者ごとのイベントを別行で残す。声かけ UI の `together` / `parent_done` は暫定の入力手段
+  として残しうるが、正本へ専用状態としては保存せず、将来整理する。
+- **理由**: 行為者は `actor_member_id` で足りる。予定とのズレはリンクで表現でき、
+  「一緒に」したい母の実績も母の別イベントとして自然に残せる。
+
 ## DR-049: 単一家庭では target/supporter 列を持たない(2026-07-21)
 
 - **課題感**: 母と娘の2人だけなので、`target_member_id` / `supporter_member_id` を毎回考えたくない。
@@ -40,6 +58,7 @@
   (c) 列を DROP し、役割は `recorded_by` + `actor` + completion `status` に寄せる。
 - **決定**: (c)。`activity_events` から両列を削除する。DR-048 の target/supporter 方針は本DRで改訂する。
   「一緒に」「代行」は声かけ完了 status、行為者は `actor_member_id` で足りる。
+  ※「一緒に/代行は status」は DR-050 で改訂。
 - **理由**: 単一家庭では対象・支援者は暗黙に決まる。本番含む差分 DROP で十分で、バックフィル不要。
 
 ## DR-048: 人物役割は activity_events の列へ統合し participants を廃止する(2026-07-21)
