@@ -342,6 +342,9 @@ export function HomePage() {
           <h1 className="mt-0.5 text-[18px] font-extrabold tracking-tight text-[var(--ink)]">
             今日のくらしを、見えるかたちに
           </h1>
+          <p className="mt-1 text-[11px] font-bold text-[var(--primary-deep)]">
+            UI確認: ボタン用途ビルド（開始する / 活動開始 / ＋記録する）
+          </p>
         </div>
         <div className="flex flex-col items-start gap-1.5 sm:items-end">
           <MoodPicker />
